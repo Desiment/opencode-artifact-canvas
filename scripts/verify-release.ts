@@ -35,9 +35,10 @@ const contents = await Bun.file(path.join(output, "tui.js")).text()
 if (contents.includes("mathjax-full") || contents.includes("mhchemparser")) {
   throw new Error("MathJax dependencies were not bundled into tui.js")
 }
-for (const specifier of ["@opencode/plugin/tui", "@opentui/core", "@opentui/solid", "solid-js"]) {
+for (const specifier of ["@opentui/core", "@opentui/solid", "solid-js"]) {
   if (!contents.includes(specifier)) throw new Error(`Release must retain the host import ${specifier}`)
 }
+if (contents.includes("@opencode/plugin/tui")) throw new Error("Release must not create a second PluginContext")
 
 const archiveContents = new TextDecoder().decode(
   await new Response(Bun.spawn(["tar", "-tzf", archive]).stdout).arrayBuffer(),

@@ -1,6 +1,6 @@
 import { createMermaidCodeBlockRenderer } from "./merman/markdown"
 import { resolveOpenCodeDiagramPalette } from "./merman/palette"
-import { Plugin, usePlugin } from "@opencode/plugin/tui"
+import type { Plugin } from "@opencode/plugin/tui"
 import { generateSyntax } from "@opencode/theme/tui"
 import { createMarkdownCodeBlockRenderer, imageInfo, NativeImage, TextAttributes, type MarkdownOptions, type RGBA } from "@opentui/core"
 import { spawn } from "node:child_process"
@@ -32,7 +32,7 @@ type CanvasReviewColors = {
   readonly commentBackground: RGBA
 }
 
-function canvasReviewColors(theme: ReturnType<typeof usePlugin>["theme"]): CanvasReviewColors {
+function canvasReviewColors(theme: Plugin.Context["theme"]): CanvasReviewColors {
   const canvas = theme as typeof theme & { readonly canvas?: { readonly review: CanvasReviewColors } }
   return canvas.canvas?.review ?? {
     cursor: theme.text.base,
@@ -53,7 +53,7 @@ function CanvasPage(props: {
   mathSize: () => number
   onMathSize: (delta: number) => void
 }) {
-  const theme = usePlugin().theme
+  const theme = props.context.theme
   const cwd = process.cwd()
   const graphics = useCanvasGraphics()
   const [mode, setMode] = createSignal<CanvasMode>("rendered")
@@ -349,6 +349,7 @@ function CanvasPage(props: {
             {(value) => (
               <CanvasDocument
                 content={value()}
+                theme={theme}
                 blocks={blocks}
                 mode={mode}
                 phase={phase}
@@ -377,6 +378,7 @@ function CanvasPage(props: {
 
 function CanvasDocument(props: {
   content: string
+  theme: Plugin.Context["theme"]
   blocks: () => CanvasBlock[]
   mode: () => CanvasMode
   phase: () => CanvasPhase
@@ -392,7 +394,7 @@ function CanvasDocument(props: {
   graphics: CanvasGraphics
   imageBase: () => string | undefined
 }) {
-  const theme = usePlugin().theme
+  const theme = props.theme
   const reviewColors = () => canvasReviewColors(theme)
   const rails = createMemo(() => assignCommentRails(props.review()?.comments ?? [], props.blocks().map((block) => block.source)))
   const railCount = createMemo(() => Math.max(0, ...rails().map((rail) => rail.column + 1)))
@@ -424,6 +426,7 @@ function CanvasDocument(props: {
                   <box flexGrow={1} minWidth={0}>
                     <CanvasBlockView
                       block={block}
+                      theme={theme}
                       renderNode={props.renderNode}
                       mathSize={props.mathSize}
                       available={available}
@@ -437,20 +440,21 @@ function CanvasDocument(props: {
                       commentNumber={(comment) => (props.review()?.comments.indexOf(comment) ?? -1) + 1}
                     />
                   </box>
-                  <CanvasCommentRails columns={railCount} rails={activeRails} />
+                  <CanvasCommentRails theme={theme} columns={railCount} rails={activeRails} />
                 </box>
                 <For each={endingRails()}>
                   {(rail) => (
                     <box width="100%" flexDirection="row">
                       <box flexGrow={1} minWidth={0}>
                         <CanvasCommentCard
+                          theme={theme}
                           comment={rail.comment}
                           number={props.review()?.comments.indexOf(rail.comment) ?? -1}
                           onDelete={props.onDeleteComment}
                           onEdit={props.onEditComment}
                         />
                       </box>
-                      <CanvasCommentRails columns={railCount} rails={() => [...continuingRails(), rail]} connector={() => rail.column} />
+                      <CanvasCommentRails theme={theme} columns={railCount} rails={() => [...continuingRails(), rail]} connector={() => rail.column} />
                     </box>
                   )}
                 </For>
@@ -465,7 +469,7 @@ function CanvasDocument(props: {
                       minWidth={0}
                       backgroundColor={selected(index()) && selected(index() + 1) ? reviewColors().selection : continuingRails().length > 0 ? reviewColors().commentBackground : undefined}
                     />
-                    <CanvasCommentRails columns={railCount} rails={continuingRails} />
+                    <CanvasCommentRails theme={theme} columns={railCount} rails={continuingRails} />
                   </box>
                 </Show>
               </>
@@ -480,6 +484,7 @@ function CanvasDocument(props: {
 // A block owns either the Markdown renderer or the inline flow, never both.
 function CanvasBlockView(props: {
   block: CanvasBlock
+  theme: Plugin.Context["theme"]
   renderNode: MarkdownOptions["renderNode"]
   mathSize: () => number
   available: () => number
@@ -492,7 +497,7 @@ function CanvasBlockView(props: {
   startingComments: () => readonly ReviewSnapshot["comments"][number][]
   commentNumber: (comment: ReviewSnapshot["comments"][number]) => number
 }) {
-  const theme = usePlugin().theme
+  const theme = props.theme
   const reviewColors = () => canvasReviewColors(theme)
   const background = () => props.selected()
     ? reviewColors().selection
@@ -526,14 +531,15 @@ function CanvasBlockView(props: {
           size={props.mathSize}
           maxWidth={props.available}
           surface={surface}
+          theme={theme}
           graphics={props.graphics}
         />
       )
     }
     if (block.type === "image") {
-      return <LocalImage href={block.href} alt={block.alt} base={props.imageBase} maxWidth={props.available} background={theme.background.base} graphics={props.graphics} />
+      return <LocalImage href={block.href} alt={block.alt} base={props.imageBase} maxWidth={props.available} background={theme.background.base} theme={theme} graphics={props.graphics} />
     }
-    return <CanvasFlow block={block.block} columns={props.available} surface={surface} background={background} graphics={props.graphics} />
+    return <CanvasFlow block={block.block} columns={props.available} surface={surface} background={background} theme={theme} graphics={props.graphics} />
   })
   return (
     <box
@@ -574,9 +580,10 @@ function LocalImage(props: {
   base: () => string | undefined
   maxWidth: () => number
   background: RGBA
+  theme: Plugin.Context["theme"]
   graphics: CanvasGraphics
 }) {
-  const theme = usePlugin().theme
+  const theme = props.theme
   const [renderError, setRenderError] = createSignal<string>()
   // A rejected resource rethrows from its read, so an unreadable image would
   // abort the canvas unmount on the next key. Report failures as values instead.
@@ -654,11 +661,12 @@ function LocalImage(props: {
 }
 
 function CanvasCommentRails(props: {
+  theme: Plugin.Context["theme"]
   columns: () => number
   rails: () => readonly ReviewCommentRail[]
   connector?: () => number | undefined
 }) {
-  const theme = usePlugin().theme
+  const theme = props.theme
   const reviewColors = () => canvasReviewColors(theme)
   return (
     <box width={props.columns()} flexShrink={0} flexDirection="row">
@@ -684,12 +692,13 @@ function CanvasCommentRails(props: {
 }
 
 function CanvasCommentCard(props: {
+  theme: Plugin.Context["theme"]
   comment: ReviewSnapshot["comments"][number]
   number: number
   onDelete: (id: string) => void
   onEdit: (id: string) => void
 }) {
-  const theme = usePlugin().theme
+  const theme = props.theme
   const reviewColors = () => canvasReviewColors(theme)
   return (
     <box paddingLeft={1} flexDirection="column" backgroundColor={reviewColors().commentBackground}>
@@ -716,9 +725,10 @@ function MathBlock(props: {
   size: () => number
   maxWidth: () => number
   surface: () => string
+  theme: Plugin.Context["theme"]
   graphics: CanvasGraphics
 }) {
-  const theme = usePlugin().theme
+  const theme = props.theme
   const [failed, setFailed] = createSignal(false)
   const color = () => rgbaToHex(theme.text.base)
   // The block mosaic needs a larger measured formula, but kitty/sixel use the
@@ -829,9 +839,9 @@ async function editArtifact(
   }
 }
 
-export default Plugin.define({
+export default {
   id: "opencode.artifact-canvas",
-  setup(context) {
+  setup(context: Plugin.Context) {
     // Canvas files often document LaTeX syntax, so only Mermaid fences opt into custom rendering here.
     const renderNode = createMarkdownCodeBlockRenderer({
       mermaid: createMermaidCodeBlockRenderer(context.renderer, () => ({
@@ -926,4 +936,4 @@ export default Plugin.define({
       },
     })
   },
-})
+}

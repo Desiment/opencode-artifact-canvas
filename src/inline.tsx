@@ -1,5 +1,5 @@
 import { TextAttributes, type RGBA } from "@opentui/core"
-import { usePlugin } from "@opencode/plugin/tui"
+import type { Plugin } from "@opencode/plugin/tui"
 import { createMemo, createResource, For, Show } from "solid-js"
 import stringWidth from "string-width"
 import { mathImageID, type CellSize, type MathImage, renderMath, rgbaToHex } from "./math"
@@ -620,7 +620,7 @@ function layout(
   return lines
 }
 
-type Theme = ReturnType<typeof usePlugin>["theme"]
+type Theme = Plugin.Context["theme"]
 
 function styleOf(theme: Theme, style: InlineStyle) {
   switch (style) {
@@ -648,13 +648,14 @@ type FlowLayout = {
   color: () => string
   surface: () => string
   background?: () => RGBA | undefined
+  theme: Theme
   // The raster is generated at this cell pixel size, so it is part of the image
   // identity OpenTUI caches by.
   cell: () => CellSize | null
 }
 
 function FlowLine(props: { line: LayoutLine; prefix: string; prefixColor: RGBA; layout: FlowLayout }) {
-  const theme = usePlugin().theme
+  const theme = props.layout.theme
   return (
     // The raster pads itself so its baseline lands 0.75 em below its top edge,
     // which is where the text baseline sits, so the image is top-aligned here.
@@ -718,7 +719,7 @@ function FlowLines(props: {
   prefixColor?: RGBA
   layout: FlowLayout
 }) {
-  const theme = usePlugin().theme
+  const theme = props.layout.theme
   const lines = createMemo(() => layout(props.runs, props.columns, props.layout.measureOf, props.layout.compactOverflow))
   return (
     <box width="100%" flexDirection="column" flexShrink={0}>
@@ -752,9 +753,10 @@ export function CanvasFlow(props: {
   columns: () => number
   surface: () => string
   background?: () => RGBA | undefined
+  theme: Theme
   graphics: CanvasGraphics
 }) {
-  const theme = usePlugin().theme
+  const theme = props.theme
   const color = () => rgbaToHex(theme.text.base)
   const contents = createMemo(() => mathOf(props.block).map((run) => run.content))
   // The resource source has to be a string: a fresh array would refetch on
@@ -823,6 +825,7 @@ export function CanvasFlow(props: {
     color,
     surface: props.surface,
     background: props.background,
+    theme,
     cell: props.graphics.cell,
   }))
 
