@@ -5,13 +5,14 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
+    "build:plugin": "bun run scripts/build-plugin.ts",
     "build:release": "bun run scripts/build-release.ts",
     "test": "bun test --timeout 30000",
     "typecheck": "tsgo --noEmit",
     "verify:release": "bun run scripts/verify-release.ts"
   },
   "exports": {
-    "./tui": "./tui.tsx"
+    "./tui": "./tui.js"
   },
   "peerDependencies": {
     "@opentui/core": ">=0.5.12",

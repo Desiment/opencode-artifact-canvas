@@ -1,6 +1,6 @@
 import { cp, mkdir, rm, writeFile } from "node:fs/promises"
 import path from "node:path"
-import { createSolidTransformPlugin } from "@opentui/solid/bun-plugin"
+import { buildPlugin } from "./build-plugin"
 
 const target = "linux-x64-glibc"
 const root = path.resolve(import.meta.dir, "..")
@@ -16,31 +16,8 @@ const manifest = (await Bun.file(path.join(root, "package.json")).json()) as { n
 await rm(output, { recursive: true, force: true })
 await mkdir(output, { recursive: true })
 
-const build = await Bun.build({
-  entrypoints: [path.join(root, "tui.tsx")],
-  outdir: output,
-  naming: { entry: "tui.js" },
-  target: "bun",
-  format: "esm",
-  splitting: false,
-  minify: true,
-  sourcemap: "none",
-  plugins: [createSolidTransformPlugin()],
-  // OpenCode supplies these modules to local plugins. Bundling them would create
-  // separate Solid and OpenTUI identities, which breaks the host plugin context.
-  external: [
-    "@opencode/plugin/tui",
-    "@opentui/core",
-    "@opentui/solid",
-    "@opentui/solid/components",
-    "@opentui/solid/jsx-runtime",
-    "@opentui/solid/jsx-dev-runtime",
-    "solid-js",
-    "solid-js/store",
-    "@resvg/resvg-js",
-  ],
-})
-if (!build.success) throw new AggregateError(build.logs, "Unable to bundle Artifact Canvas")
+await buildPlugin()
+await cp(path.join(root, "tui.js"), path.join(output, "tui.js"))
 
 await writeFile(
   path.join(output, "package.json"),
