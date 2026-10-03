@@ -3,6 +3,7 @@ import { resolveOpenCodeDiagramPalette } from "./merman/palette"
 import type { Plugin } from "@opencode/plugin/tui"
 import { generateSyntax } from "@opencode/theme/tui"
 import { createMarkdownCodeBlockRenderer, imageInfo, NativeImage, TextAttributes, type MarkdownOptions, type RGBA } from "@opentui/core"
+import { RendererContext } from "@opentui/solid"
 import { spawn } from "node:child_process"
 import path from "node:path"
 import { createEffect, createMemo, createResource, createSignal, For, Match, onCleanup, Show, Switch } from "solid-js"
@@ -868,19 +869,21 @@ export default {
     context.ui.router.register({
       name: "artifact-canvas",
       render: () => (
-        <CanvasPage
-          context={context}
-          renderNode={renderNode}
-          file={file}
-          onClose={() => context.ui.router.navigate(previous())}
-          presentation="fullscreen"
-          sessionID={() => {
-            const route = previous()
-            return route.type === "session" ? route.sessionID : undefined
-          }}
-          mathSize={mathSize}
-          onMathSize={resizeMath}
-        />
+        <RendererContext.Provider value={context.renderer}>
+          <CanvasPage
+            context={context}
+            renderNode={renderNode}
+            file={file}
+            onClose={() => context.ui.router.navigate(previous())}
+            presentation="fullscreen"
+            sessionID={() => {
+              const route = previous()
+              return route.type === "session" ? route.sessionID : undefined
+            }}
+            mathSize={mathSize}
+            onMathSize={resizeMath}
+          />
+        </RendererContext.Provider>
       ),
     })
     context.ui.slot({
@@ -888,17 +891,19 @@ export default {
       render(input) {
         if (input.name !== "artifact-canvas") return null
         return (
-          <CanvasPage
-            context={context}
-            renderNode={renderNode}
-            file={file}
-            onClose={input.close}
-            active={() => input.focused}
-            presentation={input.presentation}
-            sessionID={() => input.sessionID}
-            mathSize={mathSize}
-            onMathSize={resizeMath}
-          />
+          <RendererContext.Provider value={context.renderer}>
+            <CanvasPage
+              context={context}
+              renderNode={renderNode}
+              file={file}
+              onClose={input.close}
+              active={() => input.focused}
+              presentation={input.presentation}
+              sessionID={() => input.sessionID}
+              mathSize={mathSize}
+              onMathSize={resizeMath}
+            />
+          </RendererContext.Provider>
         )
       },
     })
