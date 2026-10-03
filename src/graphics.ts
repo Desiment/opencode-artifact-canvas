@@ -1,6 +1,5 @@
 import type { CellSize } from "./math"
-import type { PixelResolution, TerminalCapabilities } from "@opentui/core"
-import { useRenderer, useTerminalDimensions } from "@opentui/solid"
+import type { CliRenderer, PixelResolution, TerminalCapabilities } from "@opentui/core"
 import { createMemo, createSignal, onCleanup } from "solid-js"
 
 // OpenTUI does not export its `resolveImageRenderProtocol`, so this mirrors it:
@@ -24,9 +23,7 @@ function resolveGraphicsProtocol(capabilities: TerminalCapabilities | null, hasR
 // to stay legible.
 export const mosaicScale = (protocol: string) => (protocol === "blocks" ? 2 : 1)
 
-export function useCanvasGraphics() {
-  const renderer = useRenderer()
-  const dimensions = useTerminalDimensions()
+export function useCanvasGraphics(renderer: CliRenderer) {
   // Capabilities and pixel size are resolved by terminal queries after startup,
   // so the first frame can still be missing them.
   const [queried, setQueried] = createSignal(0)
@@ -69,7 +66,8 @@ export function useCanvasGraphics() {
   })
   const cell = createMemo<CellSize | null>(() => {
     const value = resolution()
-    const { width, height } = dimensions()
+    const width = renderer.terminalWidth
+    const height = renderer.terminalHeight
     if (!value || width <= 0 || height <= 0) return null
     const cellWidth = value.width / width
     const cellHeight = value.height / height

@@ -55,7 +55,7 @@ function CanvasPage(props: {
 }) {
   const theme = props.context.theme
   const cwd = process.cwd()
-  const graphics = useCanvasGraphics()
+  const graphics = useCanvasGraphics(props.context.renderer)
   const [mode, setMode] = createSignal<CanvasMode>("rendered")
   const [phase, setPhase] = createSignal<CanvasPhase>("edit")
   const [baseline, setBaseline] = createSignal<string>()
