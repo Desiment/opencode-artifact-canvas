@@ -6,28 +6,23 @@ block-range review comments, and sends a review packet to the active session.
 
 ## Install
 
-This plugin is distributed through GitHub Releases, not npm. Download the
-`artifact-canvas-linux-x64-glibc.tar.gz` asset, then extract it into OpenCode's
-global plugin directory:
+Install the Git package through OpenCode. This installs its dependencies into
+OpenCode's managed plugin cache and adds the TUI plugin to the global config:
 
 ```sh
-mkdir -p ~/.config/opencode/plugins
-tar -xzf artifact-canvas-linux-x64-glibc.tar.gz -C ~/.config/opencode/plugins
+opencode plugin add github:Desiment/opencode-artifact-canvas
 ```
 
-No Bun, npm, symlink, or `opencode.json` configuration is needed on the target
-machine. Restart OpenCode after extraction. Run `/canvas path/to/file.md` from a
-session to open the Canvas panel, or run it outside a session for the fullscreen
-route.
+Restart OpenCode after installation. Run `/canvas path/to/file.md` from a session
+to open the Canvas panel, or run it outside a session for the fullscreen route.
 
 The release targets Linux x64 with glibc. Its native SVG renderer does not work
 on musl-based Linux distributions or non-x64 architectures.
 
 ## Release
 
-Pushing a version tag such as `v0.1.0` runs the release workflow. It verifies
-the plugin and publishes `artifact-canvas-linux-x64-glibc.tar.gz` to the matching
-GitHub Release.
+Pushing a version tag such as `v0.1.0` runs the release workflow and publishes
+the Linux x64 glibc archive to the matching GitHub Release.
 
 ## Development
 
