@@ -1,0 +1,26 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.2"
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun test
+      - run: bun run build:release
+      - run: bun run verify:release
+      - run: gh release create "$GITHUB_REF_NAME" dist/artifact-canvas-linux-x64-glibc.tar.gz --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
