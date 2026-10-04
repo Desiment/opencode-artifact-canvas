@@ -16,21 +16,11 @@ opencode plugin add github:Desiment/opencode-artifact-canvas
 Restart OpenCode after installation. Run `/canvas path/to/file.md` from a session
 to open the Canvas panel, or run it outside a session for the fullscreen route.
 
-The release targets Linux x64 with glibc. Its native SVG renderer does not work
-on musl-based Linux distributions or non-x64 architectures.
-
-## Release
-
-Pushing a version tag such as `v0.1.0` runs the release workflow and publishes
-the Linux x64 glibc archive to the matching GitHub Release.
-
 ## Development
 
 ```sh
 bun test
 bun run typecheck
-bun run build:release
-bun run verify:release
 ```
 
 The plugin requires a current OpenCode V2 TUI with the public plugin API.

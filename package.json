@@ -5,22 +5,29 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "build:plugin": "bun run scripts/build-plugin.ts",
-    "build:release": "bun run scripts/build-release.ts",
     "test": "bun test --timeout 30000",
-    "typecheck": "tsgo --noEmit",
-    "verify:release": "bun run scripts/verify-release.ts"
+    "typecheck": "tsgo --noEmit"
   },
   "exports": {
-    "./tui": "./tui.js"
+    "./tui": "./tui.tsx"
   },
   "peerDependencies": {
     "@opentui/core": ">=0.5.12",
     "@opentui/solid": ">=0.5.12",
     "solid-js": ">=1.9.0"
   },
+  "peerDependenciesMeta": {
+    "@opentui/core": {
+      "optional": true
+    },
+    "@opentui/solid": {
+      "optional": true
+    },
+    "solid-js": {
+      "optional": true
+    }
+  },
   "dependencies": {
-    "@opencode/plugin": "^2.0.19",
     "@opencode/theme": "^2.0.19",
     "@resvg/resvg-js": "2.6.2",
     "diff": "8.0.4",
@@ -30,6 +37,7 @@
     "string-width": "7.2.0"
   },
   "devDependencies": {
+    "@opencode/plugin": "^2.0.19",
     "@opentui/core": "0.5.12",
     "@opentui/solid": "0.5.12",
     "@tsconfig/bun": "1.0.9",

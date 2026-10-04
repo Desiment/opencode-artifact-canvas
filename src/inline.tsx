@@ -1,3 +1,5 @@
+/** @jsxImportSource @opentui/solid */
+
 import { TextAttributes, type RGBA } from "@opentui/core"
 import type { Plugin } from "@opencode/plugin/tui"
 import { createMemo, createResource, For, Show } from "solid-js"
