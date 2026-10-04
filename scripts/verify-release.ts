@@ -32,11 +32,26 @@ const manifest = (await Bun.file(path.join(output, "package.json")).json()) as {
 if (manifest.type !== "module") throw new Error("Release manifest must be an ESM package")
 
 const contents = await Bun.file(path.join(output, "tui.js")).text()
-if (contents.includes("mathjax-full") || contents.includes("mhchemparser")) {
-  throw new Error("MathJax dependencies were not bundled into tui.js")
+const importPatterns = [
+  /(from\s+["'])([^"']+)(["'])/g,
+  /(import\s+["'])([^"']+)(["'])/g,
+  /(import\s*\(\s*["'])([^"']+)(["']\s*\))/g,
+  /(require\s*\(\s*["'])([^"']+)(["']\s*\))/g,
+]
+const importSpecifiers = new Set<string>()
+for (const pattern of importPatterns) {
+  for (const match of contents.matchAll(pattern)) importSpecifiers.add(match[2]!)
+}
+
+for (const dependency of ["mathjax-full", "mhchemparser"]) {
+  if ([...importSpecifiers].some((specifier) => specifier === dependency || specifier.startsWith(`${dependency}/`))) {
+    throw new Error(`MathJax dependency was not bundled into tui.js: ${dependency}`)
+  }
 }
 for (const specifier of ["@opentui/core", "@opentui/solid", "solid-js"]) {
-  if (!contents.includes(specifier)) throw new Error(`Release must retain the host import ${specifier}`)
+  if (!importSpecifiers.has(specifier)) {
+    throw new Error(`Release must retain a scanner-visible host import: ${specifier}`)
+  }
 }
 if (contents.includes("@opencode/plugin/tui")) throw new Error("Release must not create a second PluginContext")
 
