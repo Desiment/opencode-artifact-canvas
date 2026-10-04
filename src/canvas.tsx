@@ -2,8 +2,7 @@ import { createMermaidCodeBlockRenderer } from "./merman/markdown"
 import { resolveOpenCodeDiagramPalette } from "./merman/palette"
 import type { Plugin } from "@opencode/plugin/tui"
 import { generateSyntax } from "@opencode/theme/tui"
-import { createMarkdownCodeBlockRenderer, imageInfo, NativeImage, TextAttributes, type MarkdownOptions, type RGBA } from "@opentui/core"
-import { RendererContext } from "@opentui/solid"
+import { BaseRenderable, createMarkdownCodeBlockRenderer, imageInfo, NativeImage, TextAttributes, type MarkdownOptions, type RGBA } from "@opentui/core"
 import { spawn } from "node:child_process"
 import path from "node:path"
 import { createEffect, createMemo, createResource, createSignal, For, Match, onCleanup, Show, Switch } from "solid-js"
@@ -843,6 +842,11 @@ async function editArtifact(
 export default {
   id: "opencode.artifact-canvas",
   setup(context: Plugin.Context) {
+    if (process.env.OPENCODE_ARTIFACT_CANVAS_LINKAGE_DEBUG)
+      console.error(
+        "[artifact-canvas] host OpenTUI identity:",
+        context.renderer.root instanceof BaseRenderable,
+      )
     // Canvas files often document LaTeX syntax, so only Mermaid fences opt into custom rendering here.
     const renderNode = createMarkdownCodeBlockRenderer({
       mermaid: createMermaidCodeBlockRenderer(context.renderer, () => ({
@@ -869,21 +873,19 @@ export default {
     context.ui.router.register({
       name: "artifact-canvas",
       render: () => (
-        <RendererContext.Provider value={context.renderer}>
-          <CanvasPage
-            context={context}
-            renderNode={renderNode}
-            file={file}
-            onClose={() => context.ui.router.navigate(previous())}
-            presentation="fullscreen"
-            sessionID={() => {
-              const route = previous()
-              return route.type === "session" ? route.sessionID : undefined
-            }}
-            mathSize={mathSize}
-            onMathSize={resizeMath}
-          />
-        </RendererContext.Provider>
+        <CanvasPage
+          context={context}
+          renderNode={renderNode}
+          file={file}
+          onClose={() => context.ui.router.navigate(previous())}
+          presentation="fullscreen"
+          sessionID={() => {
+            const route = previous()
+            return route.type === "session" ? route.sessionID : undefined
+          }}
+          mathSize={mathSize}
+          onMathSize={resizeMath}
+        />
       ),
     })
     context.ui.slot({
@@ -891,19 +893,17 @@ export default {
       render(input) {
         if (input.name !== "artifact-canvas") return null
         return (
-          <RendererContext.Provider value={context.renderer}>
-            <CanvasPage
-              context={context}
-              renderNode={renderNode}
-              file={file}
-              onClose={input.close}
-              active={() => input.focused}
-              presentation={input.presentation}
-              sessionID={() => input.sessionID}
-              mathSize={mathSize}
-              onMathSize={resizeMath}
-            />
-          </RendererContext.Provider>
+          <CanvasPage
+            context={context}
+            renderNode={renderNode}
+            file={file}
+            onClose={input.close}
+            active={() => input.focused}
+            presentation={input.presentation}
+            sessionID={() => input.sessionID}
+            mathSize={mathSize}
+            onMathSize={resizeMath}
+          />
         )
       },
     })
