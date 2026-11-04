@@ -114,7 +114,9 @@ if (archiveContents.includes("server.ts") || archiveContents.includes("tui.tsx")
 const native = createRequire(import.meta.url)(path.join(output, "prebuilds/linux-x64-gnu/opentui_markdown_render.node")) as {
   renderLatex(input: { latex: string; display?: boolean }): Promise<{ png: Uint8Array }>
 }
-const formula = await native.renderLatex({ latex: "x^2" })
-if (!formula.png.length) throw new Error("Release native math addon returned no image")
+for (const latex of ["x^2", String.raw`a\!b + c\negthinspace d`, String.raw`\begin{Vmatrix} a & b \\ c & d \end{Vmatrix}`]) {
+  const formula = await native.renderLatex({ latex, display: true })
+  if (!formula.png.length) throw new Error(`Release native math addon returned no image for ${latex}`)
+}
 
 process.stdout.write("Release archive is installable on Linux x64 glibc.\n")
