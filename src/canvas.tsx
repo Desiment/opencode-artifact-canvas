@@ -5,6 +5,7 @@ import path from "node:path"
 import {
   MarkdownRenderer,
   parseDocument,
+  rgbaToHex,
   useCanvasGraphics,
   type Document,
   type RenderUnit,
@@ -36,8 +37,12 @@ import {
 import { rendererTheme } from "./theme"
 
 type CanvasMode = "rendered" | "source"
-type CanvasPhase = "edit" | "review"
+export type CanvasPhase = "edit" | "review"
 type CanvasContent = { file: string; value?: string; error?: string }
+type CanvasDialogSection = {
+  readonly title: string
+  readonly rows: readonly { readonly label: string; readonly value: string }[]
+}
 
 type CanvasReviewColors = {
   readonly cursor: RGBA
@@ -86,6 +91,73 @@ function unitIndex(units: readonly UnitInfo[], info: UnitInfo) {
   return units.findIndex((unit) => unit.kind === info.kind && sameRange(unit.source, info.source))
 }
 
+export function visualSelectionContains(
+  units: readonly UnitInfo[],
+  info: UnitInfo,
+  cursor: number,
+  visualStart: number | undefined,
+) {
+  if (visualStart === undefined) return false
+  const index = unitIndex(units, info)
+  return index >= Math.min(visualStart, cursor) && index <= Math.max(visualStart, cursor)
+}
+
+export function commentRangeContains(
+  units: readonly UnitInfo[],
+  info: UnitInfo,
+  rails: readonly ReviewCommentRail[],
+) {
+  const index = unitIndex(units, info)
+  return index >= 0 && rails.some((rail) => rail.start <= index && rail.end >= index)
+}
+
+export async function confirmReviewExit(
+  dialog: Pick<Plugin.Context["ui"]["dialog"], "confirm">,
+  commentCount: number,
+) {
+  return await dialog.confirm({
+    title: "Leave review mode?",
+    message: commentCount
+      ? `This will discard the active review and ${commentCount} unsent comment${commentCount === 1 ? "" : "s"}.`
+      : "This will discard the active review selection and return to editing mode.",
+    label: { confirm: "Leave review", cancel: "Keep reviewing" },
+  }) === true
+}
+
+function CanvasDetailsDialog(props: {
+  context: Plugin.Context
+  title: string
+  sections: readonly CanvasDialogSection[]
+}) {
+  const theme = props.context.theme.surface("dialog")
+  const close = () => props.context.ui.dialog.clear()
+  props.context.keymap.layer(() => ({
+    mode: "modal",
+    commands: [{ bind: "return", title: "close Canvas information", run: close }],
+  }))
+  return <box paddingLeft={2} paddingRight={2} gap={1}>
+    <box flexDirection="row" justifyContent="space-between">
+      <text fg={theme.text.base} attributes={TextAttributes.BOLD}>{props.title}</text>
+      <text fg={theme.text.muted} onMouseUp={close}>esc</text>
+    </box>
+    <For each={props.sections}>{(section) => {
+      const labelWidth = Math.max(10, ...section.rows.map((row) => row.label.length + 2))
+      return <box flexDirection="column">
+        <text fg={theme.text.base} attributes={TextAttributes.BOLD}>{section.title}</text>
+        <For each={section.rows}>{(row) => <box flexDirection="row" width="100%">
+          <text width={labelWidth} flexShrink={0} fg={theme.text.action.primary.base} attributes={TextAttributes.BOLD}>{row.label}</text>
+          <text flexGrow={1} minWidth={0} wrapMode="word" fg={theme.text.base}>{row.value}</text>
+        </box>}</For>
+      </box>
+    }}</For>
+    <box flexDirection="row" justifyContent="flex-end" paddingBottom={1}>
+      <box paddingLeft={3} paddingRight={3} backgroundColor={theme.background.action.primary.focused} onMouseUp={close}>
+        <text fg={theme.text.action.primary.focused}>close</text>
+      </box>
+    </box>
+  </box>
+}
+
 function CanvasPage(props: {
   context: Plugin.Context
   file: () => string | undefined
@@ -93,8 +165,6 @@ function CanvasPage(props: {
   active?: () => boolean
   presentation: string
   sessionID?: () => string | undefined
-  mathSize: () => number
-  onMathSize: (delta: number) => void
 }) {
   const theme = props.context.theme
   const cwd = process.cwd()
@@ -173,32 +243,77 @@ function CanvasPage(props: {
     setCursor(0)
     setVisualStart()
   }
-  const leaveReview = () => {
+  const discardReview = () => {
     setPhase("edit")
     setReview()
     setVisualStart()
   }
-  const showHelp = () => props.context.ui.dialog.alert({
-    title: "Artifact Canvas",
-    message: phase() === "review"
-      ? [
-          "r  finish review",
-          "j/k or arrows  move between blocks",
-          "v  start a visual block selection",
-          "c  comment selection",
-          "d  delete comment on selection",
-          "shift+s  compose and send review feedback",
-          "q  close canvas",
-          "Esc  cancel selection or close canvas",
-        ].join("\n")
-      : [
-          "r  start review",
-          "s  toggle rendered/source",
-          "e  edit artifact",
-          "+/-  resize display math",
-          "q or Esc  close canvas",
-        ].join("\n"),
-  })
+  const requestReviewExit = async () => {
+    if (phase() !== "review") return true
+    return confirmReviewExit(props.context.ui.dialog, review()?.comments.length ?? 0)
+  }
+  const leaveReview = async () => {
+    if (!await requestReviewExit()) return
+    discardReview()
+  }
+  const closeCanvas = async () => {
+    if (!await requestReviewExit()) return
+    if (phase() === "review") discardReview()
+    props.onClose()
+  }
+  const showHelp = () => {
+    props.context.ui.dialog.show(() => <CanvasDetailsDialog context={props.context} title="Artifact Canvas help" sections={[
+      { title: "GENERAL", rows: [
+        { label: "h", value: "Show this help" },
+        { label: "c", value: "Show Canvas configuration and runtime information" },
+        { label: "q", value: "Close Canvas (asks first during review)" },
+        { label: "Esc", value: "Cancel a visual selection, otherwise close Canvas" },
+      ] },
+      { title: "VIEWING AND EDITING", rows: [
+        { label: "s", value: "Switch between rendered Markdown and source" },
+        { label: "e", value: "Open the artifact in $VISUAL or $EDITOR" },
+        { label: "r", value: "Start review mode; in review mode, ask before leaving" },
+      ] },
+      { title: "REVIEW MODE", rows: [
+        { label: "j / ↓", value: "Move to the next review block" },
+        { label: "k / ↑", value: "Move to the previous review block" },
+        { label: "v", value: "Start or extend a visual block selection" },
+        { label: "a", value: "Add a comment to the selected block range" },
+        { label: "d", value: "Delete the comment matching the selected range" },
+        { label: "Shift+S", value: "Compose and send all review feedback to the session" },
+        { label: "Esc", value: "Cancel the current selection before closing" },
+      ] },
+      { title: "CURRENT STATE", rows: [
+        { label: "Mode", value: `${mode()} / ${phase()}` },
+      ] },
+    ]} />)
+    props.context.ui.dialog.set({ size: "large", centered: true })
+  }
+  const showInformation = () => {
+    const cell = graphics.cell()
+    const current = review()
+    props.context.ui.dialog.show(() => <CanvasDetailsDialog context={props.context} title="Canvas configuration & runtime" sections={[
+      { title: "CONFIGURATION", rows: [
+        { label: "File", value: props.file() ?? "No artifact selected" },
+        { label: "Working directory", value: cwd },
+        { label: "Renderer config", value: "Canvas-managed (file discovery disabled)" },
+        { label: "Images", value: "Maximum 24 rows" },
+        { label: "Display math", value: "Fixed native size (resize controls disabled)" },
+      ] },
+      { title: "RUNTIME", rows: [
+        { label: "Presentation", value: props.presentation },
+        { label: "View", value: mode() },
+        { label: "Review", value: phase() },
+        { label: "Review blocks", value: String(units().length) },
+        { label: "Review comments", value: String(current?.comments.length ?? 0) },
+        { label: "Canvas width", value: `${width()} columns` },
+        { label: "Document width", value: `${available()} columns` },
+        { label: "Graphics protocol", value: graphics.protocol() },
+        { label: "Cell pixels", value: cell ? `${cell.width}x${cell.height}` : "unknown" },
+      ] },
+    ]} />)
+    props.context.ui.dialog.set({ size: "large", centered: true })
+  }
   const addComment = async () => {
     const range = selectedRange()
     if (!range) {
@@ -249,7 +364,7 @@ function CanvasPage(props: {
   props.context.keymap.layer(() => ({
     enabled: () => props.active?.() ?? true,
     commands: [
-      { bind: "escape", title: "back", run: () => visualStart() !== undefined ? setVisualStart() : props.onClose() },
+      { bind: "escape", title: "back", run: () => visualStart() !== undefined ? setVisualStart() : void closeCanvas() },
       { bind: "s", title: mode() === "source" ? "rendered" : "source", run: () => setMode(mode() === "source" ? "rendered" : "source") },
       {
         bind: "e",
@@ -258,15 +373,16 @@ function CanvasPage(props: {
           ? props.context.ui.toast.show({ variant: "warning", message: "Leave review mode before editing the artifact" })
           : void editArtifact(props.context, props.file(), cwd, refetch),
       },
-      { bind: "r", title: phase() === "review" ? "leave review" : "start review", run: () => phase() === "review" ? leaveReview() : enterReview() },
-      { bind: "q", title: "close canvas", run: props.onClose },
+      { bind: "r", title: phase() === "review" ? "leave review" : "start review", run: () => phase() === "review" ? void leaveReview() : enterReview() },
+      { bind: "q", title: "close canvas", run: () => void closeCanvas() },
       { bind: "h", title: "canvas help", run: () => void showHelp() },
+      { bind: "c", title: "canvas configuration and runtime", run: () => void showInformation() },
       { bind: "j", title: "next block", enabled: () => phase() === "review", run: () => moveCursor(1) },
       { bind: "down", title: "next block", enabled: () => phase() === "review", run: () => moveCursor(1) },
       { bind: "k", title: "previous block", enabled: () => phase() === "review", run: () => moveCursor(-1) },
       { bind: "up", title: "previous block", enabled: () => phase() === "review", run: () => moveCursor(-1) },
       { bind: "v", title: "visual select", enabled: () => phase() === "review", run: () => setVisualStart((value) => value ?? cursor()) },
-      { bind: "c", title: "comment selection", enabled: () => phase() === "review", run: () => void addComment() },
+      { bind: "a", title: "comment selection", enabled: () => phase() === "review", run: () => void addComment() },
       {
         bind: "d",
         title: "delete selected comment",
@@ -279,10 +395,6 @@ function CanvasPage(props: {
         },
       },
       { bind: "shift+s", title: "compose review feedback", enabled: () => phase() === "review", run: () => void sendReview() },
-      { bind: "+", title: "bigger display math", run: () => props.onMathSize(1) },
-      { bind: "=", title: "bigger display math", run: () => props.onMathSize(1) },
-      { bind: "-", title: "smaller display math", run: () => props.onMathSize(-1) },
-      { bind: "_", title: "smaller display math", run: () => props.onMathSize(-1) },
     ],
   }))
 
@@ -290,21 +402,8 @@ function CanvasPage(props: {
     const file = props.file()
     return file ? path.relative(cwd, file) || file : "No artifact selected"
   }
-  const header = createMemo(() => {
-    const columns = width()
-    if (columns < 50) return { image: "", status: `${props.mathSize().toFixed(1)}x` }
-    if (columns < 78) return { image: `img:${graphics.protocol()}`, status: `${props.mathSize().toFixed(1)}x +/- r s e q` }
-    if (columns < 120) {
-      return {
-        image: `img:${graphics.protocol()}`,
-        status: `${props.presentation} ${columns}c ${mode()} ${phase()} ${props.mathSize().toFixed(1)}x h r s e q`,
-      }
-    }
-    return {
-      image: `img:${graphics.protocol()} ${graphics.cell() ? `px:${graphics.cell()!.width}x${graphics.cell()!.height}` : "px:?"}`,
-      status: `${props.presentation} ${columns}c ${mode()} ${phase()} display ${props.mathSize().toFixed(1)}x h help - r review - s source - e edit - q close`,
-    }
-  })
+  const selected = (info: UnitInfo) => phase() === "review" && visualSelectionContains(units(), info, cursor(), visualStart())
+  const commented = (info: UnitInfo) => commentRangeContains(units(), info, rails())
   const renderUnit: RenderUnit = (info, rendered) => (
     <CanvasReviewUnit
       info={info}
@@ -328,10 +427,8 @@ function CanvasPage(props: {
       onSizeChange={function () { setWidth(this.width) }}>
       <box flexShrink={0} flexDirection="row" gap={1} paddingLeft={1} paddingRight={1}
         border={["bottom"]} borderColor={theme.decrease(theme.background.base)}>
-        <text fg={theme.text.base} attributes={TextAttributes.BOLD} flexShrink={0}>canvas</text>
-        <Show when={header().image}><text fg={theme.text.muted} flexShrink={0}>{header().image}</text></Show>
         <text fg={theme.text.muted} flexGrow={1} minWidth={0} wrapMode="none" truncate>{label()}</text>
-        <text fg={theme.text.muted} flexShrink={0}>{header().status}</text>
+        <text fg={theme.text.muted} flexShrink={0}>h help  q quit</text>
       </box>
       <scrollbox flexGrow={1} contentOptions={{ minHeight: "100%", paddingLeft: 2, paddingRight: 2, paddingTop: 1, paddingBottom: 1 }}>
         <Switch>
@@ -356,11 +453,16 @@ function CanvasPage(props: {
                 columns={available}
                 assetBase={() => props.file() ? path.dirname(props.file()!) : undefined}
                 theme={renderTheme}
-                mathScale={props.mathSize}
                 frame={{ enabled: false }}
                 config={{ images: { maxRows: 24 } }}
                 discoverConfig={false}
                 renderUnit={renderUnit}
+                unitSurface={(info) => {
+                  const colors = canvasReviewColors(theme)
+                  if (selected(info())) return rgbaToHex(colors.selection)
+                  if (commented(info())) return rgbaToHex(colors.commentBackground)
+                  return undefined
+                }}
                 onDiagnostic={({ message }) => props.context.ui.toast.show({ variant: "warning", message })}
               />
             </Show>
@@ -390,8 +492,7 @@ function CanvasReviewUnit(props: {
   const activeRails = () => props.rails().filter((rail) => rail.start <= index() && rail.end >= index())
   const endingRails = () => props.rails().filter((rail) => rail.end === index())
   const selected = () => {
-    const start = props.visualStart()
-    return start !== undefined && props.phase() === "review" && index() >= Math.min(start, props.cursor()) && index() <= Math.max(start, props.cursor())
+    return props.phase() === "review" && visualSelectionContains(props.units(), props.info(), props.cursor(), props.visualStart())
   }
   const active = () => props.phase() === "review" && index() === props.cursor()
   const commented = () => activeRails().length > 0
@@ -501,26 +602,20 @@ export default {
     }
     const [file, setFile] = createSignal<string>()
     const [previous, setPrevious] = createSignal({ ...context.ui.router.current() })
-    const [settings, updateSettings] = context.storage.store<{ mathScale: number }>("canvas", { initial: { mathScale: 1 } })
-    const mathSize = () => Math.min(2, Math.max(0.5, Math.round((settings.mathScale ?? 1) * 10) / 10))
-    const resizeMath = (delta: number) => void updateSettings((draft) => {
-      draft.mathScale = Math.min(2, Math.max(0.5, Math.round((mathSize() + delta * 0.1) * 10) / 10))
-    })
     context.ui.router.register({
       name: "artifact-canvas",
       render: () => <CanvasPage context={context} file={file} onClose={() => context.ui.router.navigate(previous())}
         presentation="fullscreen" sessionID={() => {
           const route = previous()
           return route.type === "session" ? route.sessionID : undefined
-        }}
-        mathSize={mathSize} onMathSize={resizeMath} />,
+        }} />,
     })
     context.ui.slot({
       append: "session.panel",
       render(input) {
         if (input.name !== "artifact-canvas") return null
         return <CanvasPage context={context} file={file} onClose={input.close} active={() => input.focused}
-          presentation={input.presentation} sessionID={() => input.sessionID} mathSize={mathSize} onMathSize={resizeMath} />
+          presentation={input.presentation} sessionID={() => input.sessionID} />
       },
     })
     context.ui.slot({

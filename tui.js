@@ -585,12 +585,12 @@ var require_lib2 = __commonJS(function(exports) {
 // src/canvas.tsx
 import { memo as _$memo6 } from "@opentui/solid";
 import { effect as _$effect9 } from "@opentui/solid";
-import { insert as _$insert9 } from "@opentui/solid";
+import { createComponent as _$createComponent8 } from "@opentui/solid";
 import { createTextNode as _$createTextNode3 } from "@opentui/solid";
 import { insertNode as _$insertNode4 } from "@opentui/solid";
+import { insert as _$insert9 } from "@opentui/solid";
 import { setProp as _$setProp11 } from "@opentui/solid";
 import { createElement as _$createElement11 } from "@opentui/solid";
-import { createComponent as _$createComponent8 } from "@opentui/solid";
 import { BaseRenderable, TextAttributes as TextAttributes6 } from "@opentui/core";
 import { spawn } from "child_process";
 import path5 from "path";
@@ -2077,7 +2077,7 @@ import { createSignal as createSignal3 } from "solid-js";
 import { setProp as _$setProp4 } from "@opentui/solid";
 import { effect as _$effect3 } from "@opentui/solid";
 import { createElement as _$createElement4 } from "@opentui/solid";
-import { TextAttributes as TextAttributes3, TextTableRenderable as TextTableRenderable2 } from "@opentui/core";
+import { parseColor as parseColor3, TextAttributes as TextAttributes3, TextTableRenderable as TextTableRenderable2 } from "@opentui/core";
 import { extend } from "@opentui/solid";
 import {
   BoxRenderable
@@ -2110,7 +2110,7 @@ import { use as _$use2 } from "@opentui/solid";
 import { createElement as _$createElement7 } from "@opentui/solid";
 import { createEffect as createEffect3, createMemo as createMemo4, Show as Show2 } from "solid-js";
 import {
-  parseColor as parseColor3,
+  parseColor as parseColor4,
   StyledText as StyledText3
 } from "@opentui/core";
 import { BorderChars as BorderChars2 } from "@opentui/core";
@@ -6980,7 +6980,7 @@ function TableBlock(props) {
   return (() => {
     var _el$ = _$createElement4("md_text_table");
     _$effect3((_p$) => {
-      var _v$ = content(), _v$2 = props.options, _v$3 = props.theme.markdown.text, _v$4 = props.theme.background.base, _v$5 = props.theme.border.base;
+      var _v$ = content(), _v$2 = props.options, _v$3 = props.theme.markdown.text, _v$4 = props.surface ? parseColor3(props.surface()) : props.theme.background.base, _v$5 = props.theme.border.base;
       _v$ !== _p$.e && (_p$.e = _$setProp4(_el$, "tableData", _v$, _p$.e));
       _v$2 !== _p$.t && (_p$.t = _$setProp4(_el$, "resolved", _v$2, _p$.t));
       _v$3 !== _p$.a && (_p$.a = _$setProp4(_el$, "foreground", _v$3, _p$.a));
@@ -7375,7 +7375,7 @@ function InlineFlow(props) {
           }
         }), null);
         _$effect4((_p$) => {
-          var _v$3 = line.height, _v$4 = props.theme.background.base;
+          var _v$3 = line.height, _v$4 = props.surface();
           _v$3 !== _p$.e && (_p$.e = _$setProp5(_el$4, "height", _v$3, _p$.e));
           _v$4 !== _p$.t && (_p$.t = _$setProp5(_el$4, "backgroundColor", _v$4, _p$.t));
           return _p$;
@@ -7525,6 +7525,7 @@ function DisplayMath(props) {
         })];
       }
     }));
+    _$effect5((_$p) => _$setProp6(_el$, "backgroundColor", props.surface(), _$p));
     return _el$;
   })();
 }
@@ -16782,7 +16783,7 @@ function renderTimelineGridStyledText(grid, colors) {
   });
 }
 function color(value) {
-  return value === undefined ? undefined : parseColor3(value);
+  return value === undefined ? undefined : parseColor4(value);
 }
 function prepareDiagram(kind, source, options, layoutMaxWidth) {
   const colors = options.colors ?? {};
@@ -17159,7 +17160,7 @@ function DocumentView(props) {
     previous = reconcileSlots(previous, [...props.document.blocks]);
     return previous;
   });
-  function flow(children, columns, quote, prefix, prefixColor, prefixChunks) {
+  function flow(children, columns, quote, surface = props.surface, prefix, prefixColor, prefixChunks) {
     return _$createComponent5(InlineFlow, {
       inlines: children,
       get columns() {
@@ -17174,9 +17175,7 @@ function DocumentView(props) {
       get graphics() {
         return props.graphics;
       },
-      get surface() {
-        return props.surface;
-      },
+      surface,
       quote,
       prefix,
       prefixColor,
@@ -17184,6 +17183,7 @@ function DocumentView(props) {
     });
   }
   function BlockView(input) {
+    const surface = input.surface ?? props.surface;
     if (input.block().type === "mermaid") {
       return _$createComponent5(MermaidDiagramView, {
         get source() {
@@ -17214,7 +17214,7 @@ function DocumentView(props) {
       const columns = Math.max(1, input.columns);
       switch (block.type) {
         case "paragraph":
-          return flow(block.children, () => columns, input.quote);
+          return flow(block.children, () => columns, input.quote, surface);
         case "heading": {
           const level = headingLevels[block.level - 1];
           const style = props.headings[level];
@@ -17239,9 +17239,7 @@ function DocumentView(props) {
               get graphics() {
                 return props.graphics;
               },
-              get surface() {
-                return props.surface;
-              },
+              surface,
               heading: {
                 level
               },
@@ -17284,9 +17282,7 @@ function DocumentView(props) {
             get cell() {
               return props.graphics.cell;
             },
-            get background() {
-              return props.surface;
-            },
+            background: surface,
             labelColor: () => props.theme.markdown.image,
             textColor: () => props.theme.markdown.imageText,
             get limits() {
@@ -17309,9 +17305,7 @@ function DocumentView(props) {
             get graphics() {
               return props.graphics;
             },
-            get surface() {
-              return props.surface;
-            },
+            surface,
             scale: () => props.mathScale ?? 1
           });
         case "quote":
@@ -17328,7 +17322,8 @@ function DocumentView(props) {
               children: (child) => _$createComponent5(BlockView, {
                 block: () => child,
                 columns: columns > 2 ? columns - 2 : columns,
-                quote: true
+                quote: true,
+                surface
               })
             }));
             _$effect6((_$p) => _$setProp8(_el$3, "borderColor", props.theme.markdown.blockQuote, _$p));
@@ -17395,6 +17390,7 @@ function DocumentView(props) {
             get headings() {
               return props.headings;
             },
+            surface,
             get hyperlinks() {
               return props.graphics.hyperlinks?.() ?? true;
             }
@@ -17424,6 +17420,7 @@ function DocumentView(props) {
       _$setProp8(_el$5, "flexDirection", "column");
       _$setProp8(_el$5, "flexShrink", 0);
       _$insert6(_el$5, view);
+      _$effect6((_$p) => _$setProp8(_el$5, "backgroundColor", surface(), _$p));
       return _el$5;
     })();
   }
@@ -17433,6 +17430,19 @@ function DocumentView(props) {
     const markerWidth = input.markerWidth;
     const hanging = () => markerWidth() + 1;
     const marker = () => listMarker(list(), input.index(), item());
+    const info = () => {
+      const current = item();
+      const source = input.latest().items[input.index()]?.source ?? null;
+      return {
+        kind: "list-item",
+        item: current.source === source ? current : {
+          ...current,
+          source
+        },
+        source
+      };
+    };
+    const surface = () => props.unitSurface?.(info) ?? props.surface();
     const content = (() => {
       var _el$6 = _$createElement8("box");
       _$setProp8(_el$6, "flexDirection", "column");
@@ -17442,7 +17452,7 @@ function DocumentView(props) {
         get each() {
           return item().blocks;
         },
-        children: (child, childIndex) => childIndex() === 0 && child.type === "paragraph" ? flow(child.children, () => input.columns, input.quote, (row) => row === 0 ? `${marker().padEnd(markerWidth())} ` : " ".repeat(hanging()), () => list().ordered ? props.theme.markdown.listEnumeration : props.theme.markdown.listItem, item().task ? (row) => row === 0 ? [{
+        children: (child, childIndex) => childIndex() === 0 && child.type === "paragraph" ? flow(child.children, () => input.columns, input.quote, surface, (row) => row === 0 ? `${marker().padEnd(markerWidth())} ` : " ".repeat(hanging()), () => list().ordered ? props.theme.markdown.listEnumeration : props.theme.markdown.listItem, item().task ? (row) => row === 0 ? [{
           __isChunk: true,
           text: `${list().ordered ? `${list().start + input.index()}.` : "-"} `,
           fg: list().ordered ? props.theme.markdown.listEnumeration : props.theme.markdown.listItem
@@ -17469,12 +17479,13 @@ function DocumentView(props) {
             },
             get quote() {
               return input.quote;
-            }
+            },
+            surface
           }), null);
           _$effect6((_p$) => {
-            var _v$5 = hanging(), _v$6 = list().ordered ? props.theme.markdown.listEnumeration : props.theme.markdown.listItem;
-            _v$5 !== _p$.e && (_p$.e = _$setProp8(_el$8, "width", _v$5, _p$.e));
-            _v$6 !== _p$.t && (_p$.t = _$setProp8(_el$8, "fg", _v$6, _p$.t));
+            var _v$7 = hanging(), _v$8 = list().ordered ? props.theme.markdown.listEnumeration : props.theme.markdown.listItem;
+            _v$7 !== _p$.e && (_p$.e = _$setProp8(_el$8, "width", _v$7, _p$.e));
+            _v$8 !== _p$.t && (_p$.t = _$setProp8(_el$8, "fg", _v$8, _p$.t));
             return _p$;
           }, {
             e: undefined,
@@ -17491,12 +17502,13 @@ function DocumentView(props) {
             },
             get quote() {
               return input.quote;
-            }
+            },
+            surface
           }));
           _$effect6((_p$) => {
-            var _v$7 = hanging(), _v$8 = Math.max(1, input.columns - hanging());
-            _v$7 !== _p$.e && (_p$.e = _$setProp8(_el$9, "marginLeft", _v$7, _p$.e));
-            _v$8 !== _p$.t && (_p$.t = _$setProp8(_el$9, "width", _v$8, _p$.t));
+            var _v$9 = hanging(), _v$0 = Math.max(1, input.columns - hanging());
+            _v$9 !== _p$.e && (_p$.e = _$setProp8(_el$9, "marginLeft", _v$9, _p$.e));
+            _v$0 !== _p$.t && (_p$.t = _$setProp8(_el$9, "width", _v$0, _p$.t));
             return _p$;
           }, {
             e: undefined,
@@ -17514,21 +17526,17 @@ function DocumentView(props) {
           return _el$0;
         })();
       })(), null);
-      _$effect6((_$p) => _$setProp8(_el$6, "marginBottom", list().loose && input.index() < list().items.length - 1 ? 1 : 0, _$p));
+      _$effect6((_p$) => {
+        var _v$5 = surface(), _v$6 = list().loose && input.index() < list().items.length - 1 ? 1 : 0;
+        _v$5 !== _p$.e && (_p$.e = _$setProp8(_el$6, "backgroundColor", _v$5, _p$.e));
+        _v$6 !== _p$.t && (_p$.t = _$setProp8(_el$6, "marginBottom", _v$6, _p$.t));
+        return _p$;
+      }, {
+        e: undefined,
+        t: undefined
+      });
       return _el$6;
     })();
-    const info = () => {
-      const current = item();
-      const source = input.latest().items[input.index()]?.source ?? null;
-      return {
-        kind: "list-item",
-        item: current.source === source ? current : {
-          ...current,
-          source
-        },
-        source
-      };
-    };
     return _$memo5(() => _$memo5(() => !!(input.wrapUnit && props.renderUnit))() ? props.renderUnit(info, content) : content);
   }
   function ListBlockView(input) {
@@ -17595,11 +17603,13 @@ function DocumentView(props) {
         source
       };
     };
+    const surface = () => props.unitSurface?.(info) ?? props.surface();
     const content = _$createComponent5(BlockView, {
       block,
       get columns() {
         return input.columns;
-      }
+      },
+      surface
     });
     return _$memo5(() => _$memo5(() => !!props.renderUnit)() ? props.renderUnit(info, content) : content);
   }
@@ -17760,6 +17770,9 @@ function MarkdownRenderer(props) {
           },
           get renderUnit() {
             return props.renderUnit;
+          },
+          get unitSurface() {
+            return props.unitSurface;
           }
         });
       }
@@ -18410,6 +18423,133 @@ function unitIndex(units, info) {
     return identity;
   return units.findIndex((unit) => unit.kind === info.kind && sameRange2(unit.source, info.source));
 }
+function visualSelectionContains(units, info, cursor, visualStart) {
+  if (visualStart === undefined)
+    return false;
+  const index = unitIndex(units, info);
+  return index >= Math.min(visualStart, cursor) && index <= Math.max(visualStart, cursor);
+}
+function commentRangeContains(units, info, rails) {
+  const index = unitIndex(units, info);
+  return index >= 0 && rails.some((rail) => rail.start <= index && rail.end >= index);
+}
+async function confirmReviewExit(dialog, commentCount) {
+  return await dialog.confirm({
+    title: "Leave review mode?",
+    message: commentCount ? `This will discard the active review and ${commentCount} unsent comment${commentCount === 1 ? "" : "s"}.` : "This will discard the active review selection and return to editing mode.",
+    label: {
+      confirm: "Leave review",
+      cancel: "Keep reviewing"
+    }
+  }) === true;
+}
+function CanvasDetailsDialog(props) {
+  const theme = props.context.theme.surface("dialog");
+  const close = () => props.context.ui.dialog.clear();
+  props.context.keymap.layer(() => ({
+    mode: "modal",
+    commands: [{
+      bind: "return",
+      title: "close Canvas information",
+      run: close
+    }]
+  }));
+  return (() => {
+    var _el$ = _$createElement11("box"), _el$2 = _$createElement11("box"), _el$3 = _$createElement11("text"), _el$4 = _$createElement11("text"), _el$6 = _$createElement11("box"), _el$7 = _$createElement11("box"), _el$8 = _$createElement11("text");
+    _$insertNode4(_el$, _el$2);
+    _$insertNode4(_el$, _el$6);
+    _$setProp11(_el$, "paddingLeft", 2);
+    _$setProp11(_el$, "paddingRight", 2);
+    _$setProp11(_el$, "gap", 1);
+    _$insertNode4(_el$2, _el$3);
+    _$insertNode4(_el$2, _el$4);
+    _$setProp11(_el$2, "flexDirection", "row");
+    _$setProp11(_el$2, "justifyContent", "space-between");
+    _$insert9(_el$3, () => props.title);
+    _$insertNode4(_el$4, _$createTextNode3(`esc`));
+    _$setProp11(_el$4, "onMouseUp", close);
+    _$insert9(_el$, _$createComponent8(For4, {
+      get each() {
+        return props.sections;
+      },
+      children: (section) => {
+        const labelWidth = Math.max(10, ...section.rows.map((row) => row.label.length + 2));
+        return (() => {
+          var _el$0 = _$createElement11("box"), _el$1 = _$createElement11("text");
+          _$insertNode4(_el$0, _el$1);
+          _$setProp11(_el$0, "flexDirection", "column");
+          _$insert9(_el$1, () => section.title);
+          _$insert9(_el$0, _$createComponent8(For4, {
+            get each() {
+              return section.rows;
+            },
+            children: (row) => (() => {
+              var _el$10 = _$createElement11("box"), _el$11 = _$createElement11("text"), _el$12 = _$createElement11("text");
+              _$insertNode4(_el$10, _el$11);
+              _$insertNode4(_el$10, _el$12);
+              _$setProp11(_el$10, "flexDirection", "row");
+              _$setProp11(_el$10, "width", "100%");
+              _$setProp11(_el$11, "width", labelWidth);
+              _$setProp11(_el$11, "flexShrink", 0);
+              _$insert9(_el$11, () => row.label);
+              _$setProp11(_el$12, "flexGrow", 1);
+              _$setProp11(_el$12, "minWidth", 0);
+              _$setProp11(_el$12, "wrapMode", "word");
+              _$insert9(_el$12, () => row.value);
+              _$effect9((_p$) => {
+                var _v$8 = theme.text.action.primary.base, _v$9 = TextAttributes6.BOLD, _v$0 = theme.text.base;
+                _v$8 !== _p$.e && (_p$.e = _$setProp11(_el$11, "fg", _v$8, _p$.e));
+                _v$9 !== _p$.t && (_p$.t = _$setProp11(_el$11, "attributes", _v$9, _p$.t));
+                _v$0 !== _p$.a && (_p$.a = _$setProp11(_el$12, "fg", _v$0, _p$.a));
+                return _p$;
+              }, {
+                e: undefined,
+                t: undefined,
+                a: undefined
+              });
+              return _el$10;
+            })()
+          }), null);
+          _$effect9((_p$) => {
+            var _v$6 = theme.text.base, _v$7 = TextAttributes6.BOLD;
+            _v$6 !== _p$.e && (_p$.e = _$setProp11(_el$1, "fg", _v$6, _p$.e));
+            _v$7 !== _p$.t && (_p$.t = _$setProp11(_el$1, "attributes", _v$7, _p$.t));
+            return _p$;
+          }, {
+            e: undefined,
+            t: undefined
+          });
+          return _el$0;
+        })();
+      }
+    }), _el$6);
+    _$insertNode4(_el$6, _el$7);
+    _$setProp11(_el$6, "flexDirection", "row");
+    _$setProp11(_el$6, "justifyContent", "flex-end");
+    _$setProp11(_el$6, "paddingBottom", 1);
+    _$insertNode4(_el$7, _el$8);
+    _$setProp11(_el$7, "paddingLeft", 3);
+    _$setProp11(_el$7, "paddingRight", 3);
+    _$setProp11(_el$7, "onMouseUp", close);
+    _$insertNode4(_el$8, _$createTextNode3(`close`));
+    _$effect9((_p$) => {
+      var _v$ = theme.text.base, _v$2 = TextAttributes6.BOLD, _v$3 = theme.text.muted, _v$4 = theme.background.action.primary.focused, _v$5 = theme.text.action.primary.focused;
+      _v$ !== _p$.e && (_p$.e = _$setProp11(_el$3, "fg", _v$, _p$.e));
+      _v$2 !== _p$.t && (_p$.t = _$setProp11(_el$3, "attributes", _v$2, _p$.t));
+      _v$3 !== _p$.a && (_p$.a = _$setProp11(_el$4, "fg", _v$3, _p$.a));
+      _v$4 !== _p$.o && (_p$.o = _$setProp11(_el$7, "backgroundColor", _v$4, _p$.o));
+      _v$5 !== _p$.i && (_p$.i = _$setProp11(_el$8, "fg", _v$5, _p$.i));
+      return _p$;
+    }, {
+      e: undefined,
+      t: undefined,
+      a: undefined,
+      o: undefined,
+      i: undefined
+    });
+    return _el$;
+  })();
+}
 function CanvasPage(props) {
   const theme = props.context.theme;
   const cwd = process.cwd();
@@ -18503,17 +18643,165 @@ function CanvasPage(props) {
     setCursor(0);
     setVisualStart();
   };
-  const leaveReview = () => {
+  const discardReview = () => {
     setPhase("edit");
     setReview();
     setVisualStart();
   };
-  const showHelp = () => props.context.ui.dialog.alert({
-    title: "Artifact Canvas",
-    message: phase() === "review" ? ["r  finish review", "j/k or arrows  move between blocks", "v  start a visual block selection", "c  comment selection", "d  delete comment on selection", "shift+s  compose and send review feedback", "q  close canvas", "Esc  cancel selection or close canvas"].join(`
-`) : ["r  start review", "s  toggle rendered/source", "e  edit artifact", "+/-  resize display math", "q or Esc  close canvas"].join(`
-`)
-  });
+  const requestReviewExit = async () => {
+    if (phase() !== "review")
+      return true;
+    return confirmReviewExit(props.context.ui.dialog, review()?.comments.length ?? 0);
+  };
+  const leaveReview = async () => {
+    if (!await requestReviewExit())
+      return;
+    discardReview();
+  };
+  const closeCanvas = async () => {
+    if (!await requestReviewExit())
+      return;
+    if (phase() === "review")
+      discardReview();
+    props.onClose();
+  };
+  const showHelp = () => {
+    props.context.ui.dialog.show(() => _$createComponent8(CanvasDetailsDialog, {
+      get context() {
+        return props.context;
+      },
+      title: "Artifact Canvas help",
+      get sections() {
+        return [{
+          title: "GENERAL",
+          rows: [{
+            label: "h",
+            value: "Show this help"
+          }, {
+            label: "c",
+            value: "Show Canvas configuration and runtime information"
+          }, {
+            label: "q",
+            value: "Close Canvas (asks first during review)"
+          }, {
+            label: "Esc",
+            value: "Cancel a visual selection, otherwise close Canvas"
+          }]
+        }, {
+          title: "VIEWING AND EDITING",
+          rows: [{
+            label: "s",
+            value: "Switch between rendered Markdown and source"
+          }, {
+            label: "e",
+            value: "Open the artifact in $VISUAL or $EDITOR"
+          }, {
+            label: "r",
+            value: "Start review mode; in review mode, ask before leaving"
+          }]
+        }, {
+          title: "REVIEW MODE",
+          rows: [{
+            label: "j / \u2193",
+            value: "Move to the next review block"
+          }, {
+            label: "k / \u2191",
+            value: "Move to the previous review block"
+          }, {
+            label: "v",
+            value: "Start or extend a visual block selection"
+          }, {
+            label: "a",
+            value: "Add a comment to the selected block range"
+          }, {
+            label: "d",
+            value: "Delete the comment matching the selected range"
+          }, {
+            label: "Shift+S",
+            value: "Compose and send all review feedback to the session"
+          }, {
+            label: "Esc",
+            value: "Cancel the current selection before closing"
+          }]
+        }, {
+          title: "CURRENT STATE",
+          rows: [{
+            label: "Mode",
+            value: `${mode()} / ${phase()}`
+          }]
+        }];
+      }
+    }));
+    props.context.ui.dialog.set({
+      size: "large",
+      centered: true
+    });
+  };
+  const showInformation = () => {
+    const cell = graphics.cell();
+    const current = review();
+    props.context.ui.dialog.show(() => _$createComponent8(CanvasDetailsDialog, {
+      get context() {
+        return props.context;
+      },
+      title: "Canvas configuration & runtime",
+      get sections() {
+        return [{
+          title: "CONFIGURATION",
+          rows: [{
+            label: "File",
+            value: props.file() ?? "No artifact selected"
+          }, {
+            label: "Working directory",
+            value: cwd
+          }, {
+            label: "Renderer config",
+            value: "Canvas-managed (file discovery disabled)"
+          }, {
+            label: "Images",
+            value: "Maximum 24 rows"
+          }, {
+            label: "Display math",
+            value: "Fixed native size (resize controls disabled)"
+          }]
+        }, {
+          title: "RUNTIME",
+          rows: [{
+            label: "Presentation",
+            value: props.presentation
+          }, {
+            label: "View",
+            value: mode()
+          }, {
+            label: "Review",
+            value: phase()
+          }, {
+            label: "Review blocks",
+            value: String(units().length)
+          }, {
+            label: "Review comments",
+            value: String(current?.comments.length ?? 0)
+          }, {
+            label: "Canvas width",
+            value: `${width()} columns`
+          }, {
+            label: "Document width",
+            value: `${available()} columns`
+          }, {
+            label: "Graphics protocol",
+            value: graphics.protocol()
+          }, {
+            label: "Cell pixels",
+            value: cell ? `${cell.width}x${cell.height}` : "unknown"
+          }]
+        }];
+      }
+    }));
+    props.context.ui.dialog.set({
+      size: "large",
+      centered: true
+    });
+  };
   const addComment = async () => {
     const range = selectedRange();
     if (!range) {
@@ -18588,7 +18876,7 @@ function CanvasPage(props) {
     commands: [{
       bind: "escape",
       title: "back",
-      run: () => visualStart() !== undefined ? setVisualStart() : props.onClose()
+      run: () => visualStart() !== undefined ? setVisualStart() : void closeCanvas()
     }, {
       bind: "s",
       title: mode() === "source" ? "rendered" : "source",
@@ -18603,15 +18891,19 @@ function CanvasPage(props) {
     }, {
       bind: "r",
       title: phase() === "review" ? "leave review" : "start review",
-      run: () => phase() === "review" ? leaveReview() : enterReview()
+      run: () => phase() === "review" ? void leaveReview() : enterReview()
     }, {
       bind: "q",
       title: "close canvas",
-      run: props.onClose
+      run: () => void closeCanvas()
     }, {
       bind: "h",
       title: "canvas help",
       run: () => void showHelp()
+    }, {
+      bind: "c",
+      title: "canvas configuration and runtime",
+      run: () => void showInformation()
     }, {
       bind: "j",
       title: "next block",
@@ -18638,7 +18930,7 @@ function CanvasPage(props) {
       enabled: () => phase() === "review",
       run: () => setVisualStart((value) => value ?? cursor())
     }, {
-      bind: "c",
+      bind: "a",
       title: "comment selection",
       enabled: () => phase() === "review",
       run: () => void addComment()
@@ -18658,51 +18950,14 @@ function CanvasPage(props) {
       title: "compose review feedback",
       enabled: () => phase() === "review",
       run: () => void sendReview()
-    }, {
-      bind: "+",
-      title: "bigger display math",
-      run: () => props.onMathSize(1)
-    }, {
-      bind: "=",
-      title: "bigger display math",
-      run: () => props.onMathSize(1)
-    }, {
-      bind: "-",
-      title: "smaller display math",
-      run: () => props.onMathSize(-1)
-    }, {
-      bind: "_",
-      title: "smaller display math",
-      run: () => props.onMathSize(-1)
     }]
   }));
   const label = () => {
     const file = props.file();
     return file ? path5.relative(cwd, file) || file : "No artifact selected";
   };
-  const header = createMemo7(() => {
-    const columns = width();
-    if (columns < 50)
-      return {
-        image: "",
-        status: `${props.mathSize().toFixed(1)}x`
-      };
-    if (columns < 78)
-      return {
-        image: `img:${graphics.protocol()}`,
-        status: `${props.mathSize().toFixed(1)}x +/- r s e q`
-      };
-    if (columns < 120) {
-      return {
-        image: `img:${graphics.protocol()}`,
-        status: `${props.presentation} ${columns}c ${mode()} ${phase()} ${props.mathSize().toFixed(1)}x h r s e q`
-      };
-    }
-    return {
-      image: `img:${graphics.protocol()} ${graphics.cell() ? `px:${graphics.cell().width}x${graphics.cell().height}` : "px:?"}`,
-      status: `${props.presentation} ${columns}c ${mode()} ${phase()} display ${props.mathSize().toFixed(1)}x h help - r review - s source - e edit - q close`
-    };
-  });
+  const selected = (info) => phase() === "review" && visualSelectionContains(units(), info, cursor(), visualStart());
+  const commented = (info) => commentRangeContains(units(), info, rails());
   const renderUnit = (info, rendered) => _$createComponent8(CanvasReviewUnit, {
     info,
     rendered,
@@ -18718,112 +18973,97 @@ function CanvasPage(props) {
     onEdit: editComment
   });
   return (() => {
-    var _el$ = _$createElement11("box"), _el$2 = _$createElement11("box"), _el$3 = _$createElement11("text"), _el$6 = _$createElement11("text"), _el$7 = _$createElement11("text"), _el$8 = _$createElement11("scrollbox");
-    _$insertNode4(_el$, _el$2);
-    _$insertNode4(_el$, _el$8);
-    _$setProp11(_el$, "width", "100%");
-    _$setProp11(_el$, "height", "100%");
-    _$setProp11(_el$, "flexDirection", "column");
-    _$setProp11(_el$, "onSizeChange", function() {
+    var _el$13 = _$createElement11("box"), _el$14 = _$createElement11("box"), _el$15 = _$createElement11("text"), _el$16 = _$createElement11("text"), _el$18 = _$createElement11("scrollbox");
+    _$insertNode4(_el$13, _el$14);
+    _$insertNode4(_el$13, _el$18);
+    _$setProp11(_el$13, "width", "100%");
+    _$setProp11(_el$13, "height", "100%");
+    _$setProp11(_el$13, "flexDirection", "column");
+    _$setProp11(_el$13, "onSizeChange", function() {
       setWidth(this.width);
     });
-    _$insertNode4(_el$2, _el$3);
-    _$insertNode4(_el$2, _el$6);
-    _$insertNode4(_el$2, _el$7);
-    _$setProp11(_el$2, "flexShrink", 0);
-    _$setProp11(_el$2, "flexDirection", "row");
-    _$setProp11(_el$2, "gap", 1);
-    _$setProp11(_el$2, "paddingLeft", 1);
-    _$setProp11(_el$2, "paddingRight", 1);
-    _$setProp11(_el$2, "border", ["bottom"]);
-    _$insertNode4(_el$3, _$createTextNode3(`canvas`));
-    _$setProp11(_el$3, "flexShrink", 0);
-    _$insert9(_el$2, _$createComponent8(Show4, {
-      get when() {
-        return header().image;
-      },
-      get children() {
-        var _el$5 = _$createElement11("text");
-        _$setProp11(_el$5, "flexShrink", 0);
-        _$insert9(_el$5, () => header().image);
-        _$effect9((_$p) => _$setProp11(_el$5, "fg", theme.text.muted, _$p));
-        return _el$5;
-      }
-    }), _el$6);
-    _$setProp11(_el$6, "flexGrow", 1);
-    _$setProp11(_el$6, "minWidth", 0);
-    _$setProp11(_el$6, "wrapMode", "none");
-    _$setProp11(_el$6, "truncate", true);
-    _$insert9(_el$6, label);
-    _$setProp11(_el$7, "flexShrink", 0);
-    _$insert9(_el$7, () => header().status);
-    _$setProp11(_el$8, "flexGrow", 1);
-    _$setProp11(_el$8, "contentOptions", {
+    _$insertNode4(_el$14, _el$15);
+    _$insertNode4(_el$14, _el$16);
+    _$setProp11(_el$14, "flexShrink", 0);
+    _$setProp11(_el$14, "flexDirection", "row");
+    _$setProp11(_el$14, "gap", 1);
+    _$setProp11(_el$14, "paddingLeft", 1);
+    _$setProp11(_el$14, "paddingRight", 1);
+    _$setProp11(_el$14, "border", ["bottom"]);
+    _$setProp11(_el$15, "flexGrow", 1);
+    _$setProp11(_el$15, "minWidth", 0);
+    _$setProp11(_el$15, "wrapMode", "none");
+    _$setProp11(_el$15, "truncate", true);
+    _$insert9(_el$15, label);
+    _$insertNode4(_el$16, _$createTextNode3(`h help q quit`));
+    _$setProp11(_el$16, "flexShrink", 0);
+    _$setProp11(_el$18, "flexGrow", 1);
+    _$setProp11(_el$18, "contentOptions", {
       minHeight: "100%",
       paddingLeft: 2,
       paddingRight: 2,
       paddingTop: 1,
       paddingBottom: 1
     });
-    _$insert9(_el$8, _$createComponent8(Switch3, {
+    _$insert9(_el$18, _$createComponent8(Switch3, {
       get children() {
         return [_$createComponent8(Match3, {
           get when() {
             return !props.file();
           },
           get children() {
-            var _el$9 = _$createElement11("box"), _el$0 = _$createElement11("text"), _el$10 = _$createElement11("text");
-            _$insertNode4(_el$9, _el$0);
-            _$insertNode4(_el$9, _el$10);
-            _$setProp11(_el$9, "flexDirection", "column");
-            _$setProp11(_el$9, "gap", 1);
-            _$insertNode4(_el$0, _$createTextNode3(`Open a Markdown artifact with /canvas path/to/file.md`));
-            _$insertNode4(_el$10, _$createTextNode3(`Rendered mode supports Markdown, math, Mermaid, tables, and local images.`));
+            var _el$19 = _$createElement11("box"), _el$20 = _$createElement11("text"), _el$22 = _$createElement11("text");
+            _$insertNode4(_el$19, _el$20);
+            _$insertNode4(_el$19, _el$22);
+            _$setProp11(_el$19, "flexDirection", "column");
+            _$setProp11(_el$19, "gap", 1);
+            _$insertNode4(_el$20, _$createTextNode3(`Open a Markdown artifact with /canvas path/to/file.md`));
+            _$insertNode4(_el$22, _$createTextNode3(`Rendered mode supports Markdown, math, Mermaid, tables, and local images.`));
             _$effect9((_p$) => {
-              var _v$ = theme.text.base, _v$2 = TextAttributes6.BOLD, _v$3 = theme.text.muted;
-              _v$ !== _p$.e && (_p$.e = _$setProp11(_el$0, "fg", _v$, _p$.e));
-              _v$2 !== _p$.t && (_p$.t = _$setProp11(_el$0, "attributes", _v$2, _p$.t));
-              _v$3 !== _p$.a && (_p$.a = _$setProp11(_el$10, "fg", _v$3, _p$.a));
+              var _v$1 = theme.text.base, _v$10 = TextAttributes6.BOLD, _v$11 = theme.text.muted;
+              _v$1 !== _p$.e && (_p$.e = _$setProp11(_el$20, "fg", _v$1, _p$.e));
+              _v$10 !== _p$.t && (_p$.t = _$setProp11(_el$20, "attributes", _v$10, _p$.t));
+              _v$11 !== _p$.a && (_p$.a = _$setProp11(_el$22, "fg", _v$11, _p$.a));
               return _p$;
             }, {
               e: undefined,
               t: undefined,
               a: undefined
             });
-            return _el$9;
+            return _el$19;
           }
         }), _$createComponent8(Match3, {
           get when() {
             return loaded()?.error;
           },
           get children() {
-            var _el$12 = _$createElement11("box"), _el$13 = _$createElement11("text"), _el$15 = _$createElement11("text");
-            _$insertNode4(_el$12, _el$13);
-            _$insertNode4(_el$12, _el$15);
-            _$setProp11(_el$12, "flexDirection", "column");
-            _$setProp11(_el$12, "gap", 1);
-            _$insertNode4(_el$13, _$createTextNode3(`Could not load artifact`));
-            _$insert9(_el$15, () => loaded().error);
+            var _el$24 = _$createElement11("box"), _el$25 = _$createElement11("text"), _el$27 = _$createElement11("text");
+            _$insertNode4(_el$24, _el$25);
+            _$insertNode4(_el$24, _el$27);
+            _$setProp11(_el$24, "flexDirection", "column");
+            _$setProp11(_el$24, "gap", 1);
+            _$insertNode4(_el$25, _$createTextNode3(`Could not load artifact`));
+            _$insert9(_el$27, () => loaded().error);
             _$effect9((_p$) => {
-              var _v$4 = theme.text.feedback.error.base, _v$5 = theme.text.muted;
-              _v$4 !== _p$.e && (_p$.e = _$setProp11(_el$13, "fg", _v$4, _p$.e));
-              _v$5 !== _p$.t && (_p$.t = _$setProp11(_el$15, "fg", _v$5, _p$.t));
+              var _v$12 = theme.text.feedback.error.base, _v$13 = theme.text.muted;
+              _v$12 !== _p$.e && (_p$.e = _$setProp11(_el$25, "fg", _v$12, _p$.e));
+              _v$13 !== _p$.t && (_p$.t = _$setProp11(_el$27, "fg", _v$13, _p$.t));
               return _p$;
             }, {
               e: undefined,
               t: undefined
             });
-            return _el$12;
+            return _el$24;
           }
         }), _$createComponent8(Match3, {
           get when() {
             return content.loading;
           },
           get children() {
-            var _el$16 = _$createElement11("text");
-            _$insertNode4(_el$16, _$createTextNode3(`Loading artifact...`));
-            _$effect9((_$p) => _$setProp11(_el$16, "fg", theme.text.muted, _$p));
-            return _el$16;
+            var _el$28 = _$createElement11("text");
+            _$insertNode4(_el$28, _$createTextNode3(`Loading artifact...`));
+            _$effect9((_$p) => _$setProp11(_el$28, "fg", theme.text.muted, _$p));
+            return _el$28;
           }
         }), _$createComponent8(Match3, {
           get when() {
@@ -18836,11 +19076,11 @@ function CanvasPage(props) {
               },
               get fallback() {
                 return (() => {
-                  var _el$18 = _$createElement11("text");
-                  _$setProp11(_el$18, "wrapMode", "word");
-                  _$insert9(_el$18, () => loaded().value);
-                  _$effect9((_$p) => _$setProp11(_el$18, "fg", theme.text.base, _$p));
-                  return _el$18;
+                  var _el$30 = _$createElement11("text");
+                  _$setProp11(_el$30, "wrapMode", "word");
+                  _$insert9(_el$30, () => loaded().value);
+                  _$effect9((_$p) => _$setProp11(_el$30, "fg", theme.text.base, _$p));
+                  return _el$30;
                 })();
               },
               get children() {
@@ -18852,9 +19092,6 @@ function CanvasPage(props) {
                   columns: available,
                   assetBase: () => props.file() ? path5.dirname(props.file()) : undefined,
                   theme: renderTheme,
-                  get mathScale() {
-                    return props.mathSize;
-                  },
                   frame: {
                     enabled: false
                   },
@@ -18865,6 +19102,14 @@ function CanvasPage(props) {
                   },
                   discoverConfig: false,
                   renderUnit,
+                  unitSurface: (info) => {
+                    const colors = canvasReviewColors(theme);
+                    if (selected(info()))
+                      return rgbaToHex(colors.selection);
+                    if (commented(info()))
+                      return rgbaToHex(colors.commentBackground);
+                    return;
+                  },
                   onDiagnostic: ({
                     message
                   }) => props.context.ui.toast.show({
@@ -18879,15 +19124,13 @@ function CanvasPage(props) {
       }
     }));
     _$effect9((_p$) => {
-      var _v$6 = theme.background.base, _v$7 = props.presentation === "panel" ? ["left"] : false, _v$8 = theme.border.base, _v$9 = theme.decrease(theme.background.base), _v$0 = theme.text.base, _v$1 = TextAttributes6.BOLD, _v$10 = theme.text.muted, _v$11 = theme.text.muted;
-      _v$6 !== _p$.e && (_p$.e = _$setProp11(_el$, "backgroundColor", _v$6, _p$.e));
-      _v$7 !== _p$.t && (_p$.t = _$setProp11(_el$, "border", _v$7, _p$.t));
-      _v$8 !== _p$.a && (_p$.a = _$setProp11(_el$, "borderColor", _v$8, _p$.a));
-      _v$9 !== _p$.o && (_p$.o = _$setProp11(_el$2, "borderColor", _v$9, _p$.o));
-      _v$0 !== _p$.i && (_p$.i = _$setProp11(_el$3, "fg", _v$0, _p$.i));
-      _v$1 !== _p$.n && (_p$.n = _$setProp11(_el$3, "attributes", _v$1, _p$.n));
-      _v$10 !== _p$.s && (_p$.s = _$setProp11(_el$6, "fg", _v$10, _p$.s));
-      _v$11 !== _p$.h && (_p$.h = _$setProp11(_el$7, "fg", _v$11, _p$.h));
+      var _v$14 = theme.background.base, _v$15 = props.presentation === "panel" ? ["left"] : false, _v$16 = theme.border.base, _v$17 = theme.decrease(theme.background.base), _v$18 = theme.text.muted, _v$19 = theme.text.muted;
+      _v$14 !== _p$.e && (_p$.e = _$setProp11(_el$13, "backgroundColor", _v$14, _p$.e));
+      _v$15 !== _p$.t && (_p$.t = _$setProp11(_el$13, "border", _v$15, _p$.t));
+      _v$16 !== _p$.a && (_p$.a = _$setProp11(_el$13, "borderColor", _v$16, _p$.a));
+      _v$17 !== _p$.o && (_p$.o = _$setProp11(_el$14, "borderColor", _v$17, _p$.o));
+      _v$18 !== _p$.i && (_p$.i = _$setProp11(_el$15, "fg", _v$18, _p$.i));
+      _v$19 !== _p$.n && (_p$.n = _$setProp11(_el$16, "fg", _v$19, _p$.n));
       return _p$;
     }, {
       e: undefined,
@@ -18895,11 +19138,9 @@ function CanvasPage(props) {
       a: undefined,
       o: undefined,
       i: undefined,
-      n: undefined,
-      s: undefined,
-      h: undefined
+      n: undefined
     });
-    return _el$;
+    return _el$13;
   })();
 }
 function CanvasReviewUnit(props) {
@@ -18908,69 +19149,68 @@ function CanvasReviewUnit(props) {
   const activeRails = () => props.rails().filter((rail) => rail.start <= index() && rail.end >= index());
   const endingRails = () => props.rails().filter((rail) => rail.end === index());
   const selected = () => {
-    const start = props.visualStart();
-    return start !== undefined && props.phase() === "review" && index() >= Math.min(start, props.cursor()) && index() <= Math.max(start, props.cursor());
+    return props.phase() === "review" && visualSelectionContains(props.units(), props.info(), props.cursor(), props.visualStart());
   };
   const active = () => props.phase() === "review" && index() === props.cursor();
   const commented = () => activeRails().length > 0;
   return [(() => {
-    var _el$19 = _$createElement11("box"), _el$20 = _$createElement11("box");
-    _$insertNode4(_el$19, _el$20);
-    _$setProp11(_el$19, "width", "100%");
-    _$setProp11(_el$19, "flexDirection", "row");
-    _$setProp11(_el$20, "flexGrow", 1);
-    _$setProp11(_el$20, "minWidth", 0);
-    _$setProp11(_el$20, "flexDirection", "column");
-    _$insert9(_el$20, _$createComponent8(Show4, {
+    var _el$31 = _$createElement11("box"), _el$32 = _$createElement11("box");
+    _$insertNode4(_el$31, _el$32);
+    _$setProp11(_el$31, "width", "100%");
+    _$setProp11(_el$31, "flexDirection", "row");
+    _$setProp11(_el$32, "flexGrow", 1);
+    _$setProp11(_el$32, "minWidth", 0);
+    _$setProp11(_el$32, "flexDirection", "column");
+    _$insert9(_el$32, _$createComponent8(Show4, {
       get when() {
         return activeRails().some((rail) => rail.start === index());
       },
       get children() {
-        var _el$21 = _$createElement11("box"), _el$22 = _$createElement11("text"), _el$23 = _$createTextNode3(`comment `);
-        _$insertNode4(_el$21, _el$22);
-        _$setProp11(_el$21, "width", "100%");
-        _$setProp11(_el$21, "flexDirection", "row");
-        _$setProp11(_el$21, "justifyContent", "flex-end");
-        _$insertNode4(_el$22, _el$23);
-        _$insert9(_el$22, () => activeRails().filter((rail) => rail.start === index()).map((rail) => `#${(props.review()?.comments.indexOf(rail.comment) ?? -1) + 1}`).join(", "), null);
+        var _el$33 = _$createElement11("box"), _el$34 = _$createElement11("text"), _el$35 = _$createTextNode3(`comment `);
+        _$insertNode4(_el$33, _el$34);
+        _$setProp11(_el$33, "width", "100%");
+        _$setProp11(_el$33, "flexDirection", "row");
+        _$setProp11(_el$33, "justifyContent", "flex-end");
+        _$insertNode4(_el$34, _el$35);
+        _$insert9(_el$34, () => activeRails().filter((rail) => rail.start === index()).map((rail) => `#${(props.review()?.comments.indexOf(rail.comment) ?? -1) + 1}`).join(", "), null);
         _$effect9((_p$) => {
-          var _v$12 = colors().comment, _v$13 = TextAttributes6.BOLD;
-          _v$12 !== _p$.e && (_p$.e = _$setProp11(_el$22, "fg", _v$12, _p$.e));
-          _v$13 !== _p$.t && (_p$.t = _$setProp11(_el$22, "attributes", _v$13, _p$.t));
+          var _v$20 = colors().comment, _v$21 = TextAttributes6.BOLD;
+          _v$20 !== _p$.e && (_p$.e = _$setProp11(_el$34, "fg", _v$20, _p$.e));
+          _v$21 !== _p$.t && (_p$.t = _$setProp11(_el$34, "attributes", _v$21, _p$.t));
           return _p$;
         }, {
           e: undefined,
           t: undefined
         });
-        return _el$21;
+        return _el$33;
       }
     }), null);
-    _$insert9(_el$20, () => props.rendered, null);
-    _$insert9(_el$20, _$createComponent8(Show4, {
+    _$insert9(_el$32, () => props.rendered, null);
+    _$insert9(_el$32, _$createComponent8(Show4, {
       get when() {
         return active();
       },
       get children() {
-        var _el$24 = _$createElement11("box"), _el$25 = _$createElement11("text");
-        _$insertNode4(_el$24, _el$25);
-        _$setProp11(_el$24, "paddingLeft", 1);
-        _$setProp11(_el$24, "paddingRight", 1);
-        _$setProp11(_el$24, "flexDirection", "row");
-        _$setProp11(_el$24, "justifyContent", "flex-end");
-        _$insertNode4(_el$25, _$createTextNode3(`review cursor`));
+        var _el$36 = _$createElement11("box"), _el$37 = _$createElement11("text");
+        _$insertNode4(_el$36, _el$37);
+        _$setProp11(_el$36, "paddingLeft", 1);
+        _$setProp11(_el$36, "paddingRight", 1);
+        _$setProp11(_el$36, "flexDirection", "row");
+        _$setProp11(_el$36, "justifyContent", "flex-end");
+        _$insertNode4(_el$37, _$createTextNode3(`review cursor`));
         _$effect9((_p$) => {
-          var _v$14 = colors().comment, _v$15 = TextAttributes6.BOLD;
-          _v$14 !== _p$.e && (_p$.e = _$setProp11(_el$25, "fg", _v$14, _p$.e));
-          _v$15 !== _p$.t && (_p$.t = _$setProp11(_el$25, "attributes", _v$15, _p$.t));
+          var _v$22 = colors().comment, _v$23 = TextAttributes6.BOLD;
+          _v$22 !== _p$.e && (_p$.e = _$setProp11(_el$37, "fg", _v$22, _p$.e));
+          _v$23 !== _p$.t && (_p$.t = _$setProp11(_el$37, "attributes", _v$23, _p$.t));
           return _p$;
         }, {
           e: undefined,
           t: undefined
         });
-        return _el$24;
+        return _el$36;
       }
     }), null);
-    _$insert9(_el$19, _$createComponent8(CanvasCommentRails, {
+    _$insert9(_el$31, _$createComponent8(CanvasCommentRails, {
       get theme() {
         return props.theme;
       },
@@ -18980,29 +19220,29 @@ function CanvasReviewUnit(props) {
       rails: activeRails
     }), null);
     _$effect9((_p$) => {
-      var _v$16 = selected() ? colors().selection : commented() ? colors().commentBackground : undefined, _v$17 = active() ? ["top", "right", "bottom", "left"] : undefined, _v$18 = active() ? colors().cursor : undefined;
-      _v$16 !== _p$.e && (_p$.e = _$setProp11(_el$20, "backgroundColor", _v$16, _p$.e));
-      _v$17 !== _p$.t && (_p$.t = _$setProp11(_el$20, "border", _v$17, _p$.t));
-      _v$18 !== _p$.a && (_p$.a = _$setProp11(_el$20, "borderColor", _v$18, _p$.a));
+      var _v$24 = selected() ? colors().selection : commented() ? colors().commentBackground : undefined, _v$25 = active() ? ["top", "right", "bottom", "left"] : undefined, _v$26 = active() ? colors().cursor : undefined;
+      _v$24 !== _p$.e && (_p$.e = _$setProp11(_el$32, "backgroundColor", _v$24, _p$.e));
+      _v$25 !== _p$.t && (_p$.t = _$setProp11(_el$32, "border", _v$25, _p$.t));
+      _v$26 !== _p$.a && (_p$.a = _$setProp11(_el$32, "borderColor", _v$26, _p$.a));
       return _p$;
     }, {
       e: undefined,
       t: undefined,
       a: undefined
     });
-    return _el$19;
+    return _el$31;
   })(), _$createComponent8(For4, {
     get each() {
       return endingRails();
     },
     children: (rail) => (() => {
-      var _el$27 = _$createElement11("box"), _el$28 = _$createElement11("box");
-      _$insertNode4(_el$27, _el$28);
-      _$setProp11(_el$27, "width", "100%");
-      _$setProp11(_el$27, "flexDirection", "row");
-      _$setProp11(_el$28, "flexGrow", 1);
-      _$setProp11(_el$28, "minWidth", 0);
-      _$insert9(_el$28, _$createComponent8(CanvasCommentCard, {
+      var _el$39 = _$createElement11("box"), _el$40 = _$createElement11("box");
+      _$insertNode4(_el$39, _el$40);
+      _$setProp11(_el$39, "width", "100%");
+      _$setProp11(_el$39, "flexDirection", "row");
+      _$setProp11(_el$40, "flexGrow", 1);
+      _$setProp11(_el$40, "minWidth", 0);
+      _$insert9(_el$40, _$createComponent8(CanvasCommentCard, {
         get theme() {
           return props.theme;
         },
@@ -19019,7 +19259,7 @@ function CanvasReviewUnit(props) {
           return props.onEdit;
         }
       }));
-      _$insert9(_el$27, _$createComponent8(CanvasCommentRails, {
+      _$insert9(_el$39, _$createComponent8(CanvasCommentRails, {
         get theme() {
           return props.theme;
         },
@@ -19029,17 +19269,17 @@ function CanvasReviewUnit(props) {
         rails: activeRails,
         connector: () => rail.column
       }), null);
-      return _el$27;
+      return _el$39;
     })()
   })];
 }
 function CanvasCommentRails(props) {
   const colors = () => canvasReviewColors(props.theme);
   return (() => {
-    var _el$29 = _$createElement11("box");
-    _$setProp11(_el$29, "flexShrink", 0);
-    _$setProp11(_el$29, "flexDirection", "row");
-    _$insert9(_el$29, _$createComponent8(For4, {
+    var _el$41 = _$createElement11("box");
+    _$setProp11(_el$41, "flexShrink", 0);
+    _$setProp11(_el$41, "flexDirection", "row");
+    _$insert9(_el$41, _$createComponent8(For4, {
       get each() {
         return Array.from({
           length: props.columns()
@@ -19056,99 +19296,99 @@ function CanvasCommentRails(props) {
             },
             get fallback() {
               return (() => {
-                var _el$35 = _$createElement11("box");
-                _$setProp11(_el$35, "width", 1);
-                return _el$35;
+                var _el$47 = _$createElement11("box");
+                _$setProp11(_el$47, "width", 1);
+                return _el$47;
               })();
             },
             get children() {
-              var _el$34 = _$createElement11("box");
-              _$setProp11(_el$34, "width", 1);
-              _$setProp11(_el$34, "height", "100%");
-              _$setProp11(_el$34, "border", ["left"]);
-              _$effect9((_$p) => _$setProp11(_el$34, "borderColor", colors().comment, _$p));
-              return _el$34;
+              var _el$46 = _$createElement11("box");
+              _$setProp11(_el$46, "width", 1);
+              _$setProp11(_el$46, "height", "100%");
+              _$setProp11(_el$46, "border", ["left"]);
+              _$effect9((_$p) => _$setProp11(_el$46, "borderColor", colors().comment, _$p));
+              return _el$46;
             }
           });
         },
         get children() {
-          var _el$30 = _$createElement11("box"), _el$31 = _$createElement11("text"), _el$33 = _$createElement11("box");
-          _$insertNode4(_el$30, _el$31);
-          _$insertNode4(_el$30, _el$33);
-          _$setProp11(_el$30, "width", 1);
-          _$setProp11(_el$30, "height", "100%");
-          _$setProp11(_el$30, "flexDirection", "column");
-          _$insertNode4(_el$31, _$createTextNode3(`\u2524`));
-          _$setProp11(_el$33, "flexGrow", 1);
-          _$setProp11(_el$33, "minHeight", 0);
-          _$setProp11(_el$33, "border", ["left"]);
+          var _el$42 = _$createElement11("box"), _el$43 = _$createElement11("text"), _el$45 = _$createElement11("box");
+          _$insertNode4(_el$42, _el$43);
+          _$insertNode4(_el$42, _el$45);
+          _$setProp11(_el$42, "width", 1);
+          _$setProp11(_el$42, "height", "100%");
+          _$setProp11(_el$42, "flexDirection", "column");
+          _$insertNode4(_el$43, _$createTextNode3(`\u2524`));
+          _$setProp11(_el$45, "flexGrow", 1);
+          _$setProp11(_el$45, "minHeight", 0);
+          _$setProp11(_el$45, "border", ["left"]);
           _$effect9((_p$) => {
-            var _v$19 = colors().comment, _v$20 = colors().comment;
-            _v$19 !== _p$.e && (_p$.e = _$setProp11(_el$31, "fg", _v$19, _p$.e));
-            _v$20 !== _p$.t && (_p$.t = _$setProp11(_el$33, "borderColor", _v$20, _p$.t));
+            var _v$27 = colors().comment, _v$28 = colors().comment;
+            _v$27 !== _p$.e && (_p$.e = _$setProp11(_el$43, "fg", _v$27, _p$.e));
+            _v$28 !== _p$.t && (_p$.t = _$setProp11(_el$45, "borderColor", _v$28, _p$.t));
             return _p$;
           }, {
             e: undefined,
             t: undefined
           });
-          return _el$30;
+          return _el$42;
         }
       })
     }));
-    _$effect9((_$p) => _$setProp11(_el$29, "width", props.columns(), _$p));
-    return _el$29;
+    _$effect9((_$p) => _$setProp11(_el$41, "width", props.columns(), _$p));
+    return _el$41;
   })();
 }
 function CanvasCommentCard(props) {
   const colors = () => canvasReviewColors(props.theme);
   return (() => {
-    var _el$36 = _$createElement11("box"), _el$37 = _$createElement11("box"), _el$38 = _$createElement11("box"), _el$39 = _$createElement11("text"), _el$40 = _$createTextNode3(`#`), _el$41 = _$createTextNode3(` `), _el$42 = _$createElement11("text"), _el$44 = _$createElement11("box"), _el$45 = _$createElement11("text"), _el$47 = _$createElement11("text");
-    _$insertNode4(_el$36, _el$37);
-    _$insertNode4(_el$36, _el$44);
-    _$setProp11(_el$36, "paddingLeft", 1);
-    _$setProp11(_el$36, "flexDirection", "column");
-    _$insertNode4(_el$37, _el$38);
-    _$insertNode4(_el$37, _el$42);
-    _$setProp11(_el$37, "width", "100%");
-    _$setProp11(_el$37, "flexDirection", "row");
-    _$insertNode4(_el$38, _el$39);
-    _$setProp11(_el$38, "flexGrow", 1);
-    _$setProp11(_el$38, "minWidth", 0);
-    _$setProp11(_el$38, "paddingLeft", 1);
-    _$setProp11(_el$38, "paddingRight", 1);
-    _$setProp11(_el$38, "flexDirection", "row");
-    _$setProp11(_el$38, "justifyContent", "flex-end");
-    _$setProp11(_el$38, "border", ["top", "right", "bottom", "left"]);
-    _$insertNode4(_el$39, _el$40);
-    _$insertNode4(_el$39, _el$41);
-    _$setProp11(_el$39, "wrapMode", "word");
-    _$setProp11(_el$39, "flexShrink", 1);
-    _$insert9(_el$39, () => props.number + 1, _el$41);
-    _$insert9(_el$39, () => props.comment.message, null);
-    _$insertNode4(_el$42, _$createTextNode3(`\u2500\u2500\u2500`));
-    _$setProp11(_el$42, "width", 3);
-    _$insertNode4(_el$44, _el$45);
-    _$insertNode4(_el$44, _el$47);
-    _$setProp11(_el$44, "paddingTop", 1);
-    _$setProp11(_el$44, "paddingRight", 1);
-    _$setProp11(_el$44, "gap", 1);
-    _$setProp11(_el$44, "flexDirection", "row");
-    _$setProp11(_el$44, "justifyContent", "flex-end");
-    _$insertNode4(_el$45, _$createTextNode3(`edit`));
-    _$setProp11(_el$45, "flexShrink", 0);
-    _$setProp11(_el$45, "onMouseUp", () => props.onEdit(props.comment.id));
-    _$insertNode4(_el$47, _$createTextNode3(`delete`));
-    _$setProp11(_el$47, "flexShrink", 0);
-    _$setProp11(_el$47, "onMouseUp", () => props.onDelete(props.comment.id));
+    var _el$48 = _$createElement11("box"), _el$49 = _$createElement11("box"), _el$50 = _$createElement11("box"), _el$51 = _$createElement11("text"), _el$52 = _$createTextNode3(`#`), _el$53 = _$createTextNode3(` `), _el$54 = _$createElement11("text"), _el$56 = _$createElement11("box"), _el$57 = _$createElement11("text"), _el$59 = _$createElement11("text");
+    _$insertNode4(_el$48, _el$49);
+    _$insertNode4(_el$48, _el$56);
+    _$setProp11(_el$48, "paddingLeft", 1);
+    _$setProp11(_el$48, "flexDirection", "column");
+    _$insertNode4(_el$49, _el$50);
+    _$insertNode4(_el$49, _el$54);
+    _$setProp11(_el$49, "width", "100%");
+    _$setProp11(_el$49, "flexDirection", "row");
+    _$insertNode4(_el$50, _el$51);
+    _$setProp11(_el$50, "flexGrow", 1);
+    _$setProp11(_el$50, "minWidth", 0);
+    _$setProp11(_el$50, "paddingLeft", 1);
+    _$setProp11(_el$50, "paddingRight", 1);
+    _$setProp11(_el$50, "flexDirection", "row");
+    _$setProp11(_el$50, "justifyContent", "flex-end");
+    _$setProp11(_el$50, "border", ["top", "right", "bottom", "left"]);
+    _$insertNode4(_el$51, _el$52);
+    _$insertNode4(_el$51, _el$53);
+    _$setProp11(_el$51, "wrapMode", "word");
+    _$setProp11(_el$51, "flexShrink", 1);
+    _$insert9(_el$51, () => props.number + 1, _el$53);
+    _$insert9(_el$51, () => props.comment.message, null);
+    _$insertNode4(_el$54, _$createTextNode3(`\u2500\u2500\u2500`));
+    _$setProp11(_el$54, "width", 3);
+    _$insertNode4(_el$56, _el$57);
+    _$insertNode4(_el$56, _el$59);
+    _$setProp11(_el$56, "paddingTop", 1);
+    _$setProp11(_el$56, "paddingRight", 1);
+    _$setProp11(_el$56, "gap", 1);
+    _$setProp11(_el$56, "flexDirection", "row");
+    _$setProp11(_el$56, "justifyContent", "flex-end");
+    _$insertNode4(_el$57, _$createTextNode3(`edit`));
+    _$setProp11(_el$57, "flexShrink", 0);
+    _$setProp11(_el$57, "onMouseUp", () => props.onEdit(props.comment.id));
+    _$insertNode4(_el$59, _$createTextNode3(`delete`));
+    _$setProp11(_el$59, "flexShrink", 0);
+    _$setProp11(_el$59, "onMouseUp", () => props.onDelete(props.comment.id));
     _$effect9((_p$) => {
-      var _v$21 = colors().commentBackground, _v$22 = colors().comment, _v$23 = props.theme.text.base, _v$24 = TextAttributes6.BOLD, _v$25 = colors().comment, _v$26 = props.theme.text.muted, _v$27 = props.theme.text.muted;
-      _v$21 !== _p$.e && (_p$.e = _$setProp11(_el$36, "backgroundColor", _v$21, _p$.e));
-      _v$22 !== _p$.t && (_p$.t = _$setProp11(_el$38, "borderColor", _v$22, _p$.t));
-      _v$23 !== _p$.a && (_p$.a = _$setProp11(_el$39, "fg", _v$23, _p$.a));
-      _v$24 !== _p$.o && (_p$.o = _$setProp11(_el$39, "attributes", _v$24, _p$.o));
-      _v$25 !== _p$.i && (_p$.i = _$setProp11(_el$42, "fg", _v$25, _p$.i));
-      _v$26 !== _p$.n && (_p$.n = _$setProp11(_el$45, "fg", _v$26, _p$.n));
-      _v$27 !== _p$.s && (_p$.s = _$setProp11(_el$47, "fg", _v$27, _p$.s));
+      var _v$29 = colors().commentBackground, _v$30 = colors().comment, _v$31 = props.theme.text.base, _v$32 = TextAttributes6.BOLD, _v$33 = colors().comment, _v$34 = props.theme.text.muted, _v$35 = props.theme.text.muted;
+      _v$29 !== _p$.e && (_p$.e = _$setProp11(_el$48, "backgroundColor", _v$29, _p$.e));
+      _v$30 !== _p$.t && (_p$.t = _$setProp11(_el$50, "borderColor", _v$30, _p$.t));
+      _v$31 !== _p$.a && (_p$.a = _$setProp11(_el$51, "fg", _v$31, _p$.a));
+      _v$32 !== _p$.o && (_p$.o = _$setProp11(_el$51, "attributes", _v$32, _p$.o));
+      _v$33 !== _p$.i && (_p$.i = _$setProp11(_el$54, "fg", _v$33, _p$.i));
+      _v$34 !== _p$.n && (_p$.n = _$setProp11(_el$57, "fg", _v$34, _p$.n));
+      _v$35 !== _p$.s && (_p$.s = _$setProp11(_el$59, "fg", _v$35, _p$.s));
       return _p$;
     }, {
       e: undefined,
@@ -19159,7 +19399,7 @@ function CanvasCommentCard(props) {
       n: undefined,
       s: undefined
     });
-    return _el$36;
+    return _el$48;
   })();
 }
 async function editArtifact(context, file, cwd, refetch) {
@@ -19208,15 +19448,6 @@ var canvas_default = {
     const [previous, setPrevious] = createSignal6({
       ...context.ui.router.current()
     });
-    const [settings, updateSettings] = context.storage.store("canvas", {
-      initial: {
-        mathScale: 1
-      }
-    });
-    const mathSize = () => Math.min(2, Math.max(0.5, Math.round((settings.mathScale ?? 1) * 10) / 10));
-    const resizeMath = (delta) => void updateSettings((draft) => {
-      draft.mathScale = Math.min(2, Math.max(0.5, Math.round((mathSize() + delta * 0.1) * 10) / 10));
-    });
     context.ui.router.register({
       name: "artifact-canvas",
       render: () => _$createComponent8(CanvasPage, {
@@ -19227,9 +19458,7 @@ var canvas_default = {
         sessionID: () => {
           const route = previous();
           return route.type === "session" ? route.sessionID : undefined;
-        },
-        mathSize,
-        onMathSize: resizeMath
+        }
       })
     });
     context.ui.slot({
@@ -19247,9 +19476,7 @@ var canvas_default = {
           get presentation() {
             return input.presentation;
           },
-          sessionID: () => input.sessionID,
-          mathSize,
-          onMathSize: resizeMath
+          sessionID: () => input.sessionID
         });
       }
     });
