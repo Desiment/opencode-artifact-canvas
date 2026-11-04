@@ -596,7 +596,7 @@ import { spawn } from "child_process";
 import path5 from "path";
 
 // node_modules/opentui-markdown-render/src/app.tsx
-import { createMemo as createMemo6, createSignal as createSignal5, onCleanup as onCleanup4 } from "solid-js";
+import { createEffect as createEffect4, createMemo as createMemo6, createSignal as createSignal5, onCleanup as onCleanup4 } from "solid-js";
 
 // node_modules/opentui-markdown-render/src/graphics.ts
 import { createMemo, createSignal, onCleanup } from "solid-js";
@@ -3727,6 +3727,7 @@ import { createMemo as createMemo5, For as For2 } from "solid-js";
 // node_modules/opentui-markdown-render/src/media.tsx
 var import_gifuct_js = __toESM(require_lib2(), 1);
 import { NativeImage, imageInfo, parseColor as parseColor2 } from "@opentui/core";
+import { useRenderer } from "@opentui/solid";
 import path4 from "path";
 import { createEffect, createResource, createSignal as createSignal2, Match, onCleanup as onCleanup2, Switch } from "solid-js";
 import { jsxDEV as jsxDEV2 } from "@opentui/solid/jsx-dev-runtime";
@@ -3779,6 +3780,7 @@ function imageBox(width, height, columns, cellAspectRatio, limits) {
   return { columns: Math.max(1, Math.round(ratio * rowLimit * aspect)), rows: rowLimit };
 }
 function LocalImage(props) {
+  const renderer = useRenderer();
   const [failure, setFailure] = createSignal2();
   const [loaded] = createResource(() => JSON.stringify({
     href: props.href,
@@ -3819,27 +3821,45 @@ function LocalImage(props) {
   const [frame, setFrame] = createSignal2();
   createEffect(() => {
     const value = media();
-    if (!value?.frames?.length) {
+    if (!value?.animation) {
       setFrame(value?.image);
       return;
     }
+    const animation = value.animation;
+    const canvas = new Uint8Array(animation.width * animation.height * 4);
     let index = 0;
+    let current;
     let timer;
     const next = () => {
-      const current = value.frames[index];
-      setFrame(current.image);
-      index = (index + 1) % value.frames.length;
-      timer = setTimeout(next, current.delay);
+      const decoded = import_gifuct_js.decompressFrame(animation.frames[index], animation.colorTable, true);
+      const before = decoded.disposalType === 3 ? canvas.slice() : undefined;
+      drawPatch(canvas, animation.width, animation.height, decoded.patch, decoded.dims.left, decoded.dims.top, decoded.dims.width, decoded.dims.height);
+      const image = prepareImage(NativeImage.fromRgba(canvas.slice(), animation.width, animation.height), animation.target, animation.background);
+      const previous = current;
+      current = image;
+      setFrame(image);
+      if (previous)
+        renderer.idle().then(() => previous.dispose());
+      if (decoded.disposalType === 2)
+        clearPatch(canvas, animation.width, decoded.dims.left, decoded.dims.top, decoded.dims.width, decoded.dims.height);
+      if (before)
+        canvas.set(before);
+      index = (index + 1) % animation.frames.length;
+      timer = setTimeout(next, Math.max(50, decoded.delay || 100));
     };
     next();
     onCleanup2(() => {
       if (timer)
         clearTimeout(timer);
+      const image = current;
+      if (image)
+        renderer.idle().then(() => image.dispose());
+      setFrame();
     });
   });
   createEffect(() => {
     const value = media();
-    onCleanup2(() => disposeMedia(value));
+    onCleanup2(() => void renderer.idle().then(() => disposeMedia(value)));
   });
   return /* @__PURE__ */ jsxDEV2("box", {
     width: "100%",
@@ -3909,20 +3929,10 @@ function loadGif(bytes, box, target, background) {
   const gif = import_gifuct_js.parseGIF(bytes.slice().buffer);
   const width = gif.lsd.width;
   const height = gif.lsd.height;
-  const canvas = new Uint8Array(width * height * 4);
-  const frames = import_gifuct_js.decompressFrames(gif, true).map((frame) => {
-    const before = canvas.slice();
-    drawPatch(canvas, width, height, frame.patch, frame.dims.left, frame.dims.top, frame.dims.width, frame.dims.height);
-    const image = prepareImage(NativeImage.fromRgba(canvas.slice(), width, height), target, background);
-    if (frame.disposalType === 2)
-      clearPatch(canvas, width, frame.dims.left, frame.dims.top, frame.dims.width, frame.dims.height);
-    if (frame.disposalType === 3)
-      canvas.set(before);
-    return { image, delay: Math.max(50, frame.delay || 100) };
-  });
+  const frames = gif.frames.filter((frame) => ("image" in frame));
   if (!frames.length)
     throw new Error("GIF contains no frames");
-  return { box, frames };
+  return { box, animation: { width, height, frames, colorTable: gif.gct, target, background } };
 }
 function drawPatch(canvas, width, height, patch, left, top, patchWidth, patchHeight) {
   for (let y = 0;y < patchHeight; y++) {
@@ -3975,12 +3985,11 @@ function prepareImage(image, target, background) {
 }
 function disposeMedia(media) {
   media?.image?.dispose();
-  media?.frames?.forEach((frame) => frame.image.dispose());
 }
 
 // node_modules/opentui-markdown-render/src/view/code.tsx
 import { infoStringToFiletype } from "@opentui/core";
-import { useRenderer } from "@opentui/solid";
+import { useRenderer as useRenderer2 } from "@opentui/solid";
 import { onCleanup as onCleanup3 } from "solid-js";
 
 // node_modules/opentui-markdown-render/src/theme/syntax.ts
@@ -4059,14 +4068,21 @@ function rule(scope, foreground, style = {}) {
 
 // node_modules/opentui-markdown-render/src/view/code.tsx
 import { jsxDEV as jsxDEV3 } from "@opentui/solid/jsx-dev-runtime";
+function resolveCodeFiletype(language) {
+  const token = language?.trim().split(/\s+/, 1)[0]?.toLowerCase() ?? "";
+  return token === "jsonc" ? "json" : infoStringToFiletype(language ?? "");
+}
 function CodeBlock(props) {
-  const renderer = useRenderer();
+  const renderer = useRenderer2();
   const nativeScene = renderer.nativeScene;
   const owned = props.syntaxStyle ? undefined : generateSyntax(props.theme, props.headings, props.theme.markdown.codeBlock, nativeScene);
-  onCleanup3(() => owned?.destroy());
+  onCleanup3(() => {
+    if (owned)
+      renderer.idle().then(() => owned.destroy());
+  });
   return /* @__PURE__ */ jsxDEV3("code", {
     content: props.content,
-    filetype: infoStringToFiletype(props.language ?? ""),
+    filetype: resolveCodeFiletype(props.language),
     syntaxStyle: props.syntaxStyle ?? owned,
     fg: props.theme.markdown.codeBlock,
     bg: props.theme.background.base,
@@ -4606,12 +4622,18 @@ function useInlineMathImages(contents, foreground, background, cell) {
 import { jsxDEV as jsxDEV5 } from "@opentui/solid/jsx-dev-runtime";
 function PrefixSegment(props) {
   let ref;
-  createEffect2(() => {
+  const update = () => {
+    const content = new StyledText(props.chunks());
     if (ref)
-      ref.content = new StyledText(props.chunks());
-  });
+      ref.content = content;
+    return content;
+  };
+  createEffect2(update);
   return /* @__PURE__ */ jsxDEV5("text", {
-    ref,
+    ref: (renderable) => {
+      ref = renderable;
+      renderable.content = update();
+    },
     wrapMode: "none",
     width: props.width,
     flexShrink: 0
@@ -4619,20 +4641,25 @@ function PrefixSegment(props) {
 }
 function StyledSegment(props) {
   let ref;
-  createEffect2(() => {
+  const update = () => {
     const atom = props.entry.atom;
-    if (ref && atom.type === "text") {
-      ref.content = new StyledText([{
-        __isChunk: true,
-        text: atom.text,
-        fg: atom.fg,
-        attributes: atom.attributes,
-        ...atom.href ? { link: { url: atom.href } } : {}
-      }]);
-    }
-  });
+    const content = atom.type === "text" ? new StyledText([{
+      __isChunk: true,
+      text: atom.text,
+      fg: atom.fg,
+      attributes: atom.attributes,
+      ...atom.href ? { link: { url: atom.href } } : {}
+    }]) : new StyledText([]);
+    if (ref)
+      ref.content = content;
+    return content;
+  };
+  createEffect2(update);
   return /* @__PURE__ */ jsxDEV5("text", {
-    ref,
+    ref: (renderable) => {
+      ref = renderable;
+      renderable.content = update();
+    },
     width: props.entry.columns,
     flexShrink: 0,
     wrapMode: "none",
@@ -17007,6 +17034,7 @@ function DocumentView(props) {
         columns: input.columns,
         mermaidOptions: props.mermaidOptions,
         headings: props.headings,
+        syntaxStyle: props.syntaxStyle,
         onDiagnostic: props.onDiagnostic
       }, undefined, false, undefined, this);
     }
@@ -17337,14 +17365,14 @@ function MarkdownRenderer(props) {
     return parseDocument(content());
   });
   const headings = createMemo6(() => resolveHeadingStyles(config().headings));
-  let currentSyntax;
   const syntaxStyle = createMemo6(() => {
-    currentSyntax?.destroy();
     const nativeScene = renderer.nativeScene;
-    currentSyntax = generateSyntax(theme(), headings(), theme().markdown.codeBlock, nativeScene);
-    return currentSyntax;
+    return generateSyntax(theme(), headings(), theme().markdown.codeBlock, nativeScene);
   });
-  onCleanup4(() => currentSyntax?.destroy());
+  createEffect4(() => {
+    const style = syntaxStyle();
+    onCleanup4(() => void renderer.idle().then(() => style.destroy()));
+  });
   return /* @__PURE__ */ jsxDEV9("box", {
     width: "100%",
     flexDirection: "column",
@@ -17382,7 +17410,7 @@ import { For as For3, Show as Show4 } from "solid-js";
 import { TextAttributes as TextAttributes5 } from "@opentui/core";
 var defaultStatusLineFields = statusLineFields.filter((field) => field !== "text");
 // src/canvas.tsx
-import { createEffect as createEffect4, createMemo as createMemo7, createResource as createResource4, createSignal as createSignal6, For as For4, Match as Match3, Show as Show5, Switch as Switch3 } from "solid-js";
+import { createEffect as createEffect5, createMemo as createMemo7, createResource as createResource4, createSignal as createSignal6, For as For4, Match as Match3, Show as Show5, Switch as Switch3 } from "solid-js";
 // node_modules/diff/libesm/diff/base.js
 class Diff {
   diff(oldStr, newStr, options = {}) {
@@ -18069,7 +18097,7 @@ function CanvasPage(props) {
   const railCount = createMemo7(() => Math.max(0, ...rails().map((rail) => rail.column + 1)));
   const available = () => Math.max(8, width() - 4 - railCount());
   let baselineFile;
-  createEffect4(() => {
+  createEffect5(() => {
     const file = props.file();
     const value = loaded()?.value;
     if (!file || value === undefined || baselineFile === file)
@@ -18081,7 +18109,7 @@ function CanvasPage(props) {
     setCursor(0);
     setVisualStart();
   });
-  createEffect4(() => {
+  createEffect5(() => {
     const last = Math.max(0, units().length - 1);
     if (cursor() > last)
       setCursor(last);
