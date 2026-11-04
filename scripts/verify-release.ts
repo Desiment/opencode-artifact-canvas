@@ -83,6 +83,13 @@ const localImage = contents.slice(contents.indexOf("function LocalImage"), conte
 if (localImage.includes("jsxDEV") || !localImage.includes("get children()")) {
   throw new Error("Release contains uncompiled dependency JSX that eagerly reads image media")
 }
+if (!localImage.includes('"alignItems", "center"')) {
+  throw new Error("Release does not center standalone images")
+}
+const documentView = contents.slice(contents.indexOf("function DocumentView"), contents.indexOf("function MarkdownRenderer"))
+if (!documentView.includes("function flow(children, columns") || !documentView.includes("return columns();")) {
+  throw new Error("Release freezes list layout at the host's provisional width")
+}
 
 const archiveContents = new TextDecoder().decode(
   await new Response(Bun.spawn(["tar", "-tzf", archive]).stdout).arrayBuffer(),
