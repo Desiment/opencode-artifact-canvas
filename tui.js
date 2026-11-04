@@ -596,7 +596,7 @@ import { spawn } from "child_process";
 import path5 from "path";
 
 // node_modules/opentui-markdown-render/src/app.tsx
-import { createMemo as createMemo6, createSignal as createSignal5 } from "solid-js";
+import { createMemo as createMemo6, createSignal as createSignal5, onCleanup as onCleanup4 } from "solid-js";
 
 // node_modules/opentui-markdown-render/src/graphics.ts
 import { createMemo, createSignal, onCleanup } from "solid-js";
@@ -3980,10 +3980,12 @@ function disposeMedia(media) {
 
 // node_modules/opentui-markdown-render/src/view/code.tsx
 import { infoStringToFiletype } from "@opentui/core";
+import { useRenderer } from "@opentui/solid";
+import { onCleanup as onCleanup3 } from "solid-js";
 
 // node_modules/opentui-markdown-render/src/theme/syntax.ts
 import { SyntaxStyle } from "@opentui/core";
-function generateSyntax(theme, headings = defaultHeadingStyles, defaultColor = theme.text.base) {
+function generateSyntax(theme, headings = defaultHeadingStyles, defaultColor = theme.text.base, owner) {
   const { markdown, syntax, text } = theme;
   const feedback = text.feedback;
   const headingStyle = (level) => {
@@ -3996,7 +3998,7 @@ function generateSyntax(theme, headings = defaultHeadingStyles, defaultColor = t
     };
   };
   const headingRules = headingLevels.map((level) => rule([`markup.heading.${level}`], headingColor(theme, level), headingStyle(level)));
-  return SyntaxStyle.fromTheme([
+  const rules = [
     rule(["default"], defaultColor),
     rule(["prompt"], theme.accent),
     rule(["comment", "comment.documentation"], syntax.comment, { italic: true }),
@@ -4047,7 +4049,9 @@ function generateSyntax(theme, headings = defaultHeadingStyles, defaultColor = t
     rule(["error"], feedback.error, { bold: true }),
     rule(["warning"], feedback.warning, { bold: true }),
     rule(["info"], feedback.info)
-  ]);
+  ];
+  const fromTheme = SyntaxStyle.fromTheme;
+  return fromTheme(rules, owner);
 }
 function rule(scope, foreground, style = {}) {
   return { scope, style: { foreground, ...style } };
@@ -4056,10 +4060,14 @@ function rule(scope, foreground, style = {}) {
 // node_modules/opentui-markdown-render/src/view/code.tsx
 import { jsxDEV as jsxDEV3 } from "@opentui/solid/jsx-dev-runtime";
 function CodeBlock(props) {
+  const renderer = useRenderer();
+  const nativeScene = renderer.nativeScene;
+  const owned = props.syntaxStyle ? undefined : generateSyntax(props.theme, props.headings, props.theme.markdown.codeBlock, nativeScene);
+  onCleanup3(() => owned?.destroy());
   return /* @__PURE__ */ jsxDEV3("code", {
     content: props.content,
     filetype: infoStringToFiletype(props.language ?? ""),
-    syntaxStyle: generateSyntax(props.theme, props.headings, props.theme.markdown.codeBlock),
+    syntaxStyle: props.syntaxStyle ?? owned,
     fg: props.theme.markdown.codeBlock,
     bg: props.theme.background.base,
     conceal: false,
@@ -16955,7 +16963,8 @@ function MermaidDiagramView(props) {
         content: props.source,
         language: "mermaid",
         theme: props.theme,
-        headings: props.headings ?? defaultHeadingStyles
+        headings: props.headings ?? defaultHeadingStyles,
+        syntaxStyle: props.syntaxStyle
       }, undefined, false, undefined, this),
       children: (value) => /* @__PURE__ */ jsxDEV7(DiagramText, {
         prepared: value
@@ -17088,7 +17097,8 @@ function DocumentView(props) {
             content: block.content,
             language: block.language,
             theme: props.theme,
-            headings: props.headings
+            headings: props.headings,
+            syntaxStyle: props.syntaxStyle
           }, undefined, false, undefined, this);
         case "mermaid":
           return /* @__PURE__ */ jsxDEV8(MermaidDiagramView, {
@@ -17097,6 +17107,7 @@ function DocumentView(props) {
             columns,
             mermaidOptions: props.mermaidOptions,
             headings: props.headings,
+            syntaxStyle: props.syntaxStyle,
             onDiagnostic: props.onDiagnostic
           }, undefined, false, undefined, this);
         case "table":
@@ -17326,6 +17337,14 @@ function MarkdownRenderer(props) {
     return parseDocument(content());
   });
   const headings = createMemo6(() => resolveHeadingStyles(config().headings));
+  let currentSyntax;
+  const syntaxStyle = createMemo6(() => {
+    currentSyntax?.destroy();
+    const nativeScene = renderer.nativeScene;
+    currentSyntax = generateSyntax(theme(), headings(), theme().markdown.codeBlock, nativeScene);
+    return currentSyntax;
+  });
+  onCleanup4(() => currentSyntax?.destroy());
   return /* @__PURE__ */ jsxDEV9("box", {
     width: "100%",
     flexDirection: "column",
@@ -17351,6 +17370,7 @@ function MarkdownRenderer(props) {
         tableOptions: tableOptions(),
         mermaidOptions: config().mermaid,
         mathScale: mathScale(),
+        syntaxStyle: syntaxStyle(),
         onDiagnostic: props.onDiagnostic,
         renderUnit: props.renderUnit
       }, undefined, false, undefined, this)

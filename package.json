@@ -1,6 +1,6 @@
 {
   "name": "opencode-artifact-canvas",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Artifact Canvas TUI plugin for OpenCode",
   "type": "module",
   "license": "MIT",
@@ -29,14 +29,14 @@
   "dependencies": {
     "@opencode/plugin": "^2.0.19",
     "diff": "8.0.4",
-    "opentui-markdown-render": "^0.2.1"
+    "opentui-markdown-render": "0.2.2"
   },
   "devDependencies": {
-    "@opentui/core": "0.5.12",
-    "@opentui/solid": "0.5.12",
+    "@opentui/core": "0.8.2",
+    "@opentui/solid": "0.8.2",
     "@tsconfig/bun": "1.0.9",
     "@types/bun": "1.4.0",
     "@typescript/native-preview": "7.0.0-dev.20251207.1",
-    "solid-js": "1.9.15"
+    "solid-js": "1.9.18"
   }
 }
