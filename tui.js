@@ -6356,6 +6356,7 @@ function LocalImage(props) {
     _$setProp2(_el$, "flexDirection", "column");
     _$setProp2(_el$, "flexShrink", 0);
     _$setProp2(_el$, "overflow", "hidden");
+    _$setProp2(_el$, "alignItems", "center");
     _$insert2(_el$, _$createComponent(Switch, {
       get children() {
         return [_$createComponent(Match, {
@@ -17133,7 +17134,9 @@ function DocumentView(props) {
   function flow(children, columns, quote, prefix, prefixColor, prefixChunks) {
     return _$createComponent5(InlineFlow, {
       inlines: children,
-      columns,
+      get columns() {
+        return columns();
+      },
       get theme() {
         return props.theme;
       },
@@ -17183,7 +17186,7 @@ function DocumentView(props) {
       const columns = Math.max(1, input.columns);
       switch (block.type) {
         case "paragraph":
-          return flow(block.children, columns, input.quote);
+          return flow(block.children, () => columns, input.quote);
         case "heading": {
           const level = headingLevels[block.level - 1];
           const style = props.headings[level];
@@ -17411,7 +17414,7 @@ function DocumentView(props) {
         get each() {
           return item().blocks;
         },
-        children: (child, childIndex) => childIndex() === 0 && child.type === "paragraph" ? flow(child.children, input.columns, input.quote, (row) => row === 0 ? `${marker().padEnd(markerWidth())} ` : " ".repeat(hanging()), () => list().ordered ? props.theme.markdown.listEnumeration : props.theme.markdown.listItem, item().task ? (row) => row === 0 ? [{
+        children: (child, childIndex) => childIndex() === 0 && child.type === "paragraph" ? flow(child.children, () => input.columns, input.quote, (row) => row === 0 ? `${marker().padEnd(markerWidth())} ` : " ".repeat(hanging()), () => list().ordered ? props.theme.markdown.listEnumeration : props.theme.markdown.listItem, item().task ? (row) => row === 0 ? [{
           __isChunk: true,
           text: `${list().ordered ? `${list().start + input.index()}.` : "-"} `,
           fg: list().ordered ? props.theme.markdown.listEnumeration : props.theme.markdown.listItem
