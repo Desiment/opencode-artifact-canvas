@@ -70,6 +70,17 @@ for (const specifier of ["@opentui/core", "@opentui/solid", "solid-js"]) {
 if (contents.includes("@opencode/plugin/tui")) throw new Error("Release must not create a second PluginContext")
 if (!contents.includes("opentui_markdown_render.node")) throw new Error("Release does not contain the native math loader")
 if (!contents.includes("renderer.nativeScene")) throw new Error("Release does not bind syntax resources to the host renderer")
+if (!contents.includes("h help q quit")) throw new Error("Release does not contain the simplified Canvas header")
+if (!contents.includes("Leave review mode?")) throw new Error("Release does not confirm before leaving review mode")
+if (!contents.includes("Canvas configuration & runtime")) throw new Error("Release does not contain Canvas runtime information")
+if (!contents.includes("unitSurface")) throw new Error("Release does not paint review selections through renderer units")
+const tableBlock = contents.slice(contents.indexOf("function TableBlock"), contents.indexOf("function hardChunks"))
+if (!tableBlock.includes("props.surface ?") || !tableBlock.includes("props.surface()")) {
+  throw new Error("Release does not paint review selections through tables")
+}
+if (contents.includes("bigger display math") || contents.includes("smaller display math")) {
+  throw new Error("Release still contains Canvas display-math scaling controls")
+}
 const styledSegment = contents.slice(contents.indexOf("function StyledSegment"), contents.indexOf("function InlineFlow"))
 if (!styledSegment.includes("renderable.content = update()") ||
   (!styledSegment.includes("ref: (renderable)") && !styledSegment.includes("_$use((renderable)")) ||

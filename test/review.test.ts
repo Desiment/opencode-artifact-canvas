@@ -11,7 +11,7 @@ import {
   updateReviewComment,
   type ReviewComment,
 } from "../src/review"
-import { documentReviewUnits, unitAtomKind } from "../src/canvas"
+import { commentRangeContains, confirmReviewExit, documentReviewUnits, unitAtomKind, visualSelectionContains } from "../src/canvas"
 import { parseDocument } from "opentui-markdown-render"
 
 describe("artifact canvas review state", () => {
@@ -128,6 +128,39 @@ describe("artifact canvas review state", () => {
     const units = documentReviewUnits(parseDocument(source))
     expect(units.map((unit) => unit.kind)).toEqual(["list-item", "list-item"])
     expect(units.map((unit) => unit.source && source.slice(unit.source.start, unit.source.end))).toEqual(["- first\n", "- second"])
+  })
+
+  test("includes every block in a forward or reverse visual range", () => {
+    const units = documentReviewUnits(parseDocument("# Heading\n\nParagraph\n\n$$\nx^2\n$$\n\nTail"))
+    expect(units).toHaveLength(4)
+    expect(units.map((unit) => visualSelectionContains(units, unit, 2, 0))).toEqual([true, true, true, false])
+    expect(units.map((unit) => visualSelectionContains(units, unit, 0, 2))).toEqual([true, true, true, false])
+    expect(units.map((unit) => visualSelectionContains(units, unit, 2, undefined))).toEqual([false, false, false, false])
+  })
+
+  test("keeps every commented block marked after visual selection ends", () => {
+    const units = documentReviewUnits(parseDocument("# Heading\n\nParagraph\n\n$$\nx^2\n$$\n\nTail"))
+    const first = units[0]?.source
+    const last = units[2]?.source
+    if (!first || !last) throw new Error("expected review ranges")
+    const comment = { ...formulaComment, range: { start: first.start, end: last.end, atomKind: "text" as const } }
+    const rails = assignCommentRails([comment], units.map((unit) => unit.source!))
+    expect(units.map((unit) => commentRangeContains(units, unit, rails))).toEqual([true, true, true, false])
+  })
+
+  test("only leaves review after explicit confirmation", async () => {
+    let message = ""
+    const dialog = (answer: boolean | undefined) => ({
+      confirm: async (options: { message: string }) => {
+        message = options.message
+        return answer
+      },
+    })
+    expect(await confirmReviewExit(dialog(false), 2)).toBe(false)
+    expect(message).toContain("2 unsent comments")
+    expect(await confirmReviewExit(dialog(undefined), 0)).toBe(false)
+    expect(await confirmReviewExit(dialog(true), 1)).toBe(true)
+    expect(message).toContain("1 unsent comment.")
   })
 
   test("builds a named unified patch from the review baseline and current source", () => {

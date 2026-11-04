@@ -40,7 +40,7 @@ The plugin requires a current OpenCode V2 TUI with the public plugin API.
 
 Canvas uses [`opentui-markdown-render`](https://github.com/Desiment/opentui-markdown-render)
 for Markdown parsing, source ranges, TeX, Mermaid, tables, and local images.
-Review annotations are attached through the renderer's public `renderUnit` API;
+Review annotations are attached through the renderer's public `renderUnit` and `unitSurface` APIs;
 the plugin does not maintain a fork of the rendering stack.
 
 ## Features
