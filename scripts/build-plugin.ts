@@ -55,7 +55,6 @@ export async function buildPlugin() {
       "@opentui/solid/jsx-dev-runtime",
       "solid-js",
       "solid-js/store",
-      "@resvg/resvg-js",
     ],
   })
   if (!build.success) throw new AggregateError(build.logs, "Unable to bundle Artifact Canvas")

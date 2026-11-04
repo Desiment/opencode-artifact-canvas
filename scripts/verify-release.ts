@@ -11,9 +11,20 @@ const required = [
   "tui.js",
   "LICENSE",
   "LICENSES/NOTICE.md",
-  "node_modules/@resvg/resvg-js/index.js",
-  "node_modules/@resvg/resvg-js/js-binding.js",
-  "node_modules/@resvg/resvg-js-linux-x64-gnu/resvgjs.linux-x64-gnu.node",
+  "LICENSES/opentui-markdown-render.txt",
+  "LICENSES/opentui-markdown-render-NOTICE.txt",
+  "LICENSES/dagre.txt",
+  "LICENSES/graphlib.txt",
+  "LICENSES/entities.txt",
+  "LICENSES/gifuct-js.txt",
+  "LICENSES/js-binary-schema-parser.txt",
+  "LICENSES/marked.txt",
+  "LICENSES/string-width.txt",
+  "LICENSES/ansi-regex.txt",
+  "LICENSES/emoji-regex.txt",
+  "LICENSES/get-east-asian-width.txt",
+  "LICENSES/strip-ansi.txt",
+  "prebuilds/linux-x64-gnu/opentui_markdown_render.node",
 ]
 for (const relative of required) {
   try {
@@ -28,8 +39,9 @@ for (const forbidden of ["src", "test", "server.ts", "tui.tsx", "bun.lock"]) {
   if (names.includes(forbidden)) throw new Error(`Release must not contain ${forbidden}`)
 }
 
-const manifest = (await Bun.file(path.join(output, "package.json")).json()) as { type?: string }
+const manifest = (await Bun.file(path.join(output, "package.json")).json()) as { type?: string; exports?: Record<string, string> }
 if (manifest.type !== "module") throw new Error("Release manifest must be an ESM package")
+if (manifest.exports?.["./tui"] !== "./tui.js") throw new Error("Release manifest must export the TUI entrypoint")
 
 const contents = await Bun.file(path.join(output, "tui.js")).text()
 const importPatterns = [
@@ -43,9 +55,10 @@ for (const pattern of importPatterns) {
   for (const match of contents.matchAll(pattern)) importSpecifiers.add(match[2]!)
 }
 
-for (const dependency of ["mathjax-full", "mhchemparser"]) {
-  if ([...importSpecifiers].some((specifier) => specifier === dependency || specifier.startsWith(`${dependency}/`))) {
-    throw new Error(`MathJax dependency was not bundled into tui.js: ${dependency}`)
+if (importSpecifiers.has("opentui-markdown-render")) throw new Error("The Markdown renderer was not bundled into tui.js")
+for (const legacy of ["@resvg/resvg-js", "mathjax-full", "mhchemparser"]) {
+  if ([...importSpecifiers].some((specifier) => specifier === legacy || specifier.startsWith(`${legacy}/`))) {
+    throw new Error(`Release still imports the legacy rendering dependency: ${legacy}`)
   }
 }
 for (const specifier of ["@opentui/core", "@opentui/solid", "solid-js"]) {
@@ -54,6 +67,7 @@ for (const specifier of ["@opentui/core", "@opentui/solid", "solid-js"]) {
   }
 }
 if (contents.includes("@opencode/plugin/tui")) throw new Error("Release must not create a second PluginContext")
+if (!contents.includes("opentui_markdown_render.node")) throw new Error("Release does not contain the native math loader")
 
 const archiveContents = new TextDecoder().decode(
   await new Response(Bun.spawn(["tar", "-tzf", archive]).stdout).arrayBuffer(),

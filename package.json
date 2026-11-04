@@ -1,15 +1,22 @@
 {
   "name": "opencode-artifact-canvas",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Artifact Canvas TUI plugin for OpenCode",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Desiment/opencode-artifact-canvas.git"
+  },
+  "homepage": "https://github.com/Desiment/opencode-artifact-canvas#readme",
+  "bugs": "https://github.com/Desiment/opencode-artifact-canvas/issues",
   "scripts": {
     "build:plugin": "bun run scripts/build-plugin.ts",
     "build:release": "bun run scripts/build-release.ts",
     "test": "bun test --timeout 30000",
     "typecheck": "tsgo --noEmit",
-    "verify:release": "bun run scripts/verify-release.ts"
+    "verify:release": "bun run scripts/verify-release.ts",
+    "verify": "bun run typecheck && bun test --timeout 30000 && bun run build:release && bun run verify:release"
   },
   "exports": {
     "./tui": "./tui.js"
@@ -21,13 +28,8 @@
   },
   "dependencies": {
     "@opencode/plugin": "^2.0.19",
-    "@opencode/theme": "^2.0.19",
-    "@resvg/resvg-js": "2.6.2",
     "diff": "8.0.4",
-    "entities": "7.0.1",
-    "marked": "17.0.1",
-    "mathjax-full": "3.2.2",
-    "string-width": "7.2.0"
+    "opentui-markdown-render": "^0.2.1"
   },
   "devDependencies": {
     "@opentui/core": "0.5.12",

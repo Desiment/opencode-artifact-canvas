@@ -13,15 +13,16 @@ OpenCode's managed plugin cache and adds the TUI plugin to the global config:
 opencode plugin add github:Desiment/opencode-artifact-canvas
 ```
 
-Restart OpenCode after installation. Run `/canvas path/to/file.md` from a session
+OpenCode reloads plugin configuration automatically; use `/reload` if you want
+to force an immediate reload. Run `/canvas path/to/file.md` from a session
 to open the Canvas panel, or run it outside a session for the fullscreen route.
 
-The release targets Linux x64 with glibc. Its native SVG renderer does not work
+The release targets Linux x64 with glibc. Its native math renderer does not work
 on musl-based Linux distributions or non-x64 architectures.
 
 ## Release
 
-Pushing a version tag such as `v0.1.0` runs the release workflow and publishes
+Pushing a version tag such as `v0.2.0` runs the release workflow and publishes
 the Linux x64 glibc archive to the matching GitHub Release.
 
 ## Development
@@ -35,16 +36,17 @@ bun run verify:release
 
 The plugin requires a current OpenCode V2 TUI with the public plugin API.
 
-## Vendored Mermaid Renderer
+## Renderer
 
-`src/merman` is the terminal Mermaid renderer from OpenCode's Merman package,
-included here to keep diagrams available without a private OpenCode dependency.
-It is distributed under this repository's MIT license.
+Canvas uses [`opentui-markdown-render`](https://github.com/Desiment/opentui-markdown-render)
+for Markdown parsing, source ranges, TeX, Mermaid, tables, and local images.
+Review annotations are attached through the renderer's public `renderUnit` API;
+the plugin does not maintain a fork of the rendering stack.
 
 ## Features
 
 - Markdown with native terminal Mermaid rendering.
-- Inline and display TeX math rasterized through MathJax.
+- Inline and display TeX math rendered in-process by `opentui-markdown-render`.
 - Local PNG, JPEG, WebP, and GIF images using standalone Markdown syntax such as `![Chart](./chart.png)`. Images are limited to 24 terminal rows, and transparent pixels are composited against the Canvas surface. Paths are resolved relative to the artifact; network URLs are not fetched.
 - Source and rendered views.
 - Block-range review comments with visual rails.
