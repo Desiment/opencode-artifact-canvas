@@ -29,7 +29,7 @@
   "dependencies": {
     "@opencode/plugin": "^2.0.19",
     "diff": "8.0.4",
-    "opentui-markdown-render": "0.2.8"
+    "opentui-markdown-render": "0.2.9"
   },
   "devDependencies": {
     "@opentui/core": "0.8.2",
