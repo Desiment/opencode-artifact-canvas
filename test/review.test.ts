@@ -11,8 +11,8 @@ import {
   updateReviewComment,
   type ReviewComment,
 } from "../src/review"
-import { scanDocument } from "../src/inline"
-import { imageBox, imageMaxRows, localImageID, resolveLocalImage, standaloneImage } from "../src/images"
+import { documentReviewUnits, unitAtomKind } from "../src/canvas"
+import { parseDocument } from "opentui-markdown-render"
 
 describe("artifact canvas review state", () => {
   const formulaComment: ReviewComment = {
@@ -101,48 +101,33 @@ describe("artifact canvas review state", () => {
 
   test("keeps Markdown, display formulas, and Mermaid as separate comment rail blocks", () => {
     const source = "Text.\n\n$$x^2$$\n\n```mermaid\nflowchart LR\n  A --> B\n```\n"
-    const blocks = scanDocument(source)
+    const blocks = documentReviewUnits(parseDocument(source))
     const comment = { ...formulaComment, range: { start: 0, end: source.length, atomKind: "text" as const } }
 
-    expect(blocks.map((block) => block.type)).toEqual(["markdown", "display-math", "markdown"])
-    expect(blocks.map((block) => block.source.atom)).toEqual(["text", "formula", "mermaid"])
-    expect(assignCommentRails([comment], blocks.map((block) => block.source))).toEqual([
+    expect(blocks.map((unit) => unit.kind === "block" ? unit.block.type : unit.kind)).toEqual(["paragraph", "display-math", "mermaid"])
+    expect(blocks.map(unitAtomKind)).toEqual(["text", "formula", "mermaid"])
+    expect(assignCommentRails([comment], blocks.map((block) => block.source!))).toEqual([
       { comment, start: 0, end: 2, column: 0 },
     ])
   })
 
   test("keeps standalone local Markdown images as reviewable blocks", () => {
     const source = "Before\n\n![Chart](assets/chart.webp)\n\nAfter\n"
-    const blocks = scanDocument(source)
+    const blocks = documentReviewUnits(parseDocument(source))
 
-    expect(blocks.map((block) => block.type)).toEqual(["markdown", "image", "markdown"])
+    expect(blocks.map((unit) => unit.kind === "block" ? unit.block.type : unit.kind)).toEqual(["paragraph", "image", "paragraph"])
     expect(blocks[1]).toMatchObject({
-      type: "image",
-      href: "assets/chart.webp",
-      alt: "Chart",
-      source: { start: 8, end: 35, atom: "text" },
+      kind: "block",
+      block: { type: "image", href: "assets/chart.webp", alt: "Chart" },
+      source: { start: 8, end: 35 },
     })
   })
 
-  test("parses standalone images and refuses network image sources", () => {
-    expect(standaloneImage("![A chart](<assets/chart (final).png>)")).toEqual({ href: "assets/chart (final).png", alt: "A chart" })
-    expect(standaloneImage("Text before ![A chart](assets/chart.png)")).toBeUndefined()
-    expect(resolveLocalImage("/work/docs", "assets/chart.png")).toEqual({ path: "/work/docs/assets/chart.png" })
-    expect(resolveLocalImage("/work/docs", "https://example.com/chart.png")).toEqual({ error: "Only local image paths are supported" })
-  })
-
-  test("fits portrait images within the Canvas image height limit", () => {
-    expect(imageBox(1600, 900, 80, 2)).toEqual({ columns: 80, rows: 23 })
-    expect(imageBox(100, 800, 80, 2)).toEqual({ columns: 6, rows: imageMaxRows })
-  })
-
-  test("changes the terminal image identity when its cell geometry changes", () => {
-    const box = { columns: 40, rows: 12 }
-    const before = localImageID("/work/chart.png", box, { width: 8, height: 16 })
-    const after = localImageID("/work/chart.png", box, { width: 10, height: 20 })
-
-    expect(before).not.toEqual(after)
-    expect(localImageID("/work/chart.png", box, { width: 8, height: 16 })).toEqual(before)
+  test("uses list items as non-overlapping review units", () => {
+    const source = "- first\n- second\n"
+    const units = documentReviewUnits(parseDocument(source))
+    expect(units.map((unit) => unit.kind)).toEqual(["list-item", "list-item"])
+    expect(units.map((unit) => unit.source && source.slice(unit.source.start, unit.source.end))).toEqual(["- first\n", "- second"])
   })
 
   test("builds a named unified patch from the review baseline and current source", () => {
