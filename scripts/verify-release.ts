@@ -69,6 +69,14 @@ for (const specifier of ["@opentui/core", "@opentui/solid", "solid-js"]) {
 if (contents.includes("@opencode/plugin/tui")) throw new Error("Release must not create a second PluginContext")
 if (!contents.includes("opentui_markdown_render.node")) throw new Error("Release does not contain the native math loader")
 if (!contents.includes("renderer.nativeScene")) throw new Error("Release does not bind syntax resources to the host renderer")
+const styledSegment = contents.slice(contents.indexOf("function StyledSegment"), contents.indexOf("function InlineFlow"))
+if (!styledSegment.includes("ref: (renderable)") || styledSegment.includes("ref: ref")) {
+  throw new Error("Release does not initialize styled text through a bundle-safe callback ref")
+}
+const gifLoader = contents.slice(contents.indexOf("function loadGif"), contents.indexOf("function drawPatch"))
+if (!gifLoader.includes("animation:") || gifLoader.includes("decompressFrames")) {
+  throw new Error("Release eagerly decodes animated GIF frames")
+}
 
 const archiveContents = new TextDecoder().decode(
   await new Response(Bun.spawn(["tar", "-tzf", archive]).stdout).arrayBuffer(),
