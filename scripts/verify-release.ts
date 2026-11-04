@@ -70,12 +70,18 @@ if (contents.includes("@opencode/plugin/tui")) throw new Error("Release must not
 if (!contents.includes("opentui_markdown_render.node")) throw new Error("Release does not contain the native math loader")
 if (!contents.includes("renderer.nativeScene")) throw new Error("Release does not bind syntax resources to the host renderer")
 const styledSegment = contents.slice(contents.indexOf("function StyledSegment"), contents.indexOf("function InlineFlow"))
-if (!styledSegment.includes("ref: (renderable)") || styledSegment.includes("ref: ref")) {
+if (!styledSegment.includes("renderable.content = update()") ||
+  (!styledSegment.includes("ref: (renderable)") && !styledSegment.includes("_$use((renderable)")) ||
+  styledSegment.includes("ref: ref")) {
   throw new Error("Release does not initialize styled text through a bundle-safe callback ref")
 }
 const gifLoader = contents.slice(contents.indexOf("function loadGif"), contents.indexOf("function drawPatch"))
 if (!gifLoader.includes("animation:") || gifLoader.includes("decompressFrames")) {
   throw new Error("Release eagerly decodes animated GIF frames")
+}
+const localImage = contents.slice(contents.indexOf("function LocalImage"), contents.indexOf("function loadGif"))
+if (localImage.includes("jsxDEV") || !localImage.includes("get children()")) {
+  throw new Error("Release contains uncompiled dependency JSX that eagerly reads image media")
 }
 
 const archiveContents = new TextDecoder().decode(

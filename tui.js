@@ -583,298 +583,30 @@ var require_lib2 = __commonJS(function(exports) {
 });
 
 // src/canvas.tsx
-import { memo as _$memo } from "@opentui/solid";
-import { effect as _$effect } from "@opentui/solid";
-import { insert as _$insert } from "@opentui/solid";
-import { createTextNode as _$createTextNode } from "@opentui/solid";
-import { insertNode as _$insertNode } from "@opentui/solid";
-import { setProp as _$setProp } from "@opentui/solid";
-import { createElement as _$createElement } from "@opentui/solid";
-import { createComponent as _$createComponent } from "@opentui/solid";
+import { memo as _$memo6 } from "@opentui/solid";
+import { effect as _$effect9 } from "@opentui/solid";
+import { insert as _$insert9 } from "@opentui/solid";
+import { createTextNode as _$createTextNode3 } from "@opentui/solid";
+import { insertNode as _$insertNode4 } from "@opentui/solid";
+import { setProp as _$setProp11 } from "@opentui/solid";
+import { createElement as _$createElement11 } from "@opentui/solid";
+import { createComponent as _$createComponent8 } from "@opentui/solid";
 import { BaseRenderable, TextAttributes as TextAttributes6 } from "@opentui/core";
 import { spawn } from "child_process";
 import path5 from "path";
 
-// node_modules/opentui-markdown-render/src/app.tsx
+// node_modules/opentui-markdown-render/dist/index.js
+import { effect as _$effect7 } from "@opentui/solid";
+import { insert as _$insert7 } from "@opentui/solid";
+import { createComponent as _$createComponent6 } from "@opentui/solid";
+import { setProp as _$setProp9 } from "@opentui/solid";
+import { createElement as _$createElement9 } from "@opentui/solid";
 import { createEffect as createEffect4, createMemo as createMemo6, createSignal as createSignal5, onCleanup as onCleanup4 } from "solid-js";
-
-// node_modules/opentui-markdown-render/src/graphics.ts
 import { createMemo, createSignal, onCleanup } from "solid-js";
-function resolveGraphicsProtocol(capabilities, hasResolution) {
-  const configured = capabilities?.image_protocol;
-  if (configured && configured !== "auto")
-    return configured === "sixel" && !hasResolution ? "blocks" : configured;
-  if (!capabilities || capabilities.multiplexer === "tmux")
-    return "blocks";
-  if (capabilities.kitty_graphics)
-    return "kitty";
-  if (capabilities.sixel && hasResolution)
-    return "sixel";
-  return "blocks";
-}
-var mosaicScale = (protocol) => protocol === "blocks" ? 2 : 1;
-function useCanvasGraphics(renderer) {
-  const [queried, setQueried] = createSignal(0);
-  const onCapabilities = () => setQueried((value) => value + 1);
-  renderer.on("capabilities", onCapabilities);
-  let refresh;
-  const onResize = () => {
-    if (refresh)
-      clearTimeout(refresh);
-    refresh = setTimeout(() => {
-      refresh = undefined;
-      setQueried((value) => value + 1);
-    }, 250);
-  };
-  renderer.on("resize", onResize);
-  const probe = setInterval(() => {
-    if (!renderer.resolution)
-      return;
-    clearInterval(probe);
-    setQueried((value) => value + 1);
-  }, 50);
-  const stopProbe = setTimeout(() => clearInterval(probe), 1000);
-  onCleanup(() => {
-    renderer.off("capabilities", onCapabilities);
-    renderer.off("resize", onResize);
-    clearInterval(probe);
-    clearTimeout(stopProbe);
-    if (refresh)
-      clearTimeout(refresh);
-  });
-  const resolution = createMemo(() => {
-    queried();
-    const value = renderer.resolution;
-    return value && value.width > 0 && value.height > 0 ? value : null;
-  });
-  const cell = createMemo(() => {
-    const value = resolution();
-    const width = renderer.terminalWidth;
-    const height = renderer.terminalHeight;
-    if (!value || width <= 0 || height <= 0)
-      return null;
-    const cellWidth = value.width / width;
-    const cellHeight = value.height / height;
-    if (cellWidth <= 0 || cellHeight <= 0)
-      return null;
-    return { width: Math.max(1, Math.round(cellWidth)), height: Math.max(1, Math.round(cellHeight)) };
-  });
-  const protocol = createMemo(() => {
-    queried();
-    return resolveGraphicsProtocol(renderer.capabilities, resolution() !== null);
-  });
-  const hyperlinks = createMemo(() => {
-    queried();
-    return renderer.capabilities?.hyperlinks === true;
-  });
-  return { cell, protocol, hyperlinks };
-}
-
-// node_modules/opentui-markdown-render/src/headings.ts
 import { TextAttributes } from "@opentui/core";
-var headingLevels = [1, 2, 3, 4, 5, 6];
-var defaultHeadingStyles = {
-  1: { bold: true, italic: false, underline: true, dim: false, uppercase: false, marginTop: 2, marginBottom: 1 },
-  2: { bold: true, italic: false, underline: false, dim: false, uppercase: false, marginTop: 1, marginBottom: 0 },
-  3: { bold: true, italic: false, underline: false, dim: false, uppercase: false, marginTop: 1, marginBottom: 0 },
-  4: { bold: false, italic: true, underline: false, dim: false, uppercase: false, marginTop: 1, marginBottom: 0 },
-  5: { bold: false, italic: true, underline: false, dim: true, uppercase: false, marginTop: 1, marginBottom: 0 },
-  6: { bold: false, italic: false, underline: false, dim: true, uppercase: false, marginTop: 1, marginBottom: 0 }
-};
-function mergeHeadingStyle(base, override) {
-  if (!override)
-    return base;
-  return {
-    bold: override.bold ?? base.bold,
-    italic: override.italic ?? base.italic,
-    underline: override.underline ?? base.underline,
-    dim: override.dim ?? base.dim,
-    uppercase: override.uppercase ?? base.uppercase,
-    marginTop: override.marginTop ?? base.marginTop,
-    marginBottom: override.marginBottom ?? base.marginBottom
-  };
-}
-function resolveHeadingStyles(config) {
-  const styles = {};
-  for (const level of headingLevels) {
-    styles[level] = mergeHeadingStyle(defaultHeadingStyles[level], config?.levels?.[`${level}`]);
-  }
-  return styles;
-}
-function headingAttributes(style) {
-  let attributes = TextAttributes.NONE;
-  if (style.bold)
-    attributes |= TextAttributes.BOLD;
-  if (style.italic)
-    attributes |= TextAttributes.ITALIC;
-  if (style.underline)
-    attributes |= TextAttributes.UNDERLINE;
-  if (style.dim)
-    attributes |= TextAttributes.DIM;
-  return attributes;
-}
-function headingColor(theme, level) {
-  return theme.markdown.headingLevels?.[level - 1] ?? theme.markdown.heading;
-}
-
-// node_modules/opentui-markdown-render/src/math/index.ts
 import { createHash } from "crypto";
-
-// node_modules/opentui-markdown-render/src/math/native.ts
 import path from "path";
 import { createRequire } from "module";
-var loaded;
-function loadNativeMath() {
-  loaded ??= importNativeMath();
-  return loaded;
-}
-async function importNativeMath() {
-  if (process.platform !== "linux" || process.arch !== "x64")
-    return;
-  const relative = path.join("prebuilds", "linux-x64-gnu", "opentui_markdown_render.node");
-  const candidates = [
-    path.join(import.meta.dir, "..", "..", relative),
-    path.join(import.meta.dir, relative),
-    path.join(import.meta.dir, "node_modules", "opentui-markdown-render", relative)
-  ];
-  for (const file of candidates) {
-    try {
-      return createRequire(import.meta.url)(file);
-    } catch {}
-  }
-  return;
-}
-
-// node_modules/opentui-markdown-render/src/math/renderer.ts
-var limit = 128;
-var cache = new Map;
-function renderMath(request) {
-  if (request.enabled === false)
-    return Promise.resolve(undefined);
-  const scale = request.scale ?? 2;
-  const display = request.display ?? false;
-  const cellWidth = request.cellWidth ?? 8;
-  const cellHeight = request.cellHeight ?? 16;
-  const compact = request.compact ?? false;
-  const standard = request.standard ?? false;
-  const key = JSON.stringify({
-    latex: request.latex,
-    scale,
-    foreground: request.foreground,
-    background: request.background,
-    display,
-    cellWidth,
-    cellHeight,
-    compact,
-    standard
-  });
-  const cached = cache.get(key);
-  if (cached)
-    return cached;
-  const result = loadNativeMath().then(async (native) => {
-    if (!native)
-      return;
-    const image = await native.renderLatex({
-      latex: request.latex,
-      scale,
-      foreground: request.foreground,
-      background: request.background,
-      display,
-      cellWidth,
-      cellHeight,
-      compact,
-      standard
-    });
-    return {
-      png: image.png,
-      pixelWidth: image.pixelWidth,
-      pixelHeight: image.pixelHeight,
-      baseline: image.baseline,
-      clamped: image.clamped
-    };
-  }).catch(() => {
-    return;
-  });
-  cache.set(key, result);
-  if (cache.size > limit)
-    cache.delete(cache.keys().next().value);
-  return result;
-}
-
-// node_modules/opentui-markdown-render/src/math/validate.ts
-function isRenderableLatex(content) {
-  let depth = 0;
-  let left = 0;
-  let right = 0;
-  for (let index = 0;index < content.length; index++) {
-    const character = content[index];
-    if (character === "\\") {
-      if (content[index + 1] === undefined)
-        return false;
-      if (!/[A-Za-z]/.test(content[index + 1])) {
-        index++;
-        continue;
-      }
-      let cursor = index + 1;
-      while (cursor < content.length && /[A-Za-z]/.test(content[cursor]))
-        cursor++;
-      const name = content.slice(index, cursor);
-      if (name === "\\left")
-        left++;
-      else if (name === "\\right")
-        right++;
-      index = cursor - 1;
-      continue;
-    }
-    if (character === "{") {
-      depth++;
-      continue;
-    }
-    if (character === "}") {
-      if (depth === 0)
-        return false;
-      depth--;
-    }
-  }
-  return depth === 0 && left === right;
-}
-
-// node_modules/opentui-markdown-render/src/math/index.ts
-function rgbaToHex(color) {
-  const channel = (value) => Math.round(Math.max(0, Math.min(1, value)) * 255).toString(16).padStart(2, "0");
-  return `#${channel(color.r)}${channel(color.g)}${channel(color.b)}`;
-}
-function mathImageID(content, display, color, cell, scale = 1, compact = false, standard = false) {
-  return createHash("sha256").update(JSON.stringify({ content, display, color, cell, scale, compact, standard, renderer: "mitex-typst-png-v2" })).digest("hex");
-}
-var fontSizePoints = 12;
-async function renderMathImage(content, display, color, background, cell, scale = 1, compact = false, standard = false) {
-  const latex = content.trim();
-  if (!isRenderableLatex(latex))
-    return;
-  const cellWidth = cell?.width ?? 8;
-  const cellHeight = cell?.height ?? 16;
-  const base = cellHeight / fontSizePoints;
-  const rendered = await renderMath({
-    latex,
-    foreground: color,
-    background,
-    scale: base * scale,
-    display,
-    cellWidth,
-    cellHeight,
-    compact,
-    standard
-  });
-  if (!rendered)
-    return;
-  const columns = Math.max(1, Math.round(rendered.pixelWidth / cellWidth));
-  const rows = Math.max(1, Math.round(rendered.pixelHeight / cellHeight));
-  const baseline = rendered.baseline / cellHeight;
-  return { png: rendered.png, columns, rows, baseline, clamped: rendered.clamped };
-}
-
-// node_modules/opentui-markdown-render/src/config/load.ts
 import { existsSync, readFileSync, statSync } from "fs";
 import os from "os";
 import path2 from "path";
@@ -1034,992 +766,14 @@ function stringWidth(string, options = {}) {
   return width;
 }
 
-// node_modules/opentui-markdown-render/src/core/frame.ts
-var frameAligns = ["left", "center", "right"];
-function isFrameAlign(value) {
-  return typeof value === "string" && frameAligns.includes(value);
-}
-var frameStyles = ["box", "ascii", "rounded", "heavy", "double"];
-function isFrameStyle(value) {
-  return typeof value === "string" && frameStyles.includes(value);
-}
-var borderWidth = 1;
-var noInsets = { left: 0, right: 0, top: 0, bottom: 0 };
-function whole(value, fallback) {
-  if (value === undefined)
-    return fallback;
-  if (!Number.isFinite(value))
-    return fallback;
-  return Math.max(0, Math.floor(value));
-}
-function alignOffset(align, available, width) {
-  if (align === "right")
-    return Math.max(0, available - width);
-  if (align === "center")
-    return Math.max(0, Math.floor((available - width) / 2));
-  return 0;
-}
-function fitTitle(title, columns) {
-  if (!title || columns <= 0)
-    return;
-  let result = "";
-  for (const character of title) {
-    if (stringWidth(result + character) > columns)
-      break;
-    result += character;
-  }
-  return result || undefined;
-}
-function resolveFrame(viewport, config) {
-  const available = Math.max(1, Math.floor(viewport) || 1);
-  const align = config?.align ?? "left";
-  const style = config?.style ?? "box";
-  const titleAlign = config?.titleAlign ?? "left";
-  const enabled = config?.enabled ?? false;
-  if (!enabled) {
-    return {
-      enabled: false,
-      contentWidth: available,
-      width: available,
-      offsetX: 0,
-      insets: noInsets,
-      align,
-      style,
-      paddingX: 0,
-      paddingY: 0,
-      title: undefined,
-      titleAlign
-    };
-  }
-  const paddingX = whole(config?.paddingX, 1);
-  const paddingY = whole(config?.paddingY, 0);
-  const insets = {
-    left: borderWidth + paddingX,
-    right: borderWidth + paddingX,
-    top: borderWidth + paddingY,
-    bottom: borderWidth + paddingY
-  };
-  const minWidth = insets.left + insets.right + 1;
-  const width = config?.width === undefined ? available : Math.max(minWidth, Math.min(available, Math.floor(config.width)));
-  const contentWidth = Math.max(1, width - insets.left - insets.right);
-  return {
-    enabled: true,
-    contentWidth,
-    width,
-    offsetX: alignOffset(align, available, width),
-    insets,
-    align,
-    style,
-    paddingX,
-    paddingY,
-    title: fitTitle(config?.title, Math.max(0, width - borderWidth * 2 - 2)),
-    titleAlign
-  };
-}
-
-// node_modules/opentui-markdown-render/src/core/tables.ts
-var tableWidthModes = ["content", "full"];
-function isTableWidthMode(value) {
-  return typeof value === "string" && tableWidthModes.includes(value);
-}
-var tableOverflows = ["scroll", "wrap"];
-function isTableOverflow(value) {
-  return typeof value === "string" && tableOverflows.includes(value);
-}
-var tableColumnFitters = ["proportional", "balanced"];
-function isTableColumnFitter(value) {
-  return typeof value === "string" && tableColumnFitters.includes(value);
-}
-function resolveTableOptions(config) {
-  const widthMode = config?.widthMode ?? "content";
-  const overflow = config?.overflow ?? "scroll";
-  return {
-    widthMode,
-    overflow,
-    columnFitter: config?.columnFitter ?? "balanced",
-    cellPaddingX: config?.cellPaddingX ?? 1,
-    wrapMode: overflow === "scroll" && widthMode === "content" ? "none" : "word"
-  };
-}
-
-// node_modules/opentui-markdown-render/src/config/types.ts
-var statusLineStyles = ["plain", "bar"];
-function isStatusLineStyle(value) {
-  return typeof value === "string" && statusLineStyles.includes(value);
-}
-var headingLevelKeys = ["1", "2", "3", "4", "5", "6"];
-function isHeadingLevelKey(value) {
-  return headingLevelKeys.includes(value);
-}
-var statusLineFields = [
-  "title",
-  "mode",
-  "protocol",
-  "cell",
-  "mathScale",
-  "position",
-  "hint",
-  "text"
-];
-function isStatusLineField(value) {
-  return typeof value === "string" && statusLineFields.includes(value);
-}
-
-// node_modules/opentui-markdown-render/src/config/theme.ts
-var colorNames = new Set([
-  "transparent",
-  "black",
-  "white",
-  "red",
-  "green",
-  "blue",
-  "yellow",
-  "cyan",
-  "magenta",
-  "silver",
-  "gray",
-  "grey",
-  "maroon",
-  "olive",
-  "lime",
-  "aqua",
-  "teal",
-  "navy",
-  "fuchsia",
-  "purple",
-  "orange",
-  "brightblack",
-  "brightred",
-  "brightgreen",
-  "brightblue",
-  "brightyellow",
-  "brightcyan",
-  "brightmagenta",
-  "brightwhite"
-]);
-var colors = (keys) => Object.fromEntries(keys.map((key) => [key, "color"]));
-var themeFileFields = {
-  mode: "mode",
-  palette: "colors",
-  accent: "color",
-  categorical: "colors",
-  text: {
-    base: "color",
-    muted: "color",
-    feedback: colors(["error", "warning", "success", "info"]),
-    action: { primary: { focused: "color" } }
-  },
-  background: { base: "color" },
-  border: { base: "color" },
-  frame: colors(["border", "title"]),
-  statusline: colors(["background", "foreground", "title", "muted", "border"]),
-  markdown: colors([
-    "text",
-    "heading",
-    "heading1",
-    "heading2",
-    "heading3",
-    "heading4",
-    "heading5",
-    "heading6",
-    "link",
-    "linkText",
-    "code",
-    "blockQuote",
-    "emphasis",
-    "strong",
-    "horizontalRule",
-    "listItem",
-    "listEnumeration",
-    "image",
-    "imageText",
-    "codeBlock"
-  ]),
-  syntax: colors(["comment", "keyword", "function", "variable", "string", "number", "type", "operator", "punctuation"]),
-  diff: {
-    text: colors(["added", "removed", "context"]),
-    background: colors(["added", "removed", "context"])
-  }
-};
-function isColor(value) {
-  return typeof value === "string" && (/^#?(?:[\da-f]{3}|[\da-f]{4}|[\da-f]{6}|[\da-f]{8})$/i.test(value) || colorNames.has(value.toLowerCase()));
-}
-function isRecord(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-function validateTheme(value, file, report) {
-  const warn = (message) => {
-    if (report)
-      report(message);
-    else
-      console.warn(`[opentui-markdown-render] ${message}`);
-  };
-  const validate = (source, fields, prefix) => {
-    const result = Object.create(null);
-    for (const [key, entry] of Object.entries(source)) {
-      const field = Object.hasOwn(fields, key) ? fields[key] : undefined;
-      const location = `${prefix}.${key}`;
-      if (field === undefined) {
-        warn(`Unknown theme option "${location}" in ${file}`);
-        continue;
-      }
-      if (field === "color" && isColor(entry))
-        result[key] = entry;
-      else if (field === "mode" && (entry === "light" || entry === "dark" || entry === "solarized-light" || entry === "solarized-dark"))
-        result[key] = entry;
-      else if (field === "colors" && Array.isArray(entry)) {
-        result[key] = entry.filter((color, index) => {
-          if (isColor(color))
-            return true;
-          warn(`Invalid theme option "${location}[${index}]" in ${file}`);
-          return false;
-        });
-      } else if (typeof field === "object" && isRecord(entry)) {
-        result[key] = validate(entry, field, location);
-      } else {
-        warn(`Invalid theme option "${location}" in ${file}`);
-      }
-    }
-    return result;
-  };
-  return validate(value, themeFileFields, "theme");
-}
-function validateThemeConfig(value, file, report) {
-  const warn = (message) => {
-    if (report)
-      report(message);
-    else
-      console.warn(`[opentui-markdown-render] ${message}`);
-  };
-  const result = {};
-  for (const [key, entry] of Object.entries(value)) {
-    if (key !== "name") {
-      warn(`Unknown theme option "theme.${key}" in ${file}`);
-      continue;
-    }
-    if (typeof entry !== "string" || !/^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(entry)) {
-      warn(`Invalid theme option "theme.name" in ${file}`);
-      continue;
-    }
-    result.name = entry;
-  }
-  return result;
-}
-
-// node_modules/opentui-markdown-render/src/config/load.ts
-var configFilenames = ["opentui-markdown-render.jsonc", "opentui-markdown-render.json"];
-var xdgConfigFilenames = ["config.jsonc", "config.json"];
-var xdgConfigDirectory = "otmd";
-function warn(report, message) {
-  if (report)
-    report(message);
-  else
-    console.warn(`[opentui-markdown-render] ${message}`);
-}
-function loadConfig(explicitPath, cwd, report) {
-  const file = explicitPath ?? discoverConfig(cwd ?? process.cwd());
-  if (!file)
-    return {};
-  if (!existsSync(file)) {
-    if (explicitPath)
-      throw new Error(`Config not found: ${file}`);
-    return {};
-  }
-  return parseConfig(readFileSync(file, "utf8"), file, report);
-}
-function loadRendererConfig(configPath, cwd, options = {}) {
-  if (options.discover === false && !configPath)
-    return {};
-  try {
-    return loadConfig(configPath, cwd, options.report);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    warn(options.report, message);
-    return {};
-  }
-}
-function discoverConfig(start, environment = { XDG_CONFIG_HOME: process.env.XDG_CONFIG_HOME, HOME: process.env.HOME }) {
-  let directory = path2.resolve(start);
-  while (true) {
-    for (const name of configFilenames) {
-      const candidate = path2.join(directory, name);
-      if (existsSync(candidate) && statSync(candidate).isFile())
-        return candidate;
-    }
-    const parent = path2.dirname(directory);
-    if (parent === directory)
-      break;
-    directory = parent;
-  }
-  return discoverXdgConfig(environment);
-}
-function discoverXdgConfig(environment) {
-  const configured = environment.XDG_CONFIG_HOME;
-  const configHome = configured && path2.isAbsolute(configured) ? configured : path2.join(environment.HOME || os.homedir(), ".config");
-  const directory = path2.join(configHome, xdgConfigDirectory);
-  for (const name of xdgConfigFilenames) {
-    const candidate = path2.join(directory, name);
-    if (existsSync(candidate) && statSync(candidate).isFile())
-      return candidate;
-  }
-  return;
-}
-function parseConfig(source, file = "config", report) {
-  const parsed = parseJsonc(source, file);
-  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    throw new Error(`Invalid config ${file}: expected a JSON object`);
-  }
-  return validateConfig(parsed, file, report);
-}
-function parseJsonc(source, file = "config") {
-  try {
-    return JSON.parse(stripJsonComments(source));
-  } catch (error) {
-    throw new Error(`Invalid config ${file}: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
-var sections = ["theme", "statusline", "images", "mermaid", "headings", "frame", "tables"];
-function validateConfig(value, file, report) {
-  for (const key of Object.keys(value)) {
-    if (key === "$schema")
-      continue;
-    if (!sections.includes(key)) {
-      warn(report, `Unknown config section "${key}" in ${file}`);
-    }
-  }
-  return {
-    theme: isRecord2(value.theme) ? validateThemeConfig(value.theme, file, report) : undefined,
-    statusline: isRecord2(value.statusline) ? validateStatusLine(value.statusline, file, report) : undefined,
-    images: isRecord2(value.images) ? validateImages(value.images) : undefined,
-    mermaid: isRecord2(value.mermaid) ? validateMermaid(value.mermaid, file, report) : undefined,
-    headings: isRecord2(value.headings) ? validateHeadings(value.headings, file, report) : undefined,
-    frame: isRecord2(value.frame) ? validateFrame(value.frame, file, report) : undefined,
-    tables: isRecord2(value.tables) ? validateTables(value.tables, file, report) : undefined
-  };
-}
-function validateStatusLine(value, file, report) {
-  const fields = [];
-  if (Array.isArray(value.fields)) {
-    for (const entry of value.fields) {
-      if (isStatusLineField(entry))
-        fields.push(entry);
-      else
-        warn(report, `Unknown status line field "${String(entry)}" in ${file}`);
-    }
-  }
-  if (value.style !== undefined && !isStatusLineStyle(value.style)) {
-    warn(report, `Unknown status line style "${String(value.style)}" in ${file}`);
-  }
-  if (value.highlight !== undefined && !isStatusLineField(value.highlight)) {
-    warn(report, `Unknown status line field "${String(value.highlight)}" in ${file}`);
-  }
-  return {
-    enabled: typeof value.enabled === "boolean" ? value.enabled : undefined,
-    fields: fields.length ? fields : undefined,
-    separator: typeof value.separator === "string" ? value.separator : undefined,
-    border: value.border === "none" || value.border === "top" || value.border === "bottom" ? value.border : undefined,
-    style: isStatusLineStyle(value.style) ? value.style : undefined,
-    highlight: isStatusLineField(value.highlight) ? value.highlight : undefined
-  };
-}
-function validateImages(value) {
-  return {
-    maxColumns: positiveInteger(value.maxColumns),
-    maxRows: positiveInteger(value.maxRows)
-  };
-}
-function validateMermaid(value, file, report) {
-  if (value.classLayout !== undefined && value.classLayout !== "builtin" && value.classLayout !== "dagre") {
-    warn(report, `Unknown Mermaid class layout "${String(value.classLayout)}" in ${file}`);
-  }
-  return {
-    compact: typeof value.compact === "boolean" ? value.compact : undefined,
-    layoutMaxWidth: positiveInteger(value.layoutMaxWidth),
-    classLayout: value.classLayout === "dagre" || value.classLayout === "builtin" ? value.classLayout : undefined
-  };
-}
-function validateFrame(value, file, report) {
-  const option = (name, check) => {
-    const entry = value[name];
-    if (entry === undefined)
-      return;
-    if (check(entry))
-      return entry;
-    warn(report, `Invalid frame option "${name}" in ${file}`);
-    return;
-  };
-  const padding = (name) => {
-    const entry = value[name];
-    if (entry === undefined)
-      return;
-    if (isNonNegativeInteger(entry))
-      return entry;
-    warn(report, `Invalid frame option "${name}" in ${file}`);
-    return;
-  };
-  const boolean = (name) => {
-    const entry = value[name];
-    if (entry === undefined)
-      return;
-    if (typeof entry === "boolean")
-      return entry;
-    warn(report, `Invalid frame option "${name}" in ${file}`);
-    return;
-  };
-  const width = (() => {
-    const entry = value.width;
-    if (entry === undefined)
-      return;
-    if (typeof entry === "number" && Number.isInteger(entry) && entry > 0)
-      return entry;
-    warn(report, `Invalid frame option "width" in ${file}`);
-    return;
-  })();
-  const title = value.title;
-  if (title !== undefined && typeof title !== "string") {
-    warn(report, `Invalid frame option "title" in ${file}`);
-  }
-  return {
-    enabled: boolean("enabled"),
-    width,
-    align: option("align", isFrameAlign),
-    style: option("style", isFrameStyle),
-    paddingX: padding("paddingX"),
-    paddingY: padding("paddingY"),
-    title: typeof title === "string" ? title : undefined,
-    titleAlign: option("titleAlign", isFrameAlign)
-  };
-}
-function validateTables(value, file, report) {
-  const option = (name, check) => {
-    const entry = value[name];
-    if (entry === undefined)
-      return;
-    if (check(entry))
-      return entry;
-    warn(report, `Invalid tables option "${name}" in ${file}`);
-    return;
-  };
-  const padding = value.cellPaddingX;
-  if (padding !== undefined && !isNonNegativeInteger(padding)) {
-    warn(report, `Invalid tables option "cellPaddingX" in ${file}`);
-  }
-  return {
-    widthMode: option("widthMode", isTableWidthMode),
-    overflow: option("overflow", isTableOverflow),
-    columnFitter: option("columnFitter", isTableColumnFitter),
-    cellPaddingX: isNonNegativeInteger(padding) ? padding : undefined
-  };
-}
-function validateHeadings(value, file, report) {
-  if (value.levels !== undefined && !isRecord2(value.levels)) {
-    warn(report, `Invalid heading levels in ${file}`);
-    return;
-  }
-  const levels = {};
-  for (const [key, entry] of Object.entries(value.levels ?? {})) {
-    if (!isHeadingLevelKey(key)) {
-      warn(report, `Unknown heading level "${key}" in ${file}`);
-      continue;
-    }
-    if (!isRecord2(entry)) {
-      warn(report, `Invalid heading level "${key}" in ${file}`);
-      continue;
-    }
-    levels[key] = validateHeadingLevel(key, entry, file, report);
-  }
-  return Object.keys(levels).length ? { levels } : undefined;
-}
-function validateHeadingLevel(key, value, file, report) {
-  const style = {};
-  for (const [name, entry] of Object.entries(value)) {
-    switch (name) {
-      case "bold":
-      case "italic":
-      case "underline":
-      case "dim":
-      case "uppercase":
-        if (typeof entry !== "boolean") {
-          warn(report, `Invalid heading option "${name}" for level ${key} in ${file}`);
-          continue;
-        }
-        style[name] = entry;
-        break;
-      case "marginTop":
-      case "marginBottom":
-        if (!isNonNegativeInteger(entry)) {
-          warn(report, `Invalid heading option "${name}" for level ${key} in ${file}`);
-          continue;
-        }
-        style[name] = entry;
-        break;
-      default:
-        warn(report, `Unknown heading option "${name}" for level ${key} in ${file}`);
-    }
-  }
-  return style;
-}
-function isNonNegativeInteger(value) {
-  return typeof value === "number" && Number.isInteger(value) && value >= 0;
-}
-function positiveInteger(value) {
-  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : undefined;
-}
-function isRecord2(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-function stripJsonComments(source) {
-  let result = "";
-  let index = 0;
-  let inString = false;
-  let quote = "";
-  while (index < source.length) {
-    const character = source[index];
-    if (inString) {
-      result += character;
-      if (character === "\\") {
-        result += source[index + 1] ?? "";
-        index += 2;
-        continue;
-      }
-      if (character === quote)
-        inString = false;
-      index++;
-      continue;
-    }
-    if (character === '"' || character === "'") {
-      inString = true;
-      quote = character;
-      result += character;
-      index++;
-      continue;
-    }
-    if (character === "/" && source[index + 1] === "/") {
-      while (index < source.length && source[index] !== `
-`)
-        index++;
-      continue;
-    }
-    if (character === "/" && source[index + 1] === "*") {
-      index += 2;
-      while (index < source.length && !(source[index] === "*" && source[index + 1] === "/"))
-        index++;
-      index += 2;
-      continue;
-    }
-    result += character;
-    index++;
-  }
-  return result.replace(/,(\s*[}\]])/g, "$1");
-}
-// node_modules/opentui-markdown-render/src/theme/resolve.ts
+// node_modules/opentui-markdown-render/dist/index.js
 import { parseColor } from "@opentui/core";
-
-// node_modules/opentui-markdown-render/src/theme/defaults.ts
 import { RGBA } from "@opentui/core";
-var h = (hex) => RGBA.fromHex(hex);
-var solarizedPalette = [
-  "#002b36",
-  "#073642",
-  "#586e75",
-  "#657b83",
-  "#839496",
-  "#93a1a1",
-  "#eee8d5",
-  "#fdf6e3",
-  "#b58900",
-  "#cb4b16",
-  "#dc322f",
-  "#d33682",
-  "#6c71c4",
-  "#268bd2",
-  "#2aa198",
-  "#859900"
-].map(h);
-var light = {
-  mode: "light",
-  accent: h("#0969da"),
-  categorical: [h("#0969da"), h("#8250df"), h("#1a7f37"), h("#9a6700"), h("#cf222e"), h("#bc4c00")],
-  text: {
-    base: h("#1f2328"),
-    muted: h("#59636e"),
-    feedback: {
-      error: h("#cf222e"),
-      warning: h("#9a6700"),
-      success: h("#1a7f37"),
-      info: h("#0969da")
-    },
-    action: { primary: { focused: h("#0969da") } }
-  },
-  background: { base: h("#ffffff") },
-  border: { base: h("#8c959f") },
-  frame: { border: h("#8c959f"), title: h("#59636e") },
-  markdown: {
-    text: h("#1f2328"),
-    heading: h("#8250df"),
-    headingLevels: [h("#0969da"), h("#8250df"), h("#8250df"), h("#6f42c1"), h("#3d444d"), h("#3d444d")],
-    link: h("#0969da"),
-    linkText: h("#0969da"),
-    code: h("#953800"),
-    blockQuote: h("#59636e"),
-    emphasis: h("#1f2328"),
-    strong: h("#1f2328"),
-    horizontalRule: h("#d1d9e0"),
-    listItem: h("#1f2328"),
-    listEnumeration: h("#1f2328"),
-    image: h("#0969da"),
-    imageText: h("#0969da"),
-    codeBlock: h("#1f2328")
-  },
-  syntax: {
-    comment: h("#59636e"),
-    keyword: h("#cf222e"),
-    function: h("#8250df"),
-    variable: h("#1f2328"),
-    string: h("#0a3069"),
-    number: h("#0550ae"),
-    type: h("#0550ae"),
-    operator: h("#0550ae"),
-    punctuation: h("#1f2328")
-  },
-  diff: {
-    text: { added: h("#1a7f37"), removed: h("#cf222e"), context: h("#59636e") },
-    background: { added: h("#dafbe1"), removed: h("#ffebe9"), context: h("#f6f8fa") }
-  }
-};
-var dark = {
-  mode: "dark",
-  accent: h("#58a6ff"),
-  categorical: [h("#58a6ff"), h("#d2a8ff"), h("#3fb950"), h("#d29922"), h("#f85149"), h("#ffa657")],
-  text: {
-    base: h("#e6edf3"),
-    muted: h("#8b949e"),
-    feedback: {
-      error: h("#f85149"),
-      warning: h("#d29922"),
-      success: h("#3fb950"),
-      info: h("#58a6ff")
-    },
-    action: { primary: { focused: h("#58a6ff") } }
-  },
-  background: { base: h("#0d1117") },
-  border: { base: h("#30363d") },
-  frame: { border: h("#30363d"), title: h("#8b949e") },
-  markdown: {
-    text: h("#e6edf3"),
-    heading: h("#d2a8ff"),
-    headingLevels: [h("#58a6ff"), h("#d2a8ff"), h("#d2a8ff"), h("#8b949e"), h("#8b949e"), h("#8b949e")],
-    link: h("#58a6ff"),
-    linkText: h("#58a6ff"),
-    code: h("#ffa657"),
-    blockQuote: h("#8b949e"),
-    emphasis: h("#e6edf3"),
-    strong: h("#e6edf3"),
-    horizontalRule: h("#30363d"),
-    listItem: h("#e6edf3"),
-    listEnumeration: h("#e6edf3"),
-    image: h("#58a6ff"),
-    imageText: h("#58a6ff"),
-    codeBlock: h("#e6edf3")
-  },
-  syntax: {
-    comment: h("#8b949e"),
-    keyword: h("#ff7b72"),
-    function: h("#d2a8ff"),
-    variable: h("#ffa657"),
-    string: h("#a5d6ff"),
-    number: h("#79c0ff"),
-    type: h("#ffa657"),
-    operator: h("#ff7b72"),
-    punctuation: h("#c9d1d9")
-  },
-  diff: {
-    text: { added: h("#3fb950"), removed: h("#f85149"), context: h("#8b949e") },
-    background: { added: h("#12261e"), removed: h("#25171c"), context: h("#161b22") }
-  }
-};
-var solarizedLight = {
-  mode: "light",
-  palette: solarizedPalette,
-  accent: h("#268bd2"),
-  categorical: [h("#268bd2"), h("#6c71c4"), h("#859900"), h("#b58900"), h("#dc322f"), h("#cb4b16")],
-  text: {
-    base: h("#586e75"),
-    muted: h("#657b83"),
-    feedback: { error: h("#dc322f"), warning: h("#b58900"), success: h("#859900"), info: h("#268bd2") },
-    action: { primary: { focused: h("#268bd2") } }
-  },
-  background: { base: h("#fdf6e3") },
-  border: { base: h("#657b83") },
-  frame: { border: h("#657b83"), title: h("#586e75") },
-  markdown: {
-    text: h("#586e75"),
-    heading: h("#268bd2"),
-    headingLevels: [h("#268bd2"), h("#268bd2"), h("#268bd2"), h("#268bd2"), h("#268bd2"), h("#268bd2")],
-    link: h("#268bd2"),
-    linkText: h("#268bd2"),
-    code: h("#cb4b16"),
-    blockQuote: h("#657b83"),
-    emphasis: h("#586e75"),
-    strong: h("#586e75"),
-    horizontalRule: h("#657b83"),
-    listItem: h("#586e75"),
-    listEnumeration: h("#586e75"),
-    image: h("#268bd2"),
-    imageText: h("#268bd2"),
-    codeBlock: h("#586e75")
-  },
-  syntax: {
-    comment: h("#657b83"),
-    keyword: h("#dc322f"),
-    function: h("#6c71c4"),
-    variable: h("#586e75"),
-    string: h("#2aa198"),
-    number: h("#d33682"),
-    type: h("#b58900"),
-    operator: h("#268bd2"),
-    punctuation: h("#586e75")
-  },
-  diff: {
-    text: { added: h("#859900"), removed: h("#dc322f"), context: h("#657b83") },
-    background: { added: h("#eee8d5"), removed: h("#eee8d5"), context: h("#eee8d5") }
-  }
-};
-var solarizedDark = {
-  mode: "dark",
-  palette: solarizedPalette,
-  accent: h("#268bd2"),
-  categorical: [h("#268bd2"), h("#6c71c4"), h("#859900"), h("#b58900"), h("#dc322f"), h("#cb4b16")],
-  text: {
-    base: h("#93a1a1"),
-    muted: h("#839496"),
-    feedback: { error: h("#dc322f"), warning: h("#b58900"), success: h("#859900"), info: h("#268bd2") },
-    action: { primary: { focused: h("#268bd2") } }
-  },
-  background: { base: h("#002b36") },
-  border: { base: h("#586e75") },
-  frame: { border: h("#586e75"), title: h("#93a1a1") },
-  markdown: {
-    text: h("#93a1a1"),
-    heading: h("#268bd2"),
-    headingLevels: [h("#268bd2"), h("#268bd2"), h("#268bd2"), h("#268bd2"), h("#268bd2"), h("#268bd2")],
-    link: h("#268bd2"),
-    linkText: h("#268bd2"),
-    code: h("#cb4b16"),
-    blockQuote: h("#839496"),
-    emphasis: h("#93a1a1"),
-    strong: h("#93a1a1"),
-    horizontalRule: h("#586e75"),
-    listItem: h("#93a1a1"),
-    listEnumeration: h("#93a1a1"),
-    image: h("#268bd2"),
-    imageText: h("#268bd2"),
-    codeBlock: h("#93a1a1")
-  },
-  syntax: {
-    comment: h("#839496"),
-    keyword: h("#dc322f"),
-    function: h("#6c71c4"),
-    variable: h("#93a1a1"),
-    string: h("#2aa198"),
-    number: h("#d33682"),
-    type: h("#b58900"),
-    operator: h("#268bd2"),
-    punctuation: h("#93a1a1")
-  },
-  diff: {
-    text: { added: h("#859900"), removed: h("#dc322f"), context: h("#839496") },
-    background: { added: h("#073642"), removed: h("#073642"), context: h("#073642") }
-  }
-};
-function defaultTheme(preset) {
-  switch (preset) {
-    case "light":
-      return light;
-    case "dark":
-      return dark;
-    case "solarized-light":
-      return solarizedLight;
-    case "solarized-dark":
-      return solarizedDark;
-  }
-}
-
-// node_modules/opentui-markdown-render/src/theme/colors.ts
 import { RGBA as RGBA2 } from "@opentui/core";
-function mixColors(over, base, ratio) {
-  const weight = Math.min(Math.max(ratio, 0), 1);
-  const [overR, overG, overB] = over.toInts();
-  const [baseR, baseG, baseB] = base.toInts();
-  const channel = (from, to) => Math.round(to + (from - to) * weight);
-  return RGBA2.fromInts(channel(overR, baseR), channel(overG, baseG), channel(overB, baseB), 255);
-}
-
-// node_modules/opentui-markdown-render/src/theme/resolve.ts
-function resolveTheme(options) {
-  const override = options.override;
-  const mode = override?.mode ?? options.mode ?? "light";
-  return mergeTheme(defaultTheme(mode), override);
-}
-function deriveStatusLineTheme(theme) {
-  const ratio = theme.mode === "light" ? 0.12 : 0.14;
-  return {
-    background: theme.palette?.[theme.mode === "light" ? 6 : 1] ?? mixColors(theme.accent, theme.background.base, ratio),
-    foreground: theme.text.base,
-    title: theme.accent,
-    muted: theme.text.muted,
-    border: theme.accent
-  };
-}
-function mergeTheme(base, override) {
-  if (!override)
-    return base;
-  const color = (value, fallback) => value === undefined ? fallback : parseColor(value);
-  const accent = color(override.accent, base.accent);
-  const palette = override.palette ? override.palette.map((entry) => parseColor(entry)) : base.palette;
-  const background = { base: color(override.background?.base, base.background.base) };
-  const text = {
-    base: color(override.text?.base, base.text.base),
-    muted: color(override.text?.muted, base.text.muted)
-  };
-  const border = { base: color(override.border?.base, base.border.base) };
-  const frame = {
-    border: color(override.frame?.border, override.border?.base !== undefined ? border.base : base.frame?.border ?? border.base),
-    title: color(override.frame?.title, override.text?.muted !== undefined ? text.muted : base.frame?.title ?? text.muted)
-  };
-  const mode = override.mode ? override.mode.endsWith("light") ? "light" : "dark" : base.mode;
-  const derived = deriveStatusLineTheme({ mode, accent, background, text, palette });
-  return {
-    mode,
-    palette,
-    accent,
-    categorical: override.categorical ? override.categorical.map((entry) => parseColor(entry)) : base.categorical,
-    text: {
-      base: text.base,
-      muted: text.muted,
-      feedback: {
-        error: color(override.text?.feedback?.error, base.text.feedback.error),
-        warning: color(override.text?.feedback?.warning, base.text.feedback.warning),
-        success: color(override.text?.feedback?.success, base.text.feedback.success),
-        info: color(override.text?.feedback?.info, base.text.feedback.info)
-      },
-      action: {
-        primary: { focused: color(override.text?.action?.primary?.focused, base.text.action.primary.focused) }
-      }
-    },
-    background,
-    border,
-    frame,
-    statusline: mergeStatusLineTheme(derived, base.statusline, override.statusline),
-    markdown: mergeMarkdownTheme(base.markdown, override.markdown),
-    syntax: mergeColors(base.syntax, override.syntax),
-    diff: {
-      text: {
-        added: color(override.diff?.text?.added, base.diff.text.added),
-        removed: color(override.diff?.text?.removed, base.diff.text.removed),
-        context: color(override.diff?.text?.context, base.diff.text.context)
-      },
-      background: {
-        added: color(override.diff?.background?.added, base.diff.background.added),
-        removed: color(override.diff?.background?.removed, base.diff.background.removed),
-        context: color(override.diff?.background?.context, base.diff.background.context)
-      }
-    }
-  };
-}
-function mergeStatusLineTheme(derived, base, override) {
-  const color = (value, fallback) => value === undefined ? fallback : parseColor(value);
-  const pick = (key) => color(override?.[key], base?.[key] ?? derived[key]);
-  return {
-    background: pick("background"),
-    foreground: pick("foreground"),
-    title: pick("title"),
-    muted: pick("muted"),
-    border: pick("border")
-  };
-}
-function mergeColors(base, override) {
-  if (!override)
-    return base;
-  const merged = { ...base };
-  for (const key of Object.keys(base)) {
-    const value = override[key];
-    if (value !== undefined)
-      merged[key] = parseColor(value);
-  }
-  return merged;
-}
-function mergeMarkdownTheme(base, override) {
-  const levels = override ?? {};
-  const pick = (level, fallback) => {
-    const color = levels[`heading${level}`];
-    if (color !== undefined)
-      return parseColor(color);
-    if (levels.heading !== undefined)
-      return parseColor(levels.heading);
-    return fallback;
-  };
-  const [one, two, three, four, five, six] = base.headingLevels ?? [
-    base.heading,
-    base.heading,
-    base.heading,
-    base.heading,
-    base.heading,
-    base.heading
-  ];
-  const headingLevels = [
-    pick(1, one),
-    pick(2, two),
-    pick(3, three),
-    pick(4, four),
-    pick(5, five),
-    pick(6, six)
-  ];
-  const { headingLevels: _levels, ...colors } = base;
-  const merged = mergeColors(colors, override);
-  return { ...merged, headingLevels };
-}
-
-// node_modules/opentui-markdown-render/src/theme/load.ts
 import { existsSync as existsSync2, readFileSync as readFileSync2, statSync as statSync2 } from "fs";
 import os2 from "os";
 import path3 from "path";
-var themeFileNames = [".jsonc", ".json"];
-function loadTheme(name, environment = { XDG_CONFIG_HOME: process.env.XDG_CONFIG_HOME, HOME: process.env.HOME }) {
-  if (!/^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(name))
-    return;
-  const configured = environment.XDG_CONFIG_HOME;
-  const configHome = configured && path3.isAbsolute(configured) ? configured : path3.join(environment.HOME || os2.homedir(), ".config");
-  const directories = [
-    path3.join(configHome, "otmd", "themes"),
-    path3.resolve(import.meta.dir, "..", "..", "themes")
-  ];
-  for (const directory of directories) {
-    for (const suffix of themeFileNames) {
-      const file = path3.join(directory, `${name}${suffix}`);
-      if (!existsSync2(file) || !statSync2(file).isFile())
-        continue;
-      const parsed = parseJsonc(readFileSync2(file, "utf8"), file);
-      if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed))
-        return;
-      return validateTheme(parsed, file);
-    }
-  }
-  return;
-}
-// node_modules/opentui-markdown-render/src/core/layout.ts
-function createDocumentLayout(input) {
-  const frame = resolveFrame(input.viewport, input.frame);
-  return {
-    frame,
-    contentWidth: frame.contentWidth,
-    tables: resolveTableOptions(input.tables)
-  };
-}
-// node_modules/opentui-markdown-render/src/core/document.ts
-function assertNever(value) {
-  throw new Error(`Unexpected document node: ${String(value)}`);
-}
+
 // node_modules/marked/lib/marked.esm.js
 function L() {
   return { async: false, breaks: false, extensions: null, gfm: true, hooks: null, pedantic: false, renderer: null, silent: false, tokenizer: null, walkTokens: null };
@@ -3285,2324 +2039,82 @@ var Nt = d.parseInline;
 var Ft = b.parse;
 var jt = x.lex;
 
-// node_modules/opentui-markdown-render/src/core/math.ts
-function isEscaped(src, index) {
-  let backslashes = 0;
-  let i = index - 1;
-  while (i >= 0 && src[i] === "\\") {
-    backslashes++;
-    i--;
-  }
-  return backslashes % 2 === 1;
-}
-function closing(src, delimiter, start, singleLine) {
-  for (let index = start;index < src.length; index++) {
-    if (singleLine && src[index] === `
-`)
-      break;
-    if (src.startsWith(delimiter, index) && !isEscaped(src, index))
-      return index;
-  }
-  return -1;
-}
-function createMathInlineExtension() {
-  return {
-    name: "mathInline",
-    level: "inline",
-    start(src) {
-      let i = 0;
-      while (i < src.length) {
-        const ch = src[i];
-        if (ch === "\\") {
-          if (src[i + 1] === "(") {
-            if (!isEscaped(src, i))
-              return i;
-          }
-          i += 2;
-          continue;
-        }
-        if (ch === "$") {
-          if (src[i + 1] === "$") {
-            i += 2;
-            continue;
-          }
-          if (!isEscaped(src, i))
-            return i;
-        }
-        i++;
-      }
-      return;
-    },
-    tokenizer(src) {
-      if (src.startsWith("\\(")) {
-        const end = closing(src, "\\)", 2, true);
-        if (end > 2 && src.slice(2, end).indexOf(`
-`) === -1) {
-          const content = src.slice(2, end);
-          const raw = src.slice(0, end + 2);
-          return {
-            type: "mathInline",
-            raw,
-            text: content,
-            content,
-            open: "\\(",
-            close: "\\)"
-          };
-        }
-      }
-      if (src[0] === "$" && src[1] !== "$") {
-        let j = 1;
-        while (j < src.length) {
-          if (src[j] === `
-`)
-            break;
-          if (src[j] === "$" && !isEscaped(src, j)) {
-            if (j === 1)
-              break;
-            const content = src.slice(1, j);
-            const raw = src.slice(0, j + 1);
-            return {
-              type: "mathInline",
-              raw,
-              text: content,
-              content,
-              open: "$",
-              close: "$"
-            };
-          }
-          j++;
-        }
-      }
-      return;
-    }
-  };
-}
-function createMathDisplayExtension() {
-  return {
-    name: "mathDisplay",
-    level: "inline",
-    start(src) {
-      let i = 0;
-      while (i < src.length) {
-        const ch = src[i];
-        if (ch === "\\") {
-          if (src[i + 1] === "[") {
-            if (!isEscaped(src, i))
-              return i;
-          }
-          i += 2;
-          continue;
-        }
-        if (ch === "$") {
-          if (src[i + 1] === "$" && !isEscaped(src, i))
-            return i;
-        }
-        i++;
-      }
-      return;
-    },
-    tokenizer(src) {
-      if (src.startsWith("$$")) {
-        const end = closing(src, "$$", 2, false);
-        if (end > 2) {
-          const content = src.slice(2, end);
-          const raw = src.slice(0, end + 2);
-          return {
-            type: "mathDisplay",
-            raw,
-            text: content,
-            content,
-            open: "$$",
-            close: "$$"
-          };
-        }
-      }
-      if (src.startsWith("\\[")) {
-        const end = closing(src, "\\]", 2, false);
-        if (end > 2) {
-          const content = src.slice(2, end);
-          const raw = src.slice(0, end + 2);
-          return {
-            type: "mathDisplay",
-            raw,
-            text: content,
-            content,
-            open: "\\[",
-            close: "\\]"
-          };
-        }
-      }
-      return;
-    }
-  };
-}
-
-// node_modules/opentui-markdown-render/src/core/parse.ts
-var parser = new B({
-  gfm: true,
-  breaks: false,
-  async: false,
-  extensions: [createMathDisplayExtension(), createMathInlineExtension()]
-});
-function isDisplay(token) {
-  return token.type === "mathDisplay";
-}
-function isInlineMath(token) {
-  return token.type === "mathInline";
-}
-function childrenOf(token) {
-  return "tokens" in token && Array.isArray(token.tokens) ? token.tokens : [];
-}
-function inlineToken(token) {
-  if (isInlineMath(token)) {
-    return [{ type: "math", content: token.content, raw: token.raw, open: token.open, close: token.close }];
-  }
-  if (isDisplay(token))
-    return [{ type: "text", text: token.raw }];
-  switch (token.type) {
-    case "text":
-      return childrenOf(token).length ? convertInline(childrenOf(token)) : [{ type: "text", text: token.text }];
-    case "escape":
-      return [{ type: "text", text: token.text }];
-    case "codespan":
-      return [{ type: "code", text: token.text }];
-    case "strong":
-    case "em":
-    case "del":
-      return [{ type: token.type, children: convertInline(token.tokens ?? []) }];
-    case "link":
-      return [{ type: "link", href: token.href, title: token.title ?? null, children: convertInline(token.tokens ?? []) }];
-    case "image":
-      return [{ type: "inline-image", href: token.href, title: token.title ?? null, alt: token.text }];
-    case "br":
-      return [{ type: "break", hard: true }];
-    case "checkbox":
-      return [];
-    default:
-      return token.raw ? [{ type: "text", text: token.raw }] : [];
-  }
-}
-function convertInline(tokens) {
-  return tokens.flatMap(inlineToken);
-}
-function directInline(tokens) {
-  return tokens.flatMap((token) => token.type === "text" && childrenOf(token).length ? childrenOf(token) : [token]);
-}
-function convertParagraph(token, source) {
-  const tokens = directInline(childrenOf(token));
-  const visible = convertInline(tokens).filter((node) => node.type !== "text" || node.text.trim().length > 0);
-  if (visible.length === 1 && visible[0].type === "inline-image") {
-    const image = visible[0];
-    return [{ type: "image", href: image.href, alt: image.alt, title: image.title, raw: token.raw, source }];
-  }
-  if (!tokens.some(isDisplay))
-    return [{ type: "paragraph", children: convertInline(tokens), raw: token.raw, source }];
-  const blocks = [];
-  let pending = [];
-  let offset = source?.start ?? 0;
-  let aligned = source !== null;
-  let pendingStart = offset;
-  const flush = () => {
-    if (!pending.length)
-      return;
-    const raw = pending.map((child) => child.raw).join("");
-    const children = convertInline(pending);
-    if (children.length)
-      blocks.push({ type: "paragraph", raw, source: aligned ? { start: pendingStart, end: offset } : null, children });
-    pending = [];
-    pendingStart = offset;
-  };
-  for (const child of tokens) {
-    if (aligned && token.raw.slice(offset - source.start, offset - source.start + child.raw.length) !== child.raw)
-      aligned = false;
-    if (isDisplay(child)) {
-      flush();
-      offset += child.raw.length;
-      blocks.push({
-        type: "display-math",
-        content: child.content,
-        open: child.open,
-        close: child.close,
-        raw: child.raw,
-        source: aligned ? { start: offset - child.raw.length, end: offset } : null
-      });
-      pendingStart = offset;
-    } else {
-      pending.push(child);
-      offset += child.raw.length;
-    }
-  }
-  flush();
-  return blocks;
-}
-function convertBlocks(tokens, source, start = 0) {
-  const blocks = [];
-  let cursor = start;
-  for (const token of tokens) {
-    const range = source !== null && source.slice(cursor, cursor + token.raw.length) === token.raw ? { start: cursor, end: cursor + token.raw.length } : null;
-    cursor += token.raw.length;
-    if (token.type === "space" || token.type === "def" || token.type === "checkbox")
-      continue;
-    if (isDisplay(token)) {
-      blocks.push({ type: "display-math", content: token.content, open: token.open, close: token.close, raw: token.raw, source: range });
-      continue;
-    }
-    switch (token.type) {
-      case "paragraph":
-      case "text":
-        blocks.push(...convertParagraph(token, range));
-        break;
-      case "heading":
-        blocks.push({ type: "heading", level: token.depth, children: convertInline(childrenOf(token)), raw: token.raw, source: range });
-        break;
-      case "blockquote":
-        blocks.push({ type: "quote", blocks: convertBlocks(childrenOf(token), null), raw: token.raw, source: range });
-        break;
-      case "list": {
-        const list = token;
-        let cursor = 0;
-        const items = list.items.map((item) => {
-          let itemSource = null;
-          if (range !== null && list.raw.slice(cursor, cursor + item.raw.length) === item.raw) {
-            itemSource = { start: range.start + cursor, end: range.start + cursor + item.raw.length };
-          }
-          cursor += item.raw.length;
-          return {
-            task: item.task,
-            checked: item.task ? item.checked ?? false : null,
-            loose: item.loose,
-            blocks: convertBlocks(item.tokens, null),
-            source: itemSource
-          };
-        });
-        blocks.push({
-          type: "list",
-          raw: list.raw,
-          source: range,
-          ordered: list.ordered,
-          start: list.start === "" ? 1 : list.start,
-          loose: list.loose,
-          items
-        });
-        break;
-      }
-      case "table": {
-        const table = token;
-        const convertCell = (cell, header, align) => ({
-          children: cell ? convertInline(cell.tokens) : [],
-          header,
-          align
-        });
-        const align = table.align;
-        const header = table.header.map((cell, i) => convertCell(cell, true, align[i] ?? null));
-        const rows = table.rows.map((row) => header.map((_, i) => convertCell(row[i], false, align[i] ?? null)));
-        blocks.push({ type: "table", align, header, rows, raw: table.raw, source: range });
-        break;
-      }
-      case "code": {
-        const language = token.lang ?? null;
-        if (language?.trim().split(/\s+/)[0]?.toLowerCase() === "mermaid") {
-          blocks.push({ type: "mermaid", content: token.text, language: "mermaid", raw: token.raw, source: range });
-        } else {
-          blocks.push({ type: "code", content: token.text, language, fenced: /^ {0,3}(?:`{3,}|~{3,})/.test(token.raw), raw: token.raw, source: range });
-        }
-        break;
-      }
-      case "hr":
-        blocks.push({ type: "rule", raw: token.raw, source: range });
-        break;
-      default:
-        if (token.raw)
-          blocks.push({ type: "literal", text: token.raw, raw: token.raw, source: range });
-    }
-  }
-  return blocks;
-}
-function parseDocument(source) {
-  const normalized = source.replace(/\r\n?/g, `
-`);
-  const blocks = convertBlocks(parser.lexer(normalized), normalized);
-  if (normalized === source)
-    return { source, blocks };
-  const offsets = [0];
-  for (let index = 0;index < source.length; index++) {
-    if (source[index] === "\r" && source[index + 1] === `
-`)
-      index++;
-    offsets.push(index + 1);
-  }
-  const originalRange = (range) => range === null ? null : { start: offsets[range.start], end: offsets[range.end] };
-  const originalBlock = (block) => {
-    if (block.type === "list")
-      return {
-        ...block,
-        source: originalRange(block.source),
-        items: block.items.map((item) => ({ ...item, source: originalRange(item.source) }))
-      };
-    return { ...block, source: originalRange(block.source) };
-  };
-  return { source, blocks: blocks.map(originalBlock) };
-}
-// node_modules/opentui-markdown-render/src/config/resolve.ts
-function resolveConfiguredTheme(config, runtime = {}) {
-  if (runtime.theme)
-    return runtime.theme;
-  const explicit = runtime.themeMode ?? undefined;
-  const override = loadTheme(explicit ?? config.theme?.name ?? "light");
-  const mode = override?.mode ?? "light";
-  return resolveTheme({ mode, override });
-}
-function resolveConfiguredLayout(config, runtime) {
-  return createDocumentLayout({
-    viewport: runtime.viewport,
-    frame: runtime.frame ?? config.frame,
-    tables: runtime.tables ?? config.tables
-  });
-}
-// node_modules/opentui-markdown-render/src/view/frame.tsx
-import { jsxDEV } from "@opentui/solid/jsx-dev-runtime";
-var asciiBorder = {
-  topLeft: "+",
-  topRight: "+",
-  bottomLeft: "+",
-  bottomRight: "+",
-  horizontal: "-",
-  vertical: "|",
-  topT: "+",
-  bottomT: "+",
-  leftT: "+",
-  rightT: "+",
-  cross: "+"
-};
-function borderStyle(style) {
-  if (style === "rounded" || style === "heavy" || style === "double")
-    return style;
-  return "single";
-}
-function alignSelf(align) {
-  if (align === "left")
-    return "flex-start";
-  if (align === "right")
-    return "flex-end";
-  return "center";
-}
-function frameBorderColor(theme) {
-  return theme.frame?.border ?? theme.border.base;
-}
-function frameTitleColor(theme) {
-  return theme.frame?.title ?? theme.text.muted;
-}
-function borderProps(frame, theme) {
-  if (!frame.enabled)
-    return {};
-  return {
-    border: true,
-    borderStyle: borderStyle(frame.style),
-    customBorderChars: frame.style === "ascii" ? asciiBorder : undefined,
-    borderColor: frameBorderColor(theme),
-    title: frame.title,
-    titleColor: frameTitleColor(theme),
-    titleAlignment: frame.titleAlign
-  };
-}
-function MarkdownFrame(props) {
-  return /* @__PURE__ */ jsxDEV("box", {
-    width: props.frame.width,
-    alignSelf: alignSelf(props.frame.align),
-    flexDirection: "column",
-    flexShrink: 0,
-    backgroundColor: props.theme.background.base,
-    paddingLeft: props.frame.paddingX,
-    paddingRight: props.frame.paddingX,
-    paddingTop: props.frame.paddingY,
-    paddingBottom: props.frame.paddingY,
-    ...borderProps(props.frame, props.theme),
-    children: props.children
-  }, undefined, false, undefined, this);
-}
-
-// node_modules/opentui-markdown-render/src/view/document.tsx
+// node_modules/opentui-markdown-render/dist/index.js
+import { insert as _$insert } from "@opentui/solid";
+import { setProp as _$setProp } from "@opentui/solid";
+import { spread as _$spread } from "@opentui/solid";
+import { mergeProps as _$mergeProps } from "@opentui/solid";
+import { createElement as _$createElement } from "@opentui/solid";
+import { insertNode as _$insertNode3 } from "@opentui/solid";
+import { memo as _$memo5 } from "@opentui/solid";
+import { effect as _$effect6 } from "@opentui/solid";
+import { insert as _$insert6 } from "@opentui/solid";
+import { setProp as _$setProp8 } from "@opentui/solid";
+import { createElement as _$createElement8 } from "@opentui/solid";
+import { createComponent as _$createComponent5 } from "@opentui/solid";
 import { createMemo as createMemo5, For as For2 } from "solid-js";
-
-// node_modules/opentui-markdown-render/src/media.tsx
 var import_gifuct_js = __toESM(require_lib2(), 1);
+import { createComponent as _$createComponent } from "@opentui/solid";
+import { effect as _$effect } from "@opentui/solid";
+import { insert as _$insert2 } from "@opentui/solid";
+import { memo as _$memo } from "@opentui/solid";
+import { createTextNode as _$createTextNode } from "@opentui/solid";
+import { insertNode as _$insertNode } from "@opentui/solid";
+import { setProp as _$setProp2 } from "@opentui/solid";
+import { createElement as _$createElement2 } from "@opentui/solid";
 import { NativeImage, imageInfo, parseColor as parseColor2 } from "@opentui/core";
 import { useRenderer } from "@opentui/solid";
 import path4 from "path";
 import { createEffect, createResource, createSignal as createSignal2, Match, onCleanup as onCleanup2, Switch } from "solid-js";
-import { jsxDEV as jsxDEV2 } from "@opentui/solid/jsx-dev-runtime";
-var maxRows = 32;
-var maxColumns = 80;
-var TRANSPARENT_BACKGROUND = "#000000";
-function isRgba(value) {
-  return typeof value === "object" && value !== null && "r" in value && "g" in value && "b" in value;
-}
-function resolveBackground(input) {
-  if (input === undefined)
-    return [0, 0, 0];
-  if (isRgba(input)) {
-    const channel = (value) => Math.round(Math.max(0, Math.min(1, Number(value) || 0)) * 255);
-    return [channel(input.r), channel(input.g), channel(input.b)];
-  }
-  try {
-    const color = parseColor2(input);
-    const channel = (value) => Math.round(Math.max(0, Math.min(1, value)) * 255);
-    return [channel(color.r), channel(color.g), channel(color.b)];
-  } catch {
-    const color = parseColor2(TRANSPARENT_BACKGROUND);
-    return [Math.round(color.r * 255), Math.round(color.g * 255), Math.round(color.b * 255)];
-  }
-}
-function rgbToHex(color) {
-  const channel = (value) => Math.round(value).toString(16).padStart(2, "0");
-  return `#${channel(color[0])}${channel(color[1])}${channel(color[2])}`;
-}
-function resolveLocalImage(base, href) {
-  if (!base)
-    return { error: "No asset base is configured" };
-  if (/^[a-z][a-z\d+.-]*:/i.test(href) || href.startsWith("//"))
-    return { error: "Only local image paths are supported" };
-  const root = path4.resolve(base);
-  const target = path4.resolve(root, href);
-  if (target !== root && !target.startsWith(`${root}${path4.sep}`))
-    return { error: "Image path escapes the asset root" };
-  return { path: target };
-}
-function imageBox(width, height, columns, cellAspectRatio, limits) {
-  const ratio = width / height;
-  const aspect = Number.isFinite(cellAspectRatio) && cellAspectRatio > 0 ? cellAspectRatio : 2;
-  const columnLimit = Math.max(1, limits?.maxColumns ?? maxColumns);
-  const rowLimit = Math.max(1, limits?.maxRows ?? maxRows);
-  const clamped = Math.max(1, Math.min(Math.max(1, columns), columnLimit));
-  const naturalRows = Math.max(1, Math.ceil(clamped / (ratio * aspect)));
-  if (naturalRows <= rowLimit)
-    return { columns: clamped, rows: naturalRows };
-  return { columns: Math.max(1, Math.round(ratio * rowLimit * aspect)), rows: rowLimit };
-}
-function LocalImage(props) {
-  const renderer = useRenderer();
-  const [failure, setFailure] = createSignal2();
-  const [loaded] = createResource(() => JSON.stringify({
-    href: props.href,
-    base: props.base(),
-    columns: props.columns(),
-    cell: props.cell() ?? null,
-    background: rgbToHex(resolveBackground(props.background())),
-    limits: props.limits ?? null
-  }), async (key) => {
-    const input = JSON.parse(key);
-    const resolved = resolveLocalImage(input.base, input.href);
-    if (resolved.path === undefined)
-      return { error: resolved.error ?? "Image path is invalid" };
-    const file = Bun.file(resolved.path);
-    if (!await file.exists())
-      return { error: `Image does not exist: ${input.href}` };
-    try {
-      const bytes = new Uint8Array(await file.arrayBuffer());
-      const info = imageInfo(bytes);
-      const box = imageBox(info.width, info.height, Math.max(1, input.columns), input.cell ? input.cell.height / input.cell.width : 2, input.limits ?? undefined);
-      const target = { width: Math.max(1, Math.round(box.columns * (input.cell?.width ?? 8))), height: Math.max(1, Math.round(box.rows * (input.cell?.height ?? 16))) };
-      const background = resolveBackground(input.background);
-      if (info.format === "gif")
-        return loadGif(bytes, box, target, background);
-      return { box, image: prepareImage(NativeImage.decode(bytes), target, background) };
-    } catch (error) {
-      return { error: error instanceof Error ? error.message : String(error) };
-    }
-  });
-  const media = () => {
-    const value = loaded();
-    return value && !("error" in value) ? value : undefined;
-  };
-  const error = () => {
-    const value = loaded();
-    return failure() ?? (value && "error" in value ? value.error : undefined);
-  };
-  const [frame, setFrame] = createSignal2();
-  createEffect(() => {
-    const value = media();
-    if (!value?.animation) {
-      setFrame(value?.image);
-      return;
-    }
-    const animation = value.animation;
-    const canvas = new Uint8Array(animation.width * animation.height * 4);
-    let index = 0;
-    let current;
-    let timer;
-    const next = () => {
-      const decoded = import_gifuct_js.decompressFrame(animation.frames[index], animation.colorTable, true);
-      const before = decoded.disposalType === 3 ? canvas.slice() : undefined;
-      drawPatch(canvas, animation.width, animation.height, decoded.patch, decoded.dims.left, decoded.dims.top, decoded.dims.width, decoded.dims.height);
-      const image = prepareImage(NativeImage.fromRgba(canvas.slice(), animation.width, animation.height), animation.target, animation.background);
-      const previous = current;
-      current = image;
-      setFrame(image);
-      if (previous)
-        renderer.idle().then(() => previous.dispose());
-      if (decoded.disposalType === 2)
-        clearPatch(canvas, animation.width, decoded.dims.left, decoded.dims.top, decoded.dims.width, decoded.dims.height);
-      if (before)
-        canvas.set(before);
-      index = (index + 1) % animation.frames.length;
-      timer = setTimeout(next, Math.max(50, decoded.delay || 100));
-    };
-    next();
-    onCleanup2(() => {
-      if (timer)
-        clearTimeout(timer);
-      const image = current;
-      if (image)
-        renderer.idle().then(() => image.dispose());
-      setFrame();
-    });
-  });
-  createEffect(() => {
-    const value = media();
-    onCleanup2(() => void renderer.idle().then(() => disposeMedia(value)));
-  });
-  return /* @__PURE__ */ jsxDEV2("box", {
-    width: "100%",
-    flexDirection: "column",
-    flexShrink: 0,
-    overflow: "hidden",
-    children: /* @__PURE__ */ jsxDEV2(Switch, {
-      children: [
-        /* @__PURE__ */ jsxDEV2(Match, {
-          when: loaded.loading,
-          children: /* @__PURE__ */ jsxDEV2("box", {
-            width: "100%",
-            flexDirection: "row",
-            children: [
-              /* @__PURE__ */ jsxDEV2("text", {
-                fg: props.labelColor?.(),
-                flexShrink: 0,
-                children: "Loading image: "
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsxDEV2("text", {
-                fg: props.textColor?.(),
-                wrapMode: "word",
-                flexGrow: 1,
-                children: props.alt || props.href
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this)
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsxDEV2(Match, {
-          when: error(),
-          children: /* @__PURE__ */ jsxDEV2("box", {
-            width: "100%",
-            flexDirection: "row",
-            children: [
-              /* @__PURE__ */ jsxDEV2("text", {
-                fg: props.labelColor?.(),
-                flexShrink: 0,
-                children: "Could not render image "
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsxDEV2("text", {
-                fg: props.textColor?.(),
-                wrapMode: "word",
-                flexGrow: 1,
-                children: `${props.alt || props.href}: ${error()}`
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this)
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsxDEV2(Match, {
-          when: media() && frame(),
-          children: /* @__PURE__ */ jsxDEV2("image", {
-            id: `opentui-markdown-image-${props.href}`,
-            source: frame(),
-            fit: "fit",
-            protocol: "auto",
-            width: media().box.columns,
-            height: media().box.rows,
-            onError: (error) => setFailure(error instanceof Error ? error.message : String(error))
-          }, undefined, false, undefined, this)
-        }, undefined, false, undefined, this),
-        "      "
-      ]
-    }, undefined, true, undefined, this)
-  }, undefined, false, undefined, this);
-}
-function loadGif(bytes, box, target, background) {
-  const gif = import_gifuct_js.parseGIF(bytes.slice().buffer);
-  const width = gif.lsd.width;
-  const height = gif.lsd.height;
-  const frames = gif.frames.filter((frame) => ("image" in frame));
-  if (!frames.length)
-    throw new Error("GIF contains no frames");
-  return { box, animation: { width, height, frames, colorTable: gif.gct, target, background } };
-}
-function drawPatch(canvas, width, height, patch, left, top, patchWidth, patchHeight) {
-  for (let y = 0;y < patchHeight; y++) {
-    if (top + y < 0 || top + y >= height)
-      continue;
-    for (let x = 0;x < patchWidth; x++) {
-      if (left + x < 0 || left + x >= width)
-        continue;
-      const source = (y * patchWidth + x) * 4;
-      const target = ((top + y) * width + left + x) * 4;
-      const alpha = patch[source + 3] / 255;
-      const inverse = 1 - alpha;
-      canvas[target] = Math.round(patch[source] * alpha + canvas[target] * inverse);
-      canvas[target + 1] = Math.round(patch[source + 1] * alpha + canvas[target + 1] * inverse);
-      canvas[target + 2] = Math.round(patch[source + 2] * alpha + canvas[target + 2] * inverse);
-      canvas[target + 3] = Math.round((alpha + canvas[target + 3] / 255 * inverse) * 255);
-    }
-  }
-}
-function clearPatch(canvas, width, left, top, patchWidth, patchHeight) {
-  for (let y = 0;y < patchHeight; y++) {
-    for (let x = 0;x < patchWidth; x++)
-      canvas.fill(0, ((top + y) * width + left + x) * 4, ((top + y) * width + left + x + 1) * 4);
-  }
-}
-function prepareImage(image, target, background) {
-  const targetWidth = Math.max(1, Math.round(target.width));
-  const targetHeight = Math.max(1, Math.round(target.height));
-  const scale = Math.min(targetWidth / image.width, targetHeight / image.height);
-  const newWidth = Math.max(1, Math.round(image.width * scale));
-  const newHeight = Math.max(1, Math.round(image.height * scale));
-  const resized = scale !== 1 ? image.resize({ width: newWidth, height: newHeight }) : image;
-  if (resized !== image)
-    image.dispose();
-  if (!resized.info().hasAlpha)
-    return resized;
-  const raw = resized.raw();
-  const pixels = new Uint8Array(raw.width * raw.height * 4);
-  const color = background;
-  for (let index = 0;index < pixels.length; index += 4) {
-    const alpha = raw.data[index + 3] / 255;
-    pixels[index] = Math.round(raw.data[index] * alpha + color[0] * (1 - alpha));
-    pixels[index + 1] = Math.round(raw.data[index + 1] * alpha + color[1] * (1 - alpha));
-    pixels[index + 2] = Math.round(raw.data[index + 2] * alpha + color[2] * (1 - alpha));
-    pixels[index + 3] = 255;
-  }
-  const composited = NativeImage.fromRgba(pixels, raw.width, raw.height);
-  resized.dispose();
-  return composited;
-}
-function disposeMedia(media) {
-  media?.image?.dispose();
-}
-
-// node_modules/opentui-markdown-render/src/view/code.tsx
+import { effect as _$effect2 } from "@opentui/solid";
+import { setProp as _$setProp3 } from "@opentui/solid";
+import { createElement as _$createElement3 } from "@opentui/solid";
 import { infoStringToFiletype } from "@opentui/core";
 import { useRenderer as useRenderer2 } from "@opentui/solid";
 import { onCleanup as onCleanup3 } from "solid-js";
-
-// node_modules/opentui-markdown-render/src/theme/syntax.ts
 import { SyntaxStyle } from "@opentui/core";
-function generateSyntax(theme, headings = defaultHeadingStyles, defaultColor = theme.text.base, owner) {
-  const { markdown, syntax, text } = theme;
-  const feedback = text.feedback;
-  const headingStyle = (level) => {
-    const style = headings[level];
-    return {
-      bold: style.bold,
-      italic: style.italic,
-      underline: style.underline,
-      dim: style.dim
-    };
-  };
-  const headingRules = headingLevels.map((level) => rule([`markup.heading.${level}`], headingColor(theme, level), headingStyle(level)));
-  const rules = [
-    rule(["default"], defaultColor),
-    rule(["prompt"], theme.accent),
-    rule(["comment", "comment.documentation"], syntax.comment, { italic: true }),
-    rule(["string", "symbol", "character.special", "character"], syntax.string),
-    rule(["number", "boolean", "constant", "float"], syntax.number),
-    rule(["keyword.return", "keyword.conditional", "keyword.repeat", "keyword.coroutine"], syntax.keyword, {
-      italic: true
-    }),
-    rule(["keyword.type"], syntax.type, { bold: true, italic: true }),
-    rule(["keyword.function", "function.method"], syntax.function),
-    rule(["keyword"], syntax.keyword, { italic: true }),
-    rule(["keyword.import", "string.escape", "string.regexp", "tag.attribute", "keyword.export"], syntax.keyword),
-    rule(["operator", "keyword.operator", "punctuation.delimiter", "keyword.conditional.ternary"], syntax.operator),
-    rule(["variable", "variable.parameter", "function.method.call", "function.call", "property", "parameter", "field"], syntax.variable),
-    rule(["variable.member", "function", "constructor"], syntax.function),
-    rule(["type", "module", "class", "namespace"], syntax.type),
-    rule(["type.definition"], syntax.type, { bold: true }),
-    rule(["punctuation", "punctuation.bracket"], syntax.punctuation),
-    rule(["variable.builtin", "type.builtin", "function.builtin", "module.builtin", "constant.builtin", "variable.super"], feedback.error),
-    rule(["keyword.directive", "keyword.modifier", "keyword.exception"], syntax.keyword, { italic: true }),
-    rule(["punctuation.special", "tag.delimiter"], syntax.operator),
-    rule(["markup.heading"], headingColor(theme, 1), headingStyle(1)),
-    ...headingRules,
-    rule(["markup.bold", "markup.strong"], markdown.strong, { bold: true }),
-    rule(["markup.italic"], markdown.emphasis, { italic: true }),
-    rule(["markup.list"], markdown.listItem),
-    rule(["markup.list.enumeration"], markdown.listEnumeration),
-    rule(["markup.quote"], markdown.blockQuote, { italic: true }),
-    rule(["markup.raw"], markdown.code),
-    rule(["markup.raw.block"], markdown.codeBlock),
-    rule(["markup.raw.inline"], markdown.code, { background: theme.background.base }),
-    rule(["markup.link", "markup.link.url", "string.special", "string.special.url"], markdown.link, {
-      underline: true
-    }),
-    rule(["markup.link.label"], markdown.linkText, { underline: true }),
-    rule(["label"], markdown.linkText),
-    rule(["markup.underline"], text.base, { underline: true }),
-    rule(["markup.strikethrough", "markup.list.unchecked", "debug"], text.muted),
-    rule(["markup.list.checked"], feedback.success),
-    rule(["comment.error"], feedback.error, { italic: true, bold: true }),
-    rule(["comment.warning"], feedback.warning, { italic: true, bold: true }),
-    rule(["comment.todo", "comment.note"], feedback.info, { italic: true, bold: true }),
-    rule(["attribute", "annotation"], feedback.warning),
-    rule(["tag"], feedback.error),
-    rule(["diff.plus"], theme.diff.text.added, { background: theme.diff.background.added }),
-    rule(["diff.minus"], theme.diff.text.removed, { background: theme.diff.background.removed }),
-    rule(["diff.delta"], theme.diff.text.context, { background: theme.diff.background.context }),
-    rule(["error"], feedback.error, { bold: true }),
-    rule(["warning"], feedback.warning, { bold: true }),
-    rule(["info"], feedback.info)
-  ];
-  const fromTheme = SyntaxStyle.fromTheme;
-  return fromTheme(rules, owner);
-}
-function rule(scope, foreground, style = {}) {
-  return { scope, style: { foreground, ...style } };
-}
-
-// node_modules/opentui-markdown-render/src/view/code.tsx
-import { jsxDEV as jsxDEV3 } from "@opentui/solid/jsx-dev-runtime";
-function resolveCodeFiletype(language) {
-  const token = language?.trim().split(/\s+/, 1)[0]?.toLowerCase() ?? "";
-  return token === "jsonc" ? "json" : infoStringToFiletype(language ?? "");
-}
-function CodeBlock(props) {
-  const renderer = useRenderer2();
-  const nativeScene = renderer.nativeScene;
-  const owned = props.syntaxStyle ? undefined : generateSyntax(props.theme, props.headings, props.theme.markdown.codeBlock, nativeScene);
-  onCleanup3(() => {
-    if (owned)
-      renderer.idle().then(() => owned.destroy());
-  });
-  return /* @__PURE__ */ jsxDEV3("code", {
-    content: props.content,
-    filetype: resolveCodeFiletype(props.language),
-    syntaxStyle: props.syntaxStyle ?? owned,
-    fg: props.theme.markdown.codeBlock,
-    bg: props.theme.background.base,
-    conceal: false,
-    drawUnstyledText: true,
-    streaming: false,
-    width: "100%"
-  }, undefined, false, undefined, this);
-}
-
-// node_modules/opentui-markdown-render/src/view/document-slots.ts
 import { createSignal as createSignal3 } from "solid-js";
-function sameKind(old, next) {
-  if (old.type !== next.type)
-    return false;
-  return old.type !== "mermaid" || next.type === "mermaid" && old.language === next.language;
-}
-function sameValue(a, b) {
-  if (Object.is(a, b))
-    return true;
-  if (typeof a !== "object" || a === null || typeof b !== "object" || b === null)
-    return false;
-  if (Array.isArray(a) !== Array.isArray(b))
-    return false;
-  if (Array.isArray(a)) {
-    const other = b;
-    return a.length === other.length && a.every((value, index) => sameValue(value, other[index]));
-  }
-  const left = a;
-  const right = b;
-  const keys = Object.keys(left);
-  const otherKeys = Object.keys(right);
-  return keys.filter((key) => key !== "source").length === otherKeys.filter((key) => key !== "source").length && keys.every((key) => key === "source" || Object.prototype.hasOwnProperty.call(right, key) && sameValue(left[key], right[key]));
-}
-function sameBlock(old, next) {
-  return sameValue(old, next);
-}
-function sameRange(old, next) {
-  return old?.start === next?.start && old?.end === next?.end;
-}
-function sameUnitRanges(old, next) {
-  if (!sameRange(old.source, next.source))
-    return false;
-  if (old.type !== "list" || next.type !== "list")
-    return true;
-  return old.items.length === next.items.length && old.items.every((item, index) => sameRange(item.source, next.items[index]?.source));
-}
-function refresh(slot, next) {
-  const changed = !sameBlock(slot.block(), next);
-  if (changed)
-    slot.update(next);
-  if (changed || !sameUnitRanges(slot.latest(), next))
-    slot.updateLatest(next);
-}
-function createSlot(block) {
-  const [get, set] = createSignal3(block);
-  const [latest, updateLatest] = createSignal3(block);
-  return { kind: block.type, block: get, update: set, latest, updateLatest };
-}
-function reconcileSlots(prev, next) {
-  if (prev.length === 0) {
-    return next.map(createSlot);
-  }
-  let prefix = 0;
-  while (prefix < prev.length && prefix < next.length) {
-    const old = prev[prefix].block();
-    const incoming = next[prefix];
-    if (!sameKind(old, incoming) || old.raw !== incoming.raw)
-      break;
-    refresh(prev[prefix], incoming);
-    prefix++;
-  }
-  let suffix = 0;
-  while (suffix < prev.length - prefix && suffix < next.length - prefix) {
-    const old = prev[prev.length - 1 - suffix].block();
-    const incoming = next[next.length - 1 - suffix];
-    if (!sameKind(old, incoming) || old.raw !== incoming.raw)
-      break;
-    refresh(prev[prev.length - 1 - suffix], incoming);
-    suffix++;
-  }
-  const result = [];
-  for (let i = 0;i < prefix; i++)
-    result.push(prev[i]);
-  if (prev.length - prefix - suffix === 1 && next.length - prefix - suffix === 1) {
-    const slot = prev[prefix];
-    const incoming = next[prefix];
-    if (sameKind(slot.block(), incoming)) {
-      refresh(slot, incoming);
-      result.push(slot);
-    } else {
-      result.push(createSlot(incoming));
-    }
-  } else {
-    for (let i = prefix;i < next.length - suffix; i++) {
-      const b = next[i];
-      result.push(createSlot(b));
-    }
-  }
-  for (let i = prev.length - suffix;i < prev.length; i++)
-    result.push(prev[i]);
-  return result;
-}
-
-// node_modules/opentui-markdown-render/src/view/document-table.tsx
+import { setProp as _$setProp4 } from "@opentui/solid";
+import { effect as _$effect3 } from "@opentui/solid";
+import { createElement as _$createElement4 } from "@opentui/solid";
 import { TextAttributes as TextAttributes3, TextTableRenderable as TextTableRenderable2 } from "@opentui/core";
 import { extend } from "@opentui/solid";
-
-// node_modules/opentui-markdown-render/src/view/table.ts
 import {
   BoxRenderable
 } from "@opentui/core";
-function tableWidth(table) {
-  const layout = table.computeLayout?.(undefined);
-  const width = layout?.tableWidth;
-  if (typeof width === "number" && Number.isFinite(width) && width > 0)
-    return Math.round(width);
-  return Number.isFinite(table.width) ? Math.round(table.width) : 0;
-}
-
-class ScrollableTableRenderable extends BoxRenderable {
-  table;
-  offset = 0;
-  panEnabled = true;
-  dragX;
-  constructor(ctx, table) {
-    super(ctx, {
-      width: "100%",
-      flexDirection: "row",
-      flexShrink: 0,
-      overflow: "hidden"
-    });
-    this.table = table;
-    table.flexShrink = 0;
-    this.add(table);
-    this.onMouseDown = (event) => {
-      if (event.button !== 0)
-        return;
-      this.dragX = event.x;
-    };
-    this.onMouseDrag = (event) => {
-      if (this.dragX === undefined || !this.panEnabled)
-        return;
-      const dx = event.x - this.dragX;
-      this.dragX = event.x;
-      if (!dx || !this.overflows())
-        return;
-      event.preventDefault();
-      event.stopPropagation();
-      this.scrollBy(-dx);
-    };
-    this.onMouseDragEnd = () => {
-      this.dragX = undefined;
-    };
-    this.onMouseUp = () => {
-      this.dragX = undefined;
-    };
-    this.onMouseScroll = (event) => {
-      const direction = event.scroll?.direction;
-      if (!this.panEnabled || direction !== "left" && direction !== "right")
-        return;
-      if (!this.overflows())
-        return;
-      event.preventDefault();
-      event.stopPropagation();
-      this.scrollBy(direction === "left" ? -2 : 2);
-    };
-  }
-  onResize(width, _height) {
-    super.onResize(width, _height);
-    this.syncOverflowState(width);
-  }
-  syncOverflowState(width = this.width) {
-    if (!Number.isFinite(width) || width <= 0)
-      return;
-    const viewport = Math.round(width);
-    const max = Math.max(0, tableWidth(this.table) - viewport);
-    this.offset = this.panEnabled ? Math.min(this.offset, max) : 0;
-    this.table.marginLeft = -this.offset;
-    this.table.selectable = !this.panEnabled || max === 0;
-  }
-  overflows(width = this.width) {
-    const viewportWidth = Number.isFinite(width) ? Math.round(width) : 0;
-    return tableWidth(this.table) > viewportWidth;
-  }
-  scrollBy(delta) {
-    const viewportWidth = Number.isFinite(this.width) ? Math.round(this.width) : 0;
-    const max = Math.max(0, tableWidth(this.table) - viewportWidth);
-    this.offset = Math.max(0, Math.min(max, this.offset + delta));
-    this.table.marginLeft = -this.offset;
-  }
-}
-
-// node_modules/opentui-markdown-render/src/view/inline-style.ts
 import { TextAttributes as TextAttributes2 } from "@opentui/core";
-function flattenInline(inlines, ctx) {
-  const out = [];
-  const baseAttr = (ctx.attributes ?? 0) | (ctx.heading ? headingAttributes(ctx.headings[ctx.heading.level]) : 0) | (ctx.quote ? TextAttributes2.ITALIC : 0);
-  const quote = !!ctx.quote;
-  const linkCtx = ctx.link;
-  function walk(list, attr, link) {
-    for (const node of list) {
-      if (node.type === "text") {
-        let fg = ctx.theme.markdown.text;
-        if (quote && !link && !ctx.heading)
-          fg = ctx.theme.markdown.blockQuote;
-        if (ctx.heading)
-          fg = headingColor(ctx.theme, ctx.heading.level);
-        if (link)
-          fg = ctx.theme.markdown.linkText;
-        else if (attr & TextAttributes2.BOLD && !ctx.heading)
-          fg = ctx.theme.markdown.strong;
-        else if (attr & TextAttributes2.ITALIC && !ctx.heading && !quote)
-          fg = ctx.theme.markdown.emphasis;
-        if (node.text)
-          out.push({ type: "text", text: node.text, fg, attributes: baseAttr | attr | (link ? TextAttributes2.UNDERLINE : 0), href: link?.href });
-        continue;
-      }
-      if (node.type === "code") {
-        const fg = ctx.theme.markdown.code;
-        out.push({ type: "text", text: node.text, fg, attributes: TextAttributes2.NONE, href: link?.href });
-        continue;
-      }
-      if (node.type === "math") {
-        out.push({ type: "math", content: node.content, raw: node.raw, open: node.open, close: node.close });
-        continue;
-      }
-      if (node.type === "break") {
-        out.push({ type: "break", hard: true });
-        continue;
-      }
-      if (node.type === "strong") {
-        walk(node.children, attr | TextAttributes2.BOLD, link);
-        continue;
-      }
-      if (node.type === "em") {
-        walk(node.children, attr | TextAttributes2.ITALIC, link);
-        continue;
-      }
-      if (node.type === "del") {
-        walk(node.children, attr | TextAttributes2.STRIKETHROUGH, link);
-        continue;
-      }
-      if (node.type === "link") {
-        const l = { href: node.href, title: node.title };
-        walk(node.children, attr, l);
-        const label = node.children.map((child) => child.type === "text" || child.type === "code" ? child.text : "").join("");
-        if (ctx.hyperlinks === false && label !== node.href) {
-          out.push({ type: "text", text: ` (${node.href})`, fg: ctx.theme.markdown.link, attributes: baseAttr, href: node.href });
-        }
-        continue;
-      }
-      if (node.type === "inline-image") {
-        const l = link;
-        out.push({ type: "text", text: node.alt || node.href || "image", fg: ctx.theme.markdown.linkText, attributes: baseAttr | attr, href: l?.href || node.href });
-        continue;
-      }
-    }
-  }
-  walk(inlines, baseAttr, linkCtx);
-  return out;
-}
-function toTableChunks(inlines, theme, headings, hyperlinks = true) {
-  const chunks = [];
-  for (const atom of flattenInline(inlines, { theme, headings, hyperlinks })) {
-    if (atom.type === "text") {
-      chunks.push({
-        __isChunk: true,
-        text: atom.text,
-        fg: atom.fg,
-        attributes: atom.attributes,
-        ...atom.href ? { link: { url: atom.href } } : {}
-      });
-    } else if (atom.type === "math") {
-      chunks.push({ __isChunk: true, text: atom.raw, fg: theme.markdown.text });
-    } else {
-      chunks.push({ __isChunk: true, text: `
-`, fg: theme.markdown.text });
-    }
-  }
-  return chunks.length ? chunks : [{ __isChunk: true, text: " ", fg: theme.markdown.text }];
-}
-
-// node_modules/opentui-markdown-render/src/view/document-table.tsx
-import { jsxDEV as jsxDEV4 } from "@opentui/solid/jsx-dev-runtime";
-
-class MarkdownTableRenderable extends ScrollableTableRenderable {
-  constructor(ctx, _options) {
-    const defaults = resolveTableOptions();
-    const table = new TextTableRenderable2(ctx, {
-      content: [],
-      columnWidthMode: defaults.widthMode,
-      columnFitter: defaults.columnFitter,
-      cellPaddingX: defaults.cellPaddingX,
-      wrapMode: defaults.wrapMode,
-      showBorders: true,
-      border: true,
-      outerBorder: true,
-      borderStyle: "single",
-      selectable: true
-    });
-    super(ctx, table);
-  }
-  get tableData() {
-    return this.table.content;
-  }
-  set tableData(value) {
-    this.table.content = value;
-    this.syncOverflowState();
-  }
-  get resolved() {
-    return {
-      widthMode: this.table.columnWidthMode,
-      columnFitter: this.table.columnFitter,
-      cellPaddingX: this.table.cellPaddingX,
-      wrapMode: this.table.wrapMode === "none" ? "none" : "word",
-      overflow: this.panEnabled ? "scroll" : "wrap"
-    };
-  }
-  set resolved(value) {
-    this.table.columnWidthMode = value.widthMode;
-    this.table.columnFitter = value.columnFitter;
-    this.table.cellPaddingX = value.cellPaddingX;
-    this.table.wrapMode = value.wrapMode;
-    this.panEnabled = value.widthMode === "content" && value.overflow === "scroll";
-    this.syncOverflowState();
-  }
-  get foreground() {
-    return this.table.fg;
-  }
-  set foreground(value) {
-    this.table.fg = value;
-    this.syncOverflowState();
-  }
-  get tableBorderColor() {
-    return this.table.borderColor;
-  }
-  set tableBorderColor(value) {
-    this.table.borderColor = value;
-  }
-  get background() {
-    return this.backgroundColor;
-  }
-  set background(value) {
-    this.backgroundColor = value;
-    this.syncOverflowState();
-  }
-}
-extend({ md_text_table: MarkdownTableRenderable });
-function TableBlock(props) {
-  const cell = (inlines, header) => {
-    const chunks = toTableChunks(inlines, props.theme, props.headings, props.hyperlinks);
-    if (!header)
-      return chunks;
-    return chunks.map((chunk) => ({ ...chunk, fg: props.theme.markdown.heading, attributes: TextAttributes3.BOLD }));
-  };
-  const content = () => [
-    props.block.header.map((value) => cell(value.children, true)),
-    ...props.block.rows.map((row) => row.map((value) => cell(value.children, false)))
-  ];
-  return /* @__PURE__ */ jsxDEV4("md_text_table", {
-    tableData: content(),
-    resolved: props.options,
-    foreground: props.theme.markdown.text,
-    background: props.theme.background.base,
-    tableBorderColor: props.theme.border.base
-  }, undefined, false, undefined, this);
-}
-
-// node_modules/opentui-markdown-render/src/view/inline-flow.tsx
-import { createEffect as createEffect2, createMemo as createMemo3, For, Show as Show2 } from "solid-js";
+import { memo as _$memo2 } from "@opentui/solid";
+import { insert as _$insert3 } from "@opentui/solid";
+import { createComponent as _$createComponent2 } from "@opentui/solid";
+import { effect as _$effect4 } from "@opentui/solid";
+import { setProp as _$setProp5 } from "@opentui/solid";
+import { use as _$use } from "@opentui/solid";
+import { createElement as _$createElement5 } from "@opentui/solid";
+import { createEffect as createEffect2, createMemo as createMemo3, For, Show } from "solid-js";
 import { StyledText } from "@opentui/core";
-
-// node_modules/opentui-markdown-render/src/view/inline-layout.ts
-function hardChunks(content, columns) {
-  const chunks = [];
-  let current = "";
-  for (const character of content) {
-    if (current && stringWidth(current + character) > columns) {
-      chunks.push(current);
-      current = character;
-      continue;
-    }
-    current += character;
-  }
-  if (current)
-    chunks.push(current);
-  return chunks;
-}
-function layoutAtoms(atoms, columns, measureOf, compactOverflow) {
-  columns = Math.max(1, columns);
-  const lines = [];
-  let current = { runs: [], columns: 0, height: 1, textRow: 0 };
-  const flush = (force = false) => {
-    if (!current.runs.length && !force)
-      return;
-    lines.push(current);
-    current = { runs: [], columns: 0, height: 1, textRow: 0 };
-  };
-  const place = (run, textRow = 0) => {
-    const add = (entry) => {
-      current.runs.push(entry);
-      current.columns += entry.columns;
-      current.height = Math.max(current.height, entry.rows, textRow + 1);
-      current.textRow = Math.max(current.textRow, textRow);
-    };
-    if (current.columns + run.columns <= columns || !current.runs.length) {
-      add(run);
-      return;
-    }
-    if (run.atom.type === "text") {
-      const text = run.atom.text.trimStart();
-      const trimmed = { ...run, atom: { ...run.atom, text }, columns: stringWidth(text) };
-      if (current.columns + trimmed.columns <= columns) {
-        add(trimmed);
-        return;
-      }
-      flush();
-      add(trimmed);
-      return;
-    }
-    flush();
-    add(run);
-  };
-  for (const atom of atoms) {
-    if (atom.type === "break") {
-      flush(true);
-      continue;
-    }
-    if (atom.type === "math") {
-      const natural = measureOf(atom.content)?.normal;
-      const squeezed = natural ? natural.columns > columns : false;
-      const entry = natural ? { atom, columns: squeezed ? columns : natural.columns, rows: Math.max(1, Math.round(squeezed ? natural.rows * columns / natural.columns : natural.rows)) } : { atom, columns: Math.min(columns, Math.max(3, atom.raw.length)), rows: 1 };
-      place(entry, natural ? Math.max(0, Math.ceil(natural.baseline) - 1) : 0);
-      continue;
-    }
-    const normalized = atom.text.replace(/\r?\n/g, " ");
-    const words = normalized.match(/\s*\S+\s*/g) ?? (normalized ? [normalized] : []);
-    for (const word of words) {
-      if (stringWidth(word) > columns) {
-        for (const chunk of hardChunks(word.trimEnd(), columns)) {
-          place({ atom: { ...atom, text: chunk }, columns: stringWidth(chunk), rows: 1 });
-        }
-      } else {
-        place({ atom: { ...atom, text: word }, columns: stringWidth(word), rows: 1 });
-      }
-    }
-  }
-  flush();
-  if (compactOverflow) {
-    let changed = true;
-    while (changed) {
-      changed = false;
-      const occupied = lines.flatMap((line, row) => {
-        let column = 0;
-        return line.runs.map((entry) => {
-          const area = {
-            entry,
-            column,
-            row: row + (entry.atom.type === "text" ? line.textRow : 0),
-            rows: entry.atom.type === "math" ? entry.rows : 1
-          };
-          column += entry.columns;
-          return area;
-        });
-      });
-      for (const area of occupied) {
-        if (area.entry.atom.type !== "math" || area.entry.variant === "compact" || area.rows <= 1)
-          continue;
-        const collision = occupied.some((other) => other.entry !== area.entry && other.column < area.column + area.entry.columns && area.column < other.column + other.entry.columns && other.row < area.row + area.rows && area.row + 1 < other.row + other.rows);
-        if (!collision)
-          continue;
-        const compact = measureOf(area.entry.atom.content)?.compact;
-        if (!compact)
-          continue;
-        area.entry.variant = "compact";
-        area.entry.columns = compact.columns;
-        area.entry.rows = compact.rows;
-        changed = true;
-      }
-    }
-  }
-  for (const line of lines) {
-    const entry = line.runs.at(-1);
-    if (!entry || entry.atom.type !== "math" || entry.variant === "compact")
-      continue;
-    const standard = measureOf(entry.atom.content)?.standard;
-    if (!standard || line.columns - entry.columns + standard.columns > columns)
-      continue;
-    entry.variant = "standard";
-    entry.columns = standard.columns;
-    entry.rows = standard.rows;
-  }
-  for (const line of lines) {
-    line.columns = line.runs.reduce((total, entry) => total + entry.columns, 0);
-    line.textRow = Math.max(0, ...line.runs.flatMap((entry) => {
-      if (entry.atom.type !== "math")
-        return [];
-      const measured = measureOf(entry.atom.content);
-      return measured ? [Math.max(0, Math.ceil(measured[entry.variant ?? "normal"].baseline) - 1)] : [];
-    }));
-    line.height = Math.max(1, line.textRow + 1, ...line.runs.map((entry) => entry.rows));
-  }
-  return lines;
-}
-
-// node_modules/opentui-markdown-render/src/view/inline-math.ts
 import { createMemo as createMemo2, createResource as createResource2 } from "solid-js";
-function useInlineMathImages(contents, foreground, background, cell) {
-  const [rendered] = createResource2(() => JSON.stringify({ contents: contents(), color: foreground(), surface: background(), cell: cell() }), async (key) => {
-    const input = JSON.parse(key);
-    return Promise.all(input.contents.map(async (content) => {
-      try {
-        const normal = await renderMathImage(content, false, input.color, input.surface, input.cell);
-        if (!normal)
-          return;
-        const compact = normal.rows > 1 ? await renderMathImage(content, false, input.color, input.surface, input.cell, 1, true) : normal;
-        const standard = normal.clamped ? await renderMathImage(content, false, input.color, input.surface, input.cell, 1, false, true) : normal;
-        return { normal, compact: compact ?? normal, standard: standard ?? normal };
-      } catch {
-        return;
-      }
-    }));
-  });
-  return createMemo2(() => {
-    const values = rendered();
-    if (!values)
-      return new Map;
-    return new Map(contents().flatMap((content, index) => {
-      const image = values[index];
-      return image ? [[content, image]] : [];
-    }));
-  });
-}
-
-// node_modules/opentui-markdown-render/src/view/inline-flow.tsx
-import { jsxDEV as jsxDEV5 } from "@opentui/solid/jsx-dev-runtime";
-function PrefixSegment(props) {
-  let ref;
-  const update = () => {
-    const content = new StyledText(props.chunks());
-    if (ref)
-      ref.content = content;
-    return content;
-  };
-  createEffect2(update);
-  return /* @__PURE__ */ jsxDEV5("text", {
-    ref: (renderable) => {
-      ref = renderable;
-      renderable.content = update();
-    },
-    wrapMode: "none",
-    width: props.width,
-    flexShrink: 0
-  }, undefined, false, undefined, this);
-}
-function StyledSegment(props) {
-  let ref;
-  const update = () => {
-    const atom = props.entry.atom;
-    const content = atom.type === "text" ? new StyledText([{
-      __isChunk: true,
-      text: atom.text,
-      fg: atom.fg,
-      attributes: atom.attributes,
-      ...atom.href ? { link: { url: atom.href } } : {}
-    }]) : new StyledText([]);
-    if (ref)
-      ref.content = content;
-    return content;
-  };
-  createEffect2(update);
-  return /* @__PURE__ */ jsxDEV5("text", {
-    ref: (renderable) => {
-      ref = renderable;
-      renderable.content = update();
-    },
-    width: props.entry.columns,
-    flexShrink: 0,
-    wrapMode: "none",
-    marginTop: props.textRow
-  }, undefined, false, undefined, this);
-}
-function InlineFlow(props) {
-  const atoms = createMemo3(() => {
-    const ctx = {
-      theme: props.theme,
-      headings: props.headings,
-      quote: props.quote,
-      heading: props.heading,
-      hyperlinks: props.graphics.hyperlinks?.() ?? true
-    };
-    return flattenInline(props.inlines, ctx);
-  });
-  const contents = createMemo3(() => [...new Set(atoms().flatMap((atom) => atom.type === "math" ? [atom.content] : []))]);
-  const foreground = () => rgbaToHex(props.heading ? headingColor(props.theme, props.heading.level) : props.theme.text.base);
-  const images = useInlineMathImages(contents, foreground, props.surface, props.graphics.cell);
-  const scale = createMemo3(() => mosaicScale(props.graphics.protocol()));
-  const prefixWidth = () => props.prefix?.(0).length ?? 0;
-  const columns = () => Math.max(1, props.columns - prefixWidth());
-  const lines = createMemo3(() => layoutAtoms(atoms(), columns(), (content) => {
-    const image = images().get(content);
-    if (!image)
-      return;
-    return {
-      normal: { columns: Math.max(1, Math.round(image.normal.columns * scale())), rows: Math.max(1, Math.round(image.normal.rows * scale())), baseline: image.normal.baseline * scale() },
-      compact: { columns: Math.max(1, Math.round(image.compact.columns * scale())), rows: image.compact.rows === 1 ? 1 : Math.max(1, Math.round(image.compact.rows * scale())), baseline: image.compact.baseline * scale() },
-      standard: { columns: Math.max(1, Math.round(image.standard.columns * scale())), rows: Math.max(1, Math.round(image.standard.rows * scale())), baseline: image.standard.baseline * scale() }
-    };
-  }, props.graphics.protocol() !== "blocks"));
-  return /* @__PURE__ */ jsxDEV5("box", {
-    width: "100%",
-    flexDirection: "column",
-    flexShrink: 0,
-    children: /* @__PURE__ */ jsxDEV5(For, {
-      each: lines(),
-      children: (line, index) => /* @__PURE__ */ jsxDEV5("box", {
-        flexDirection: "row",
-        alignItems: "flex-start",
-        width: "100%",
-        height: line.height,
-        flexShrink: 0,
-        backgroundColor: props.theme.background.base,
-        children: [
-          /* @__PURE__ */ jsxDEV5(Show2, {
-            when: props.prefix,
-            children: /* @__PURE__ */ jsxDEV5(Show2, {
-              when: props.prefixChunks,
-              fallback: /* @__PURE__ */ jsxDEV5("text", {
-                fg: props.prefixColor?.() ?? props.theme.markdown.text,
-                wrapMode: "none",
-                width: prefixWidth(),
-                flexShrink: 0,
-                children: props.prefix?.(index()) ?? ""
-              }, undefined, false, undefined, this),
-              children: (chunks) => /* @__PURE__ */ jsxDEV5(PrefixSegment, {
-                chunks: () => chunks()(index()),
-                width: prefixWidth()
-              }, undefined, false, undefined, this)
-            }, undefined, false, undefined, this)
-          }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsxDEV5(For, {
-            each: line.runs,
-            children: (entry, position) => {
-              const atom = entry.atom;
-              if (atom.type === "text") {
-                const visible = position() === line.runs.length - 1 ? atom.text.trimEnd() : atom.text;
-                return /* @__PURE__ */ jsxDEV5(StyledSegment, {
-                  entry: { ...entry, atom: { ...atom, text: visible } },
-                  textRow: line.textRow
-                }, undefined, false, undefined, this);
-              }
-              const variant = entry.variant ?? "normal";
-              return /* @__PURE__ */ jsxDEV5(Show2, {
-                when: images().get(atom.content)?.[variant],
-                fallback: /* @__PURE__ */ jsxDEV5("text", {
-                  fg: props.theme.text.muted,
-                  wrapMode: "none",
-                  width: entry.columns,
-                  flexShrink: 0,
-                  children: atom.raw
-                }, undefined, false, undefined, this),
-                children: (image) => /* @__PURE__ */ jsxDEV5("image", {
-                  id: `opentui-markdown-math-${mathImageID(atom.content, false, foreground(), props.graphics.cell(), 1, variant === "compact", variant === "standard")}-${props.surface()}`,
-                  source: image().png,
-                  fit: "fit",
-                  protocol: "auto",
-                  width: entry.columns,
-                  height: entry.rows,
-                  flexShrink: 0
-                }, undefined, false, undefined, this)
-              }, undefined, false, undefined, this);
-            }
-          }, undefined, false, undefined, this)
-        ]
-      }, undefined, true, undefined, this)
-    }, undefined, false, undefined, this)
-  }, undefined, false, undefined, this);
-}
-
-// node_modules/opentui-markdown-render/src/view/math.tsx
+import { insert as _$insert4 } from "@opentui/solid";
+import { memo as _$memo3 } from "@opentui/solid";
+import { createComponent as _$createComponent3 } from "@opentui/solid";
+import { effect as _$effect5 } from "@opentui/solid";
+import { createTextNode as _$createTextNode2 } from "@opentui/solid";
+import { insertNode as _$insertNode2 } from "@opentui/solid";
+import { setProp as _$setProp6 } from "@opentui/solid";
+import { createElement as _$createElement6 } from "@opentui/solid";
 import { createResource as createResource3, createSignal as createSignal4, Match as Match2, Switch as Switch2 } from "solid-js";
-import { jsxDEV as jsxDEV6 } from "@opentui/solid/jsx-dev-runtime";
-function DisplayMath(props) {
-  const [failed, setFailed] = createSignal4(false);
-  const color = () => rgbaToHex(props.theme().text.base);
-  const mosaic = () => mosaicScale(props.graphics.protocol());
-  const [rendered] = createResource3(() => JSON.stringify({
-    content: props.content,
-    color: color(),
-    background: props.surface(),
-    cell: props.graphics.cell(),
-    scale: props.scale()
-  }), async (key) => {
-    const input = JSON.parse(key);
-    try {
-      const raster = await renderMathImage(input.content, true, input.color, input.background, input.cell, input.scale);
-      return raster ? { raster } : { error: "Renderer returned no image" };
-    } catch (error) {
-      return { error: error instanceof Error ? error.message : String(error) };
-    }
-  });
-  const raster = () => {
-    const value = rendered();
-    return value && "raster" in value ? value.raster : undefined;
-  };
-  const source = () => `${props.open}${props.content}${props.close}`;
-  const box = () => {
-    const image = raster();
-    const columns = (image ? image.columns : Math.min(24, props.maxWidth())) * mosaic();
-    const rows = (image ? image.rows : 3) * mosaic();
-    const max = props.maxWidth();
-    if (columns <= max)
-      return { columns, rows: Math.max(1, rows) };
-    return { columns: max, rows: Math.max(1, Math.round(rows * max / columns)) };
-  };
-  return /* @__PURE__ */ jsxDEV6("box", {
-    width: "100%",
-    flexShrink: 0,
-    flexDirection: "column",
-    marginTop: 1,
-    marginBottom: 1,
-    children: /* @__PURE__ */ jsxDEV6(Switch2, {
-      children: [
-        /* @__PURE__ */ jsxDEV6(Match2, {
-          when: rendered.loading,
-          children: /* @__PURE__ */ jsxDEV6("text", {
-            fg: props.theme().text.muted,
-            alignSelf: "center",
-            children: "Rendering math..."
-          }, undefined, false, undefined, this)
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsxDEV6(Match2, {
-          when: failed() || rendered() && "error" in rendered(),
-          children: /* @__PURE__ */ jsxDEV6("box", {
-            flexDirection: "column",
-            border: ["left"],
-            borderColor: props.theme().text.feedback.error,
-            paddingLeft: 1,
-            alignSelf: "center",
-            children: [
-              /* @__PURE__ */ jsxDEV6("text", {
-                fg: props.theme().text.feedback.error,
-                children: "Could not render TeX; showing source"
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsxDEV6("text", {
-                fg: props.theme().text.base,
-                wrapMode: "word",
-                children: source()
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this)
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsxDEV6(Match2, {
-          when: raster(),
-          children: /* @__PURE__ */ jsxDEV6("box", {
-            width: "100%",
-            height: box().rows,
-            flexShrink: 0,
-            alignItems: "center",
-            justifyContent: "center",
-            children: /* @__PURE__ */ jsxDEV6("image", {
-              id: `opentui-markdown-math-${mathImageID(props.content, true, color(), props.graphics.cell(), props.scale())}-${props.surface()}`,
-              source: raster().png,
-              fit: "fit",
-              protocol: "auto",
-              width: box().columns,
-              height: box().rows,
-              onError: () => setFailed(true)
-            }, undefined, false, undefined, this)
-          }, undefined, false, undefined, this)
-        }, undefined, false, undefined, this)
-      ]
-    }, undefined, true, undefined, this)
-  }, undefined, false, undefined, this);
-}
-
-// node_modules/opentui-markdown-render/src/view/mermaid.tsx
-import { createEffect as createEffect3, createMemo as createMemo4, Show as Show3 } from "solid-js";
-
-// node_modules/opentui-markdown-render/src/merman/diagram.ts
+import { memo as _$memo4 } from "@opentui/solid";
+import { insert as _$insert5 } from "@opentui/solid";
+import { createComponent as _$createComponent4 } from "@opentui/solid";
+import { setProp as _$setProp7 } from "@opentui/solid";
+import { use as _$use2 } from "@opentui/solid";
+import { createElement as _$createElement7 } from "@opentui/solid";
+import { createEffect as createEffect3, createMemo as createMemo4, Show as Show2 } from "solid-js";
 import {
   parseColor as parseColor3,
   StyledText as StyledText3
 } from "@opentui/core";
-
-// node_modules/opentui-markdown-render/src/merman/class/drawing.ts
 import { BorderChars as BorderChars2 } from "@opentui/core";
-
-// node_modules/opentui-markdown-render/src/merman/core/text-lines.ts
-function parseDiagramTextLines(value) {
-  return value.split(/<br\s*\/?>/i).map((line) => {
-    const runs = [];
-    const source = line.trim();
-    const tag = /<\/?(?:i|em)\s*>/gi;
-    let italic = false;
-    let offset = 0;
-    for (const match of source.matchAll(tag)) {
-      if (match.index > offset)
-        runs.push({ text: source.slice(offset, match.index), italic });
-      italic = !match[0].startsWith("</");
-      offset = match.index + match[0].length;
-    }
-    if (offset < source.length)
-      runs.push({ text: source.slice(offset), italic });
-    return { text: runs.map((run) => run.text).join(""), runs };
-  });
-}
-function splitDiagramLines(value) {
-  return parseDiagramTextLines(value).map((line) => line.text);
-}
-
-// node_modules/opentui-markdown-render/src/merman/core/text.ts
-function diagramTextWidth(value) {
-  return stringWidth(value);
-}
-var DIAGRAM_LABEL_PADDING_X = 1;
-function padDiagramLabelLine(value) {
-  const padding = " ".repeat(DIAGRAM_LABEL_PADDING_X);
-  return `${padding}${value}${padding}`;
-}
-function measureDiagramLabelWidth(value, measure = diagramTextWidth) {
-  return Math.max(...splitDiagramLines(value).map((line) => measure(line) + DIAGRAM_LABEL_PADDING_X * 2));
-}
-var graphemeSegmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
-function* diagramTextGraphemes(value) {
-  for (const { segment } of graphemeSegmenter.segment(value))
-    yield segment;
-}
-function measureDiagramTextBox(value, options = {}) {
-  const lines = splitDiagramLines(value);
-  const innerWidth = Math.max(...lines.map(diagramTextWidth), options.minInnerWidth ?? 1);
-  return {
-    width: innerWidth + (options.paddingX ?? 0) * 2,
-    height: lines.length + (options.paddingY ?? 0) * 2,
-    lines
-  };
-}
-
-// node_modules/opentui-markdown-render/src/merman/core/canvas.ts
-var MAX_DIAGRAM_CELLS = 250000;
-
-class DiagramCanvasSizeError extends Error {
-  width;
-  height;
-  constructor(width, height) {
-    const invalid = !Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width < 0 || height < 0;
-    super(invalid ? `Diagram canvas dimensions must be non-negative safe integers, received ${width}x${height}` : `Diagram canvas ${width}x${height} exceeds the ${MAX_DIAGRAM_CELLS.toLocaleString()} cell limit`);
-    this.width = width;
-    this.height = height;
-    this.name = "DiagramCanvasSizeError";
-  }
-}
-function createEmptyCell() {
-  return { char: " " };
-}
-function sameKey(left, right) {
-  return Boolean(left && left.length === right.length && left.every((value, index) => Object.is(value, right[index])));
-}
-
-class DiagramCanvas {
-  width;
-  height;
-  cells;
-  measure;
-  mergeCell;
-  rowEnds;
-  constructor(width, height, options = {}) {
-    this.width = width;
-    this.height = height;
-    if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width < 0 || height < 0) {
-      throw new DiagramCanvasSizeError(width, height);
-    }
-    if (width * height > MAX_DIAGRAM_CELLS)
-      throw new DiagramCanvasSizeError(width, height);
-    this.measure = options.measure ?? stringWidth;
-    this.mergeCell = options.mergeCell;
-    this.cells = Array.from({ length: height }, () => Array.from({ length: width }, () => createEmptyCell()));
-    this.rowEnds = new Uint32Array(height);
-  }
-  get rows() {
-    return this.cells;
-  }
-  rowText(row, rowEnd) {
-    return row.slice(0, rowEnd).map((cell) => cell.char).join("");
-  }
-  textRowRange(trimTop, trimBottom) {
-    let start = 0;
-    let end = this.cells.length;
-    if (trimTop)
-      while (start < end && this.rowEnds[start] === 0)
-        start += 1;
-    if (trimBottom)
-      while (end > start && this.rowEnds[end - 1] === 0)
-        end -= 1;
-    return { start, end };
-  }
-  setCell(x, y, char, style, metadata) {
-    this.writeCell(x, y, char, style, metadata, true);
-  }
-  replaceCell(x, y, char, style, metadata) {
-    this.writeCell(x, y, char, style, metadata, false);
-  }
-  writeCell(x, y, char, style, metadata, merge) {
-    if (y < 0 || y >= this.cells.length || x < 0 || x >= this.cells[y].length)
-      return;
-    const incoming = { char, style, ...metadata };
-    const cell = merge ? this.mergeCell?.(this.cells[y][x], incoming) ?? incoming : incoming;
-    this.cells[y][x] = cell;
-    if (cell.char !== " ") {
-      this.rowEnds[y] = Math.max(this.rowEnds[y], x + 1);
-    } else if (this.rowEnds[y] === x + 1) {
-      let end = x;
-      while (end > 0 && this.cells[y][end - 1]?.char === " ")
-        end -= 1;
-      this.rowEnds[y] = end;
-    }
-  }
-  getCell(x, y) {
-    return this.cells[y]?.[x];
-  }
-  setText(x, y, text, style, metadata) {
-    const metadataAt = (cellX) => typeof metadata === "function" ? metadata(cellX, y) : metadata;
-    if (this.measure === stringWidth && /^[\x20-\x7e]*$/.test(text)) {
-      for (let index = 0;index < text.length; index++) {
-        this.setCell(x + index, y, text[index], style, metadataAt(x + index));
-      }
-      return;
-    }
-    let offset = 0;
-    for (const grapheme of diagramTextGraphemes(text)) {
-      const width = Math.max(1, this.measure(grapheme));
-      if (x + offset < 0 || x + offset + width > this.width) {
-        offset += width;
-        continue;
-      }
-      this.setCell(x + offset, y, grapheme, style, metadataAt(x + offset));
-      for (let continuation = 1;continuation < width; continuation++) {
-        this.setCell(x + offset + continuation, y, "", style, metadataAt(x + offset + continuation));
-      }
-      offset += width;
-    }
-  }
-  toString(options = {}) {
-    const lines = [];
-    const rows = this.textRowRange(options.trimTop ?? false, options.trimBottom ?? false);
-    for (let rowIndex = rows.start;rowIndex < rows.end; rowIndex++) {
-      lines.push(this.rowText(this.cells[rowIndex], this.rowEnds[rowIndex]));
-    }
-    return lines.join(`
-`);
-  }
-  getTextSize(options = {}) {
-    const rows = this.textRowRange(options.trimTop ?? false, options.trimBottom ?? false);
-    let width = 0;
-    for (let rowIndex = rows.start;rowIndex < rows.end; rowIndex++) {
-      const row = this.cells[rowIndex];
-      const rowEnd = this.rowEnds[rowIndex];
-      if (rowEnd > 0)
-        width = Math.max(width, this.measure(this.rowText(row, rowEnd)));
-    }
-    return { width, height: rows.end - rows.start };
-  }
-  getTextHeight(options = {}) {
-    const rows = this.textRowRange(options.trimTop ?? false, options.trimBottom ?? false);
-    return rows.end - rows.start;
-  }
-  forEachRun(onRun, onLineEnd, options = {}) {
-    const key = options.key;
-    const rows = this.textRowRange(options.trimTop ?? false, options.trimBottom ?? false);
-    for (let rowIndex = rows.start;rowIndex < rows.end; rowIndex++) {
-      const row = this.cells[rowIndex];
-      let rowEnd = this.rowEnds[rowIndex];
-      while (rowEnd < row.length && row[rowEnd]?.style !== undefined)
-        rowEnd += 1;
-      let currentCell;
-      let currentKey;
-      let currentText = "";
-      const flush = () => {
-        if (!currentText || !currentCell)
-          return;
-        onRun({ text: currentText, style: currentCell.style, cell: currentCell });
-        currentText = "";
-      };
-      for (let x = 0;x < rowEnd; x++) {
-        const cell = row[x];
-        const nextKey = key?.(cell);
-        const sameRun = currentCell && (key ? sameKey(currentKey, nextKey) : currentCell.style === cell.style);
-        if (!sameRun) {
-          flush();
-          currentCell = cell;
-          currentKey = nextKey;
-        }
-        currentText += cell.char;
-      }
-      flush();
-      if (rowIndex < rows.end - 1)
-        onLineEnd();
-    }
-  }
-}
-
-// node_modules/opentui-markdown-render/src/merman/core/drawing.ts
 import { BorderChars } from "@opentui/core";
-
-// node_modules/opentui-markdown-render/src/merman/core/geometry.ts
-var DIRECTION_AXIS = {
-  left: "x",
-  right: "x",
-  up: "y",
-  down: "y"
-};
-var DIRECTION_SIGN = {
-  left: -1,
-  right: 1,
-  up: -1,
-  down: 1
-};
-var DIRECTION_SIDE = {
-  left: "left",
-  right: "right",
-  up: "top",
-  down: "bottom"
-};
-var OPPOSITE_SIDE = {
-  left: "right",
-  right: "left",
-  top: "bottom",
-  bottom: "top"
-};
-function point(x, y) {
-  return { x, y };
-}
-function diagramBoundsFromRect(left, top, width, height) {
-  return {
-    left,
-    top,
-    width,
-    height,
-    centerX: left + Math.floor(width / 2),
-    centerY: top + Math.floor(height / 2)
-  };
-}
-function translateDiagramBounds(bounds, dx, dy) {
-  bounds.left += dx;
-  bounds.top += dy;
-  bounds.centerX += dx;
-  bounds.centerY += dy;
-}
-function diagramBoundsFromBounds(bounds) {
-  if (bounds.length === 0)
-    return;
-  const left = Math.min(...bounds.map((bound) => bound.left));
-  const top = Math.min(...bounds.map((bound) => bound.top));
-  const right = Math.max(...bounds.map((bound) => bound.left + bound.width));
-  const bottom = Math.max(...bounds.map((bound) => bound.top + bound.height));
-  return diagramBoundsFromRect(left, top, right - left, bottom - top);
-}
-function diagramBoundsFromPoints(points) {
-  if (points.length === 0)
-    return;
-  const left = Math.min(...points.map((point) => point.x));
-  const top = Math.min(...points.map((point) => point.y));
-  const right = Math.max(...points.map((point) => point.x));
-  const bottom = Math.max(...points.map((point) => point.y));
-  return diagramBoundsFromRect(left, top, right - left + 1, bottom - top + 1);
-}
-function coordinate(point, axis) {
-  return point[axis];
-}
-function withCoordinate(point, axis, value) {
-  return axis === "x" ? { x: value, y: point.y } : { x: point.x, y: value };
-}
-function shiftPoint(point, direction, distance = 1) {
-  switch (direction) {
-    case "left":
-      return { x: point.x - distance, y: point.y };
-    case "right":
-      return { x: point.x + distance, y: point.y };
-    case "up":
-      return { x: point.x, y: point.y - distance };
-    case "down":
-      return { x: point.x, y: point.y + distance };
-  }
-}
-function clampPoint(point, min = { x: 0, y: 0 }) {
-  return { x: Math.max(min.x, point.x), y: Math.max(min.y, point.y) };
-}
-function samePoint(left, right) {
-  return left.x === right.x && left.y === right.y;
-}
-function directionAxis(direction) {
-  return DIRECTION_AXIS[direction];
-}
-function directionSign(direction) {
-  return DIRECTION_SIGN[direction];
-}
-function sideForDirection(direction) {
-  return DIRECTION_SIDE[direction];
-}
-function oppositeSide(side) {
-  return OPPOSITE_SIDE[side];
-}
-function directionBetween(from, to) {
-  if (from.y === to.y) {
-    if (to.x > from.x)
-      return "right";
-    if (to.x < from.x)
-      return "left";
-  }
-  if (from.x === to.x) {
-    if (to.y > from.y)
-      return "down";
-    if (to.y < from.y)
-      return "up";
-  }
-  return;
-}
-function boundsCenter(bounds) {
-  return point(bounds.centerX, bounds.centerY);
-}
-function boundsSidePoint(bounds, side, surface = "outside") {
-  switch (side) {
-    case "left":
-      return point(bounds.left - (surface === "outside" ? 1 : 0), bounds.centerY);
-    case "right":
-      return point(bounds.left + bounds.width - (surface === "outside" ? 0 : 1), bounds.centerY);
-    case "top":
-      return point(bounds.centerX, bounds.top - (surface === "outside" ? 1 : 0));
-    case "bottom":
-      return point(bounds.centerX, bounds.top + bounds.height - (surface === "outside" ? 0 : 1));
-  }
-}
-function centerCoordinate(bounds, axis) {
-  return axis === "x" ? bounds.centerX : bounds.centerY;
-}
-function snapCoordinate(source, target, tolerance) {
-  return Math.abs(source - target) <= tolerance ? target : source;
-}
-function pathThrough(points) {
-  const path = [];
-  for (const next of points) {
-    if (!path.length || !samePoint(path[path.length - 1], next))
-      path.push(point(next.x, next.y));
-  }
-  return path;
-}
-function lane(axis, coordinate) {
-  return { axis, coordinate };
-}
-function pathViaLane(start, routeLane, end) {
-  return pathThrough([
-    start,
-    withCoordinate(start, routeLane.axis, routeLane.coordinate),
-    withCoordinate(end, routeLane.axis, routeLane.coordinate),
-    end
-  ]);
-}
-function dominantAxis(start, end) {
-  return Math.abs(end.x - start.x) >= Math.abs(end.y - start.y) ? "x" : "y";
-}
-function terminalLane(start, end, axis, terminalClearance) {
-  const startCoordinate = coordinate(start, axis);
-  const endCoordinate = coordinate(end, axis);
-  const delta = endCoordinate - startCoordinate;
-  const sign = Math.sign(delta);
-  if (sign === 0)
-    return endCoordinate;
-  return endCoordinate - sign * Math.min(terminalClearance, Math.max(1, Math.abs(delta) - 1));
-}
-function orthogonalPath(start, end, options = {}) {
-  if (start.x === end.x || start.y === end.y)
-    return pathThrough([start, end]);
-  const laneAxis = options.preferredAxis ?? dominantAxis(start, end);
-  return pathViaLane(start, lane(laneAxis, terminalLane(start, end, laneAxis, options.terminalClearance ?? 4)), end);
-}
-function segmentBetween(from, to) {
-  const direction = directionBetween(from, to);
-  if (!direction)
-    return;
-  return {
-    from,
-    to,
-    axis: directionAxis(direction),
-    direction,
-    length: Math.abs(coordinate(to, directionAxis(direction)) - coordinate(from, directionAxis(direction)))
-  };
-}
-function walkOrthogonalSegment(from, to, includeStart, visit) {
-  const direction = directionBetween(from, to);
-  if (!direction)
-    return;
-  const dx = direction === "right" ? 1 : direction === "left" ? -1 : 0;
-  const dy = direction === "down" ? 1 : direction === "up" ? -1 : 0;
-  let cursor = includeStart ? from : point(from.x + dx, from.y + dy);
-  while (!samePoint(cursor, to)) {
-    if (visit(cursor) === false)
-      return;
-    cursor = point(cursor.x + dx, cursor.y + dy);
-  }
-}
-function orthogonalPathPoints(points) {
-  const path = [];
-  for (let index = 1;index < points.length; index++) {
-    const from = points[index - 1];
-    const to = points[index];
-    const direction = directionBetween(from, to);
-    if (!direction)
-      continue;
-    const dx = direction === "right" ? 1 : direction === "left" ? -1 : 0;
-    const dy = direction === "down" ? 1 : direction === "up" ? -1 : 0;
-    let cursor = path.length === 0 ? point(from.x, from.y) : point(from.x + dx, from.y + dy);
-    while (true) {
-      path.push(cursor);
-      if (samePoint(cursor, to))
-        break;
-      cursor = point(cursor.x + dx, cursor.y + dy);
-    }
-  }
-  return path;
-}
-function orderedSpan(left, right) {
-  return left <= right ? { start: left, end: right } : { start: right, end: left };
-}
-function segmentSpan(segment) {
-  return orderedSpan(coordinate(segment.from, segment.axis), coordinate(segment.to, segment.axis));
-}
-function pointOnSegment(segment, coordinateValue) {
-  return withCoordinate(segment.from, segment.axis, coordinateValue);
-}
-function insetSpan(span, amount) {
-  return { start: span.start + amount, end: span.end - amount };
-}
-function spanCapacity(span) {
-  return Math.max(0, span.end - span.start + 1);
-}
-function centeredSpanStart(span, width) {
-  return span.start + Math.floor((spanCapacity(span) - width) / 2);
-}
-function midpoint(span) {
-  return Math.round((span.start + span.end) / 2);
-}
-function advanceCoordinate(origin, direction, distance) {
-  return origin + directionSign(direction) * distance;
-}
-function beforeNearestCoordinate(points, axis, direction, clearance) {
-  const coordinates = points.map((point) => coordinate(point, axis));
-  const nearest = directionSign(direction) > 0 ? Math.min(...coordinates) : Math.max(...coordinates);
-  return advanceCoordinate(nearest, direction, -clearance);
-}
-function afterFarthestCoordinate(points, axis, direction, clearance) {
-  const coordinates = points.map((point) => coordinate(point, axis));
-  const farthest = directionSign(direction) > 0 ? Math.max(...coordinates) : Math.min(...coordinates);
-  return advanceCoordinate(farthest, direction, clearance);
-}
-function keepBefore(preferred, boundary, direction) {
-  return directionSign(direction) > 0 ? Math.min(preferred, boundary) : Math.max(preferred, boundary);
-}
-function keepAfter(preferred, boundary, direction) {
-  return directionSign(direction) > 0 ? Math.max(preferred, boundary) : Math.min(preferred, boundary);
-}
-
-// node_modules/opentui-markdown-render/src/merman/core/drawing.ts
-var DIAGRAM_ARROW_HEADS = new Set(["\u25B6", "\u25C0", "\u25BC", "\u25B2", "\u2192", "\u2190", "\u2193", "\u2191"]);
-var HEAVY_LINE_GLYPHS = new Set(Object.values(BorderChars.heavy));
-var DIAGRAM_DIAMOND_CHARS = {
-  topLeft: "\u256D",
-  topRight: "\u256E",
-  upperLeft: "\u256D",
-  upperLeftJoin: "\u256F",
-  upperRightJoin: "\u2570",
-  upperRight: "\u256E",
-  vertical: "\u2502",
-  lowerLeft: "\u2570",
-  lowerLeftJoin: "\u256E",
-  lowerRightJoin: "\u256D",
-  lowerRight: "\u256F",
-  bottomLeft: "\u2570",
-  bottomRight: "\u256F",
-  horizontal: "\u2500"
-};
-function diagramDiamondCharactersFromBorder(chars) {
-  return {
-    topLeft: chars.topLeft,
-    topRight: chars.topRight,
-    upperLeft: chars.topLeft,
-    upperLeftJoin: chars.bottomRight,
-    upperRightJoin: chars.bottomLeft,
-    upperRight: chars.topRight,
-    vertical: chars.vertical,
-    lowerLeft: chars.bottomLeft,
-    lowerLeftJoin: chars.topRight,
-    lowerRightJoin: chars.topLeft,
-    lowerRight: chars.bottomRight,
-    bottomLeft: chars.bottomLeft,
-    bottomRight: chars.bottomRight,
-    horizontal: chars.horizontal
-  };
-}
-function lineDirections(char) {
-  switch (char) {
-    case "\u2500":
-      return ["left", "right"];
-    case "\u2502":
-      return ["up", "down"];
-    case "\u2501":
-      return ["left", "right"];
-    case "\u2503":
-      return ["up", "down"];
-    case "\u250C":
-    case "\u256D":
-    case "\u250F":
-      return ["right", "down"];
-    case "\u2510":
-    case "\u256E":
-    case "\u2513":
-      return ["left", "down"];
-    case "\u2514":
-    case "\u2570":
-    case "\u2517":
-      return ["up", "right"];
-    case "\u2518":
-    case "\u256F":
-    case "\u251B":
-      return ["up", "left"];
-    case "\u251C":
-    case "\u2523":
-      return ["up", "down", "right"];
-    case "\u2524":
-    case "\u252B":
-      return ["up", "down", "left"];
-    case "\u252C":
-    case "\u2533":
-      return ["left", "right", "down"];
-    case "\u2534":
-    case "\u253B":
-      return ["left", "right", "up"];
-    case "\u253C":
-    case "\u254B":
-      return ["up", "down", "left", "right"];
-    default:
-      return;
-  }
-}
-function diagramLineGlyph(directions, cornerStyle = "square", lineStyle = "single") {
-  const up = directions.has("up");
-  const down = directions.has("down");
-  const left = directions.has("left");
-  const right = directions.has("right");
-  if (lineStyle === "heavy") {
-    const chars = BorderChars.heavy;
-    if (up && down && left && right)
-      return chars.cross;
-    if (up && down && right)
-      return chars.leftT;
-    if (up && down && left)
-      return chars.rightT;
-    if (left && right && down)
-      return chars.topT;
-    if (left && right && up)
-      return chars.bottomT;
-    if (up && right)
-      return chars.bottomLeft;
-    if (up && left)
-      return chars.bottomRight;
-    if (down && right)
-      return chars.topLeft;
-    if (down && left)
-      return chars.topRight;
-    if (up || down)
-      return chars.vertical;
-    return chars.horizontal;
-  }
-  if (up && down && left && right)
-    return "\u253C";
-  if (up && down && right)
-    return "\u251C";
-  if (up && down && left)
-    return "\u2524";
-  if (left && right && down)
-    return "\u252C";
-  if (left && right && up)
-    return "\u2534";
-  if (up && right)
-    return cornerStyle === "rounded" ? "\u2570" : "\u2514";
-  if (up && left)
-    return cornerStyle === "rounded" ? "\u256F" : "\u2518";
-  if (down && right)
-    return cornerStyle === "rounded" ? "\u256D" : "\u250C";
-  if (down && left)
-    return cornerStyle === "rounded" ? "\u256E" : "\u2510";
-  if (up || down)
-    return "\u2502";
-  return "\u2500";
-}
-function isHeavyLineGlyph(char) {
-  return HEAVY_LINE_GLYPHS.has(char);
-}
-function segmentGlyph(direction, lineStyle) {
-  const directions = new Set(direction === "left" || direction === "right" ? ["left", "right"] : ["up", "down"]);
-  return diagramLineGlyph(directions, "square", lineStyle === "heavy" ? "heavy" : "single");
-}
-function mergeDiagramLineGlyph(existing, incoming, cornerStyle = "square") {
-  const existingDirections = lineDirections(existing);
-  const incomingDirections = lineDirections(incoming);
-  if (!existingDirections || !incomingDirections)
-    return;
-  return diagramLineGlyph(new Set([...existingDirections, ...incomingDirections]), cornerStyle, isHeavyLineGlyph(existing) && isHeavyLineGlyph(incoming) ? "heavy" : "single");
-}
-function diagramArrowHead(direction, style = "filled") {
-  if (style === "line") {
-    if (direction === "right")
-      return "\u2192";
-    if (direction === "left")
-      return "\u2190";
-    if (direction === "up")
-      return "\u2191";
-    return "\u2193";
-  }
-  if (direction === "right")
-    return "\u25B6";
-  if (direction === "left")
-    return "\u25C0";
-  if (direction === "up")
-    return "\u25B2";
-  return "\u25BC";
-}
-function diagramArrowHeadBetween(from, to, style = "filled") {
-  const direction = directionBetween(from, to);
-  return direction ? diagramArrowHead(direction, style) : diagramArrowHead("right", style);
-}
-function drawDiagramFrame(bounds, chars, setCell) {
-  setCell(bounds.left, bounds.top, chars.topLeft);
-  setCell(bounds.left + bounds.width - 1, bounds.top, chars.topRight);
-  setCell(bounds.left, bounds.top + bounds.height - 1, chars.bottomLeft);
-  setCell(bounds.left + bounds.width - 1, bounds.top + bounds.height - 1, chars.bottomRight);
-  for (let x = bounds.left + 1;x < bounds.left + bounds.width - 1; x++) {
-    setCell(x, bounds.top, chars.horizontal);
-    setCell(x, bounds.top + bounds.height - 1, chars.horizontal);
-  }
-  for (let y = bounds.top + 1;y < bounds.top + bounds.height - 1; y++) {
-    setCell(bounds.left, y, chars.vertical);
-    setCell(bounds.left + bounds.width - 1, y, chars.vertical);
-  }
-}
-function fillDiagramFrameInterior(bounds, setCell) {
-  for (let y = bounds.top + 1;y < bounds.top + bounds.height - 1; y++) {
-    for (let x = bounds.left + 1;x < bounds.left + bounds.width - 1; x++)
-      setCell(x, y);
-  }
-}
-function drawDiagramDiamond(bounds, setCell, chars = DIAGRAM_DIAMOND_CHARS) {
-  const left = bounds.left;
-  const right = bounds.left + bounds.width - 1;
-  const top = bounds.top;
-  const bottom = bounds.top + bounds.height - 1;
-  const capInset = Math.min(2, Math.max(1, Math.floor((bounds.width - 1) / 2)));
-  const capLeft = left + capInset;
-  const capRight = right - capInset;
-  setCell(capLeft, top, chars.topLeft);
-  for (let x = capLeft + 1;x < capRight; x++)
-    setCell(x, top, chars.horizontal);
-  setCell(capRight, top, chars.topRight);
-  setCell(left, top + 1, chars.upperLeft);
-  for (let x = left + 1;x < capLeft; x++)
-    setCell(x, top + 1, chars.horizontal);
-  setCell(capLeft, top + 1, chars.upperLeftJoin);
-  setCell(capRight, top + 1, chars.upperRightJoin);
-  for (let x = capRight + 1;x < right; x++)
-    setCell(x, top + 1, chars.horizontal);
-  setCell(right, top + 1, chars.upperRight);
-  for (let y = top + 2;y < bottom - 1; y++) {
-    setCell(left, y, chars.vertical);
-    setCell(right, y, chars.vertical);
-  }
-  setCell(left, bottom - 1, chars.lowerLeft);
-  for (let x = left + 1;x < capLeft; x++)
-    setCell(x, bottom - 1, chars.horizontal);
-  setCell(capLeft, bottom - 1, chars.lowerLeftJoin);
-  setCell(capRight, bottom - 1, chars.lowerRightJoin);
-  for (let x = capRight + 1;x < right; x++)
-    setCell(x, bottom - 1, chars.horizontal);
-  setCell(right, bottom - 1, chars.lowerRight);
-  setCell(capLeft, bottom, chars.bottomLeft);
-  for (let x = capLeft + 1;x < capRight; x++)
-    setCell(x, bottom, chars.horizontal);
-  setCell(capRight, bottom, chars.bottomRight);
-}
-function drawOrthogonalPath(points, setCell, options = {}) {
-  for (let index = 1;index < points.length; index++) {
-    const from = points[index - 1];
-    const to = points[index];
-    const direction = directionBetween(from, to);
-    if (!direction)
-      continue;
-    const glyph = segmentGlyph(direction, options.lineStyle);
-    const horizontal = direction === "left" || direction === "right";
-    const dashOn = horizontal ? 2 : 1;
-    const dashPeriod = horizontal ? 4 : 2;
-    let step = index === 1 ? 0 : 1;
-    walkOrthogonalSegment(from, to, index === 1, (point) => {
-      if (options.lineStyle !== "dashed" || step % dashPeriod < dashOn)
-        setCell(point.x, point.y, glyph);
-      step += 1;
-    });
-  }
-  for (let index = 1;index < points.length - 1; index++) {
-    const previous = points[index - 1];
-    const current = points[index];
-    const next = points[index + 1];
-    const fromDirection = directionBetween(current, previous);
-    const toDirection = directionBetween(current, next);
-    const directions = new Set;
-    if (fromDirection)
-      directions.add(fromDirection);
-    if (toDirection)
-      directions.add(toDirection);
-    setCell(current.x, current.y, diagramLineGlyph(directions, options.cornerStyle, options.lineStyle === "heavy" ? "heavy" : "single"));
-  }
-}
 
 // node_modules/@dagrejs/dagre/dist/dagre.esm.js
 var Te2 = Object.defineProperty;
@@ -7608,875 +4120,6 @@ function _e2(e) {
 }
 /*! For license information please see dagre.esm.js.LEGAL.txt */
 
-// node_modules/opentui-markdown-render/src/merman/class/labels.ts
-function classLabelAnchor(path, lineCount, width, vertical) {
-  let bestFrom = path[0];
-  let bestTo = path[path.length - 1];
-  let bestLength = -1;
-  const preferredLength = (from, to) => {
-    const horizontal = from.y === to.y;
-    return horizontal === vertical ? Math.abs(from.x - to.x) + Math.abs(from.y - to.y) : -1;
-  };
-  for (let index = 1;index < path.length; index++) {
-    const from = path[index - 1];
-    const to = path[index];
-    const length = preferredLength(from, to);
-    if (length > bestLength) {
-      bestLength = length;
-      bestFrom = from;
-      bestTo = to;
-    }
-  }
-  if (bestLength < 0) {
-    for (let index = 1;index < path.length; index++) {
-      const from = path[index - 1];
-      const to = path[index];
-      const length = Math.abs(from.x - to.x) + Math.abs(from.y - to.y);
-      if (length > bestLength) {
-        bestLength = length;
-        bestFrom = from;
-        bestTo = to;
-      }
-    }
-  }
-  const midX = Math.floor((bestFrom.x + bestTo.x) / 2);
-  const midY = Math.floor((bestFrom.y + bestTo.y) / 2);
-  if (bestFrom.y === bestTo.y)
-    return { x: midX - Math.floor(width / 2), y: bestFrom.y - lineCount };
-  if (bestFrom.x === bestTo.x)
-    return { x: bestFrom.x + 2, y: midY - Math.floor(lineCount / 2) };
-  return { x: midX, y: midY };
-}
-
-// node_modules/opentui-markdown-render/src/merman/class/layout.ts
-var CLASS_CONTENT_OFFSET_X = 2;
-var CONTENT_PADDING = 2;
-var NODE_H_GAP = 6;
-var NODE_MIN_GAP = 3;
-var MARGIN_TOP = 2;
-var MARGIN_RIGHT = 4;
-var MARGIN_BOTTOM = 2;
-function displayClassName(id) {
-  let open = true;
-  return id.replace(/~/g, () => {
-    const glyph = open ? "<" : ">";
-    open = !open;
-    return glyph;
-  });
-}
-function classBoxSectionLines(definition) {
-  return {
-    titleLines: [
-      ...definition.stereotype ? [`\xAB${definition.stereotype}\xBB`] : [],
-      displayClassName(definition.label ?? definition.id)
-    ],
-    attributeLines: [
-      ...definition.members.filter((member) => !member.method).map((member) => member.text),
-      ...(definition.notes ?? []).map((note) => `\u24D8 ${note}`)
-    ],
-    methodLines: definition.members.filter((member) => member.method).map((member) => member.text)
-  };
-}
-function measureClassBox(definition) {
-  const { titleLines, attributeLines, methodLines } = classBoxSectionLines(definition);
-  const contentWidth = Math.max(1, ...titleLines.map(diagramTextWidth), ...attributeLines.map(diagramTextWidth), ...methodLines.map(diagramTextWidth));
-  let height = 2 + titleLines.length;
-  if (attributeLines.length)
-    height += 1 + attributeLines.length;
-  if (methodLines.length)
-    height += 1 + methodLines.length;
-  return { titleLines, attributeLines, methodLines, contentWidth, width: contentWidth + CONTENT_PADDING * 2, height };
-}
-function layoutClassDiagram(diagram, direction) {
-  const vertical = direction === "TB" || direction === "BT";
-  const metrics = new Map(diagram.classes.map((definition) => [definition.id, measureClassBox(definition)]));
-  const rank = computeRanks(diagram, direction);
-  const byId = new Map(diagram.classes.map((definition) => [definition.id, definition]));
-  const groups = new Map;
-  for (const definition of diagram.classes) {
-    const key = rank.get(definition.id) ?? 0;
-    const list = groups.get(key) ?? [];
-    list.push(definition);
-    groups.set(key, list);
-  }
-  const rankKeys = [...groups.keys()].sort((left, right) => left - right);
-  const records = diagram.relationships.map((relationship) => ({
-    relationship,
-    from: byId.get(relationship.from),
-    to: byId.get(relationship.to),
-    fromRank: rank.get(relationship.from) ?? 0,
-    toRank: rank.get(relationship.to) ?? 0
-  }));
-  const spacing = computeSpacing(records, vertical);
-  const boxes = [];
-  const boxById = new Map;
-  const bands = new Map;
-  let mainExtent = 0;
-  if (vertical) {
-    const laneWidths = rankKeys.map((key) => laneWidth(groups.get(key), metrics));
-    const totalWidth = Math.max(0, ...laneWidths);
-    let y = 0;
-    rankKeys.forEach((key, index) => {
-      const nodes = groups.get(key);
-      const bandHeight = Math.max(0, ...nodes.map((node) => metrics.get(node.id).height));
-      let x = Math.floor((totalWidth - laneWidths[index]) / 2);
-      for (const definition of nodes) {
-        const size = metrics.get(definition.id);
-        const box = makeClassBox(definition, x, y, size);
-        boxes.push(box);
-        boxById.set(definition.id, box);
-        x += size.width + NODE_H_GAP;
-      }
-      bands.set(key, { start: y, end: y + bandHeight - 1 });
-      y += bandHeight + spacing.gapFor(key);
-    });
-    mainExtent = Math.max(0, ...boxes.map((box) => box.bounds.left + box.bounds.width));
-  } else {
-    const laneHeights = rankKeys.map((key) => laneHeight(groups.get(key), metrics));
-    const totalHeight = Math.max(0, ...laneHeights);
-    let x = 0;
-    rankKeys.forEach((key, index) => {
-      const nodes = groups.get(key);
-      const bandWidth = Math.max(0, ...nodes.map((node) => metrics.get(node.id).width));
-      let y = Math.floor((totalHeight - laneHeights[index]) / 2);
-      for (const definition of nodes) {
-        const size = metrics.get(definition.id);
-        const box = makeClassBox(definition, x, y, size);
-        boxes.push(box);
-        boxById.set(definition.id, box);
-        y += size.height + NODE_MIN_GAP;
-      }
-      bands.set(key, { start: x, end: x + bandWidth - 1 });
-      x += bandWidth + spacing.gapFor(key);
-    });
-    mainExtent = Math.max(0, ...boxes.map((box) => box.bounds.top + box.bounds.height));
-  }
-  const corridors = { low: 0, high: 0 };
-  const takeCorridor = (side) => {
-    const index = corridors[side]++;
-    return side === "low" ? -3 - index : mainExtent + 3 + index;
-  };
-  const bandFor = (rank) => bands.get(rank);
-  const edges = records.map((record, edgeIndex) => {
-    const from = boxById.get(record.from.id);
-    const to = boxById.get(record.to.id);
-    const lane = (gap) => bands.get(gap).end + spacing.laneBase + spacing.laneFor(gap, edgeIndex) * spacing.stride;
-    const tieBreak = edgeIndex % 2 === 0 ? "low" : "high";
-    const path = vertical ? verticalRoute(record, from.bounds, to.bounds, lane, bandFor, mainExtent, tieBreak, takeCorridor) : horizontalRoute(record, from.bounds, to.bounds, lane, bandFor, mainExtent, tieBreak, takeCorridor);
-    return {
-      relationship: record.relationship,
-      fromId: record.from.id,
-      toId: record.to.id,
-      from: from.bounds,
-      to: to.bounds,
-      path: dedupePath(path)
-    };
-  });
-  return finalizeClassDiagramLayout(boxes, edges, direction);
-}
-function makeClassBox(definition, x, y, size) {
-  return {
-    definition,
-    bounds: diagramBoundsFromRect(x, y, size.width, size.height),
-    titleLines: size.titleLines,
-    attributeLines: size.attributeLines,
-    methodLines: size.methodLines,
-    contentWidth: size.contentWidth
-  };
-}
-function laneWidth(nodes, metrics) {
-  if (nodes.length === 0)
-    return 0;
-  return nodes.reduce((sum, node) => sum + metrics.get(node.id).width, 0) + (nodes.length - 1) * NODE_H_GAP;
-}
-function laneHeight(nodes, metrics) {
-  if (nodes.length === 0)
-    return 0;
-  return nodes.reduce((sum, node) => sum + metrics.get(node.id).height, 0) + (nodes.length - 1) * NODE_MIN_GAP;
-}
-function gapIndices(record) {
-  const upper = Math.min(record.fromRank, record.toRank);
-  const lower = Math.max(record.fromRank, record.toRank);
-  return lower - upper <= 1 ? [upper] : [];
-}
-function computeSpacing(records, vertical) {
-  const groupsByGap = new Map;
-  const laneByEdge = new Map;
-  const labelWidthByGap = new Map;
-  for (const [edgeIndex, record] of records.entries()) {
-    const label = record.relationship.label ?? "";
-    for (const gap of new Set(gapIndices(record))) {
-      const groups = groupsByGap.get(gap) ?? new Map;
-      const groupKey = `${record.from.id}\x00${label}`;
-      let slot = groups.get(groupKey);
-      if (slot === undefined) {
-        slot = groups.size;
-        groups.set(groupKey, slot);
-      }
-      groupsByGap.set(gap, groups);
-      laneByEdge.set(`${edgeIndex}:${gap}`, slot);
-      if (label) {
-        const labelWidth = Math.max(...splitDiagramLines(label).map(diagramTextWidth));
-        labelWidthByGap.set(gap, Math.max(labelWidthByGap.get(gap) ?? 0, labelWidth));
-      }
-    }
-  }
-  const stride = vertical ? 2 : Math.max(2, Math.max(0, ...labelWidthByGap.values()) + 2);
-  const laneBase = vertical ? 2 : 1;
-  const gapSizes = new Map;
-  for (const [gap, groups] of groupsByGap) {
-    const gapSize = vertical ? Math.max(NODE_MIN_GAP, laneBase + groups.size * stride) : Math.max(NODE_MIN_GAP, Math.max(0, groups.size - 1) * stride + (labelWidthByGap.get(gap) ?? 0) + 3);
-    gapSizes.set(gap, gapSize);
-  }
-  return {
-    stride,
-    laneBase,
-    gapFor: (gap) => gapSizes.get(gap) ?? NODE_MIN_GAP,
-    laneFor: (gap, edgeIndex) => laneByEdge.get(`${edgeIndex}:${gap}`) ?? 0
-  };
-}
-function chooseCorridorSide(from, to, extent, tieBreak) {
-  const low = -3;
-  const high = extent + 3;
-  const lowCost = Math.abs(from - low) + Math.abs(to - low);
-  const highCost = Math.abs(from - high) + Math.abs(to - high);
-  if (lowCost === highCost)
-    return tieBreak;
-  return lowCost < highCost ? "low" : "high";
-}
-function sideInset(size) {
-  return Math.max(1, Math.min(2, Math.floor((size - 2) / 2)));
-}
-function sidePortX(bounds, side) {
-  const inset = sideInset(bounds.width);
-  return side === "low" ? bounds.left + inset : bounds.left + bounds.width - 1 - inset;
-}
-function sidePortY(bounds, side) {
-  const inset = sideInset(bounds.height);
-  return side === "low" ? bounds.top + inset : bounds.top + bounds.height - 1 - inset;
-}
-function verticalRoute(record, from, to, laneFor, bandFor, mainExtent, tieBreak, takeCorridor) {
-  const { fromRank, toRank } = record;
-  if (fromRank === toRank) {
-    const lane = laneFor(fromRank);
-    return [
-      point2(from.centerX, from.top + from.height),
-      point2(from.centerX, lane),
-      point2(to.centerX, lane),
-      point2(to.centerX, to.top + to.height)
-    ];
-  }
-  const upper = Math.min(fromRank, toRank);
-  const lower = Math.max(fromRank, toRank);
-  if (lower - upper === 1) {
-    const lane = laneFor(upper);
-    return fromRank < toRank ? [
-      point2(from.centerX, from.top + from.height),
-      point2(from.centerX, lane),
-      point2(to.centerX, lane),
-      point2(to.centerX, to.top - 1)
-    ] : [
-      point2(from.centerX, from.top - 1),
-      point2(from.centerX, lane),
-      point2(to.centerX, lane),
-      point2(to.centerX, to.top + to.height)
-    ];
-  }
-  const side = chooseCorridorSide(from.centerX, to.centerX, mainExtent, tieBreak);
-  const corridorX = takeCorridor(side);
-  const sourceX = sidePortX(from, side);
-  const targetX = sidePortX(to, side);
-  if (fromRank < toRank) {
-    const sourceLane = bandFor(fromRank + 1).start - 1;
-    const targetLane = to.top - 2;
-    return [
-      point2(sourceX, from.top + from.height),
-      point2(sourceX, sourceLane),
-      point2(corridorX, sourceLane),
-      point2(corridorX, targetLane),
-      point2(targetX, targetLane),
-      point2(targetX, to.top - 1)
-    ];
-  }
-  const sourceLane = bandFor(fromRank).start - 1;
-  const targetLane = bandFor(toRank + 1).start - 1;
-  return [
-    point2(sourceX, from.top - 1),
-    point2(sourceX, sourceLane),
-    point2(corridorX, sourceLane),
-    point2(corridorX, targetLane),
-    point2(targetX, targetLane),
-    point2(targetX, to.top + to.height)
-  ];
-}
-function horizontalRoute(record, from, to, laneFor, bandFor, mainExtent, tieBreak, takeCorridor) {
-  const { fromRank, toRank } = record;
-  if (fromRank === toRank) {
-    const lane = laneFor(fromRank);
-    return [
-      point2(from.left + from.width, from.centerY),
-      point2(lane, from.centerY),
-      point2(lane, to.centerY),
-      point2(to.left + to.width, to.centerY)
-    ];
-  }
-  const upper = Math.min(fromRank, toRank);
-  const lower = Math.max(fromRank, toRank);
-  if (lower - upper === 1) {
-    const lane = laneFor(upper);
-    return fromRank < toRank ? [
-      point2(from.left + from.width, from.centerY),
-      point2(lane, from.centerY),
-      point2(lane, to.centerY),
-      point2(to.left - 1, to.centerY)
-    ] : [
-      point2(from.left - 1, from.centerY),
-      point2(lane, from.centerY),
-      point2(lane, to.centerY),
-      point2(to.left + to.width, to.centerY)
-    ];
-  }
-  const side = chooseCorridorSide(from.centerY, to.centerY, mainExtent, tieBreak);
-  const corridorY = takeCorridor(side);
-  const sourceY = sidePortY(from, side);
-  const targetY = sidePortY(to, side);
-  if (fromRank < toRank) {
-    const sourceLane = bandFor(fromRank + 1).start - 1;
-    const targetLane = to.left - 2;
-    return [
-      point2(from.left + from.width, sourceY),
-      point2(sourceLane, sourceY),
-      point2(sourceLane, corridorY),
-      point2(targetLane, corridorY),
-      point2(targetLane, targetY),
-      point2(to.left - 1, targetY)
-    ];
-  }
-  const sourceLane = bandFor(fromRank).start - 1;
-  const targetLane = bandFor(toRank + 1).start - 1;
-  return [
-    point2(from.left - 1, sourceY),
-    point2(sourceLane, sourceY),
-    point2(sourceLane, corridorY),
-    point2(targetLane, corridorY),
-    point2(targetLane, targetY),
-    point2(to.left + to.width, targetY)
-  ];
-}
-function point2(x, y) {
-  return { x, y };
-}
-function dedupePath(points) {
-  const result = [];
-  for (const point of points) {
-    const last = result[result.length - 1];
-    if (!last || last.x !== point.x || last.y !== point.y)
-      result.push(point);
-  }
-  return result;
-}
-function computeRanks(diagram, direction) {
-  const ids = diagram.classes.map((definition) => definition.id);
-  const adjacency = new Map(ids.map((id) => [id, []]));
-  const edges = [];
-  for (const relationship of diagram.relationships) {
-    const key = `${relationship.from}\x00${relationship.to}\x00${edges.length}`;
-    edges.push({ from: relationship.from, to: relationship.to, key });
-    adjacency.get(relationship.from)?.push({ to: relationship.to, key });
-  }
-  const state = new Map;
-  const back = new Set;
-  const visit = (id) => {
-    state.set(id, 1);
-    for (const { to, key } of adjacency.get(id) ?? []) {
-      const seen = state.get(to) ?? 0;
-      if (seen === 1)
-        back.add(key);
-      else if (seen === 0)
-        visit(to);
-    }
-    state.set(id, 2);
-  };
-  for (const id of ids)
-    if ((state.get(id) ?? 0) === 0)
-      visit(id);
-  const rank = new Map(ids.map((id) => [id, 0]));
-  let changed = true;
-  let guard = ids.length + 1;
-  while (changed && guard-- > 0) {
-    changed = false;
-    for (const edge of edges) {
-      if (back.has(edge.key))
-        continue;
-      const next = (rank.get(edge.from) ?? 0) + 1;
-      if (next > (rank.get(edge.to) ?? 0)) {
-        rank.set(edge.to, next);
-        changed = true;
-      }
-    }
-  }
-  if (direction === "BT" || direction === "RL") {
-    const maxRank = Math.max(0, ...rank.values());
-    for (const [id, value] of rank)
-      rank.set(id, maxRank - value);
-  }
-  return rank;
-}
-function finalizeClassDiagramLayout(boxes, edges, direction) {
-  const points = [
-    ...boxes.flatMap((box) => [
-      { x: box.bounds.left, y: box.bounds.top },
-      { x: box.bounds.left + box.bounds.width, y: box.bounds.top + box.bounds.height }
-    ]),
-    ...edges.flatMap((edge) => edge.path)
-  ];
-  const minX = Math.min(0, ...points.map((p) => p.x));
-  const minY = Math.min(0, ...points.map((p) => p.y));
-  const dx = -minX;
-  const dy = -minY + MARGIN_TOP;
-  if (dx !== 0 || dy !== 0) {
-    for (const box of boxes)
-      translateDiagramBounds(box.bounds, dx, dy);
-    for (const edge of edges) {
-      for (const p of edge.path) {
-        p.x += dx;
-        p.y += dy;
-      }
-    }
-  }
-  const maxX = Math.max(0, ...boxes.map((box) => box.bounds.left + box.bounds.width), ...edges.flatMap((edge) => edge.path.map((p) => p.x + 1)));
-  const maxY = Math.max(0, ...boxes.map((box) => box.bounds.top + box.bounds.height), ...edges.flatMap((edge) => edge.path.map((p) => p.y + 1)));
-  return { direction, boxes, edges, width: maxX + MARGIN_RIGHT, height: maxY + MARGIN_BOTTOM };
-}
-
-// node_modules/opentui-markdown-render/src/merman/class/dagre-layout.ts
-function attachment(box, center, size, point) {
-  const sides = [
-    ["top", Math.abs(point.y - (center.y - size.height / 2))],
-    ["bottom", Math.abs(point.y - (center.y + size.height / 2))],
-    ["left", Math.abs(point.x - (center.x - size.width / 2))],
-    ["right", Math.abs(point.x - (center.x + size.width / 2))]
-  ];
-  const side = sides.reduce((best, entry) => entry[1] < best[1] ? entry : best)[0];
-  const x = Math.max(box.left + 1, Math.min(box.left + box.width - 2, Math.round(point.x)));
-  const y = Math.max(box.top + 1, Math.min(box.top + box.height - 2, Math.round(point.y)));
-  if (side === "top")
-    return { x, y: box.top - 1 };
-  if (side === "bottom")
-    return { x, y: box.top + box.height };
-  if (side === "left")
-    return { x: box.left - 1, y };
-  return { x: box.left + box.width, y };
-}
-function intersectsBox(from, to, box) {
-  const right = box.left + box.width - 1;
-  const bottom = box.top + box.height - 1;
-  if (from.y === to.y)
-    return from.y >= box.top && from.y <= bottom && Math.max(from.x, to.x) >= box.left && Math.min(from.x, to.x) <= right;
-  return from.x >= box.left && from.x <= right && Math.max(from.y, to.y) >= box.top && Math.min(from.y, to.y) <= bottom;
-}
-function orthogonalize(points, boxes, vertical) {
-  const result = [points[0]];
-  for (const to of points.slice(1)) {
-    const from = result[result.length - 1];
-    if (from.x !== to.x && from.y !== to.y) {
-      const candidates = vertical ? [{ x: from.x, y: to.y }, { x: to.x, y: from.y }] : [{ x: to.x, y: from.y }, { x: from.x, y: to.y }];
-      const cost = (bend) => boxes.reduce((total, box) => total + Number(intersectsBox(from, bend, box.bounds)) + Number(intersectsBox(bend, to, box.bounds)), 0);
-      const bend = cost(candidates[1]) < cost(candidates[0]) ? candidates[1] : candidates[0];
-      if (from.x !== bend.x || from.y !== bend.y)
-        result.push(bend);
-    }
-    if (result.at(-1).x !== to.x || result.at(-1).y !== to.y)
-      result.push(to);
-  }
-  return result;
-}
-function selfLoop(box, vertical, offset, labelWidth) {
-  const left = box.left;
-  const right = box.left + box.width - 1;
-  const top = box.top;
-  const bottom = box.top + box.height - 1;
-  if (vertical) {
-    const portX = right - 1;
-    const outsideX = right + Math.max(3, labelWidth + 3) + offset * 2;
-    return [
-      { x: portX, y: bottom + 1 },
-      { x: portX, y: bottom + 3 + offset },
-      { x: outsideX, y: bottom + 3 + offset },
-      { x: outsideX, y: top - 3 - offset },
-      { x: portX, y: top - 3 - offset },
-      { x: portX, y: top - 1 }
-    ];
-  }
-  const portY = bottom - 1;
-  const outsideY = bottom + 3 + offset * 2;
-  return [
-    { x: right + 1, y: portY },
-    { x: right + 3 + offset, y: portY },
-    { x: right + 3 + offset, y: outsideY },
-    { x: left - 3 - offset, y: outsideY },
-    { x: left - 3 - offset, y: portY },
-    { x: left - 1, y: portY }
-  ];
-}
-function layoutDagreClassDiagram(diagram, direction) {
-  if (diagram.classes.length === 0)
-    return { direction, boxes: [], edges: [], width: 0, height: 0 };
-  const graph = new T2({ multigraph: true });
-  graph.setGraph({ rankdir: direction, nodesep: 8, ranksep: 10, edgesep: 4 });
-  graph.setDefaultEdgeLabel(() => ({}));
-  const metrics = new Map(diagram.classes.map((definition) => [definition.id, measureClassBox(definition)]));
-  for (const definition of diagram.classes) {
-    const size = metrics.get(definition.id);
-    graph.setNode(definition.id, { width: size.width, height: size.height });
-  }
-  diagram.relationships.forEach((edge, index) => {
-    const width = edge.label ? Math.max(...splitDiagramLines(edge.label).map(diagramTextWidth)) + 2 : 0;
-    const height = edge.label ? splitDiagramLines(edge.label).length + 1 : 0;
-    graph.setEdge(edge.from, edge.to, { width, height, weight: edge.kind === "inheritance" ? 2 : 1 }, String(index));
-  });
-  Oe2(graph);
-  const boxes = diagram.classes.map((definition) => {
-    const node = graph.node(definition.id);
-    const size = metrics.get(definition.id);
-    return makeClassBox(definition, Math.round(node.x - size.width / 2), Math.round(node.y - size.height / 2), size);
-  });
-  const boxById = new Map(boxes.map((box) => [box.definition.id, box]));
-  const vertical = direction === "TB" || direction === "BT";
-  const loopCounts = new Map;
-  const edges = diagram.relationships.map((relationship, index) => {
-    const from = boxById.get(relationship.from).bounds;
-    const to = boxById.get(relationship.to).bounds;
-    if (relationship.from === relationship.to) {
-      const offset = loopCounts.get(relationship.from) ?? 0;
-      loopCounts.set(relationship.from, offset + 1);
-      return {
-        relationship,
-        fromId: relationship.from,
-        toId: relationship.to,
-        from,
-        to,
-        path: selfLoop(from, vertical, offset, relationship.label ? Math.max(...splitDiagramLines(relationship.label).map(diagramTextWidth)) : 0)
-      };
-    }
-    const waypoints = graph.edge({ v: relationship.from, w: relationship.to, name: String(index) })?.points ?? [];
-    const source = graph.node(relationship.from);
-    const target = graph.node(relationship.to);
-    const first = waypoints[0] ?? { x: source.x, y: source.y };
-    const last = waypoints.at(-1) ?? { x: target.x, y: target.y };
-    const start = attachment(from, { x: source.x, y: source.y }, metrics.get(relationship.from), first);
-    const end = attachment(to, { x: target.x, y: target.y }, metrics.get(relationship.to), last);
-    const direct = (start.x === end.x || start.y === end.y) && boxes.every((box) => !intersectsBox(start, end, box.bounds));
-    const path = direct ? [start, end] : orthogonalize([
-      start,
-      ...waypoints.slice(1, -1).map((point) => ({ x: Math.round(point.x), y: Math.round(point.y) })),
-      end
-    ], boxes, vertical);
-    return { relationship, fromId: relationship.from, toId: relationship.to, from, to, path };
-  });
-  const result = finalizeClassDiagramLayout(boxes, edges, direction);
-  let minX = 0;
-  let minY = 0;
-  let maxX = result.width;
-  let maxY = result.height;
-  for (const edge of result.edges) {
-    if (!edge.relationship.label)
-      continue;
-    const lines = splitDiagramLines(edge.relationship.label);
-    const width = Math.max(...lines.map(diagramTextWidth));
-    const anchor = classLabelAnchor(edge.path, lines.length, width, vertical);
-    minX = Math.min(minX, anchor.x - 1);
-    minY = Math.min(minY, anchor.y);
-    maxX = Math.max(maxX, anchor.x + width + 2);
-    maxY = Math.max(maxY, anchor.y + lines.length + 1);
-  }
-  const dx = -minX;
-  const dy = -minY;
-  if (dx || dy) {
-    for (const box of result.boxes)
-      translateDiagramBounds(box.bounds, dx, dy);
-    for (const edge of result.edges)
-      for (const point of edge.path) {
-        point.x += dx;
-        point.y += dy;
-      }
-  }
-  result.width = maxX + dx;
-  result.height = maxY + dy;
-  return result;
-}
-
-// node_modules/opentui-markdown-render/src/merman/class/drawing.ts
-var HOLLOW_TRIANGLE = { up: "\u25B3", down: "\u25BD", left: "\u25C1", right: "\u25B7" };
-var OPEN_ARROW = { up: "\u2191", down: "\u2193", left: "\u2190", right: "\u2192" };
-var FILLED_DIAMOND = "\u25C6";
-var HOLLOW_DIAMOND = "\u25C7";
-function drawClassDiagramGrid(diagram, options = {}) {
-  return drawClassDiagramLayout(createClassDiagramLayout(diagram, options));
-}
-function createClassDiagramLayout(diagram, options = {}) {
-  const place = options.classLayout === "dagre" ? layoutDagreClassDiagram : layoutClassDiagram;
-  const requested = diagram.direction;
-  const maxWidth = options.layoutMaxWidth !== undefined && Number.isFinite(options.layoutMaxWidth) ? Math.max(1, Math.trunc(options.layoutMaxWidth)) : undefined;
-  if (maxWidth === undefined || requested !== "LR" && requested !== "RL") {
-    return place(diagram, requested);
-  }
-  const wide = place(diagram, requested);
-  if (wide.width <= maxWidth)
-    return wide;
-  const fallbackDirection = requested === "RL" ? "BT" : "TB";
-  const fallback = place(diagram, fallbackDirection);
-  return fallback.width < wide.width ? fallback : wide;
-}
-function drawClassDiagramLayout(layout) {
-  if (layout.boxes.length === 0)
-    return new DiagramCanvas(0, 0);
-  const grid = makeGrid(Math.max(1, layout.width), Math.max(1, layout.height));
-  const vertical = layout.direction === "TB" || layout.direction === "BT";
-  for (const box of layout.boxes)
-    drawBox(grid, box);
-  for (const edge of layout.edges)
-    drawEdgeLine(grid, edge);
-  for (const edge of layout.edges)
-    drawEdgeEndpoints(grid, edge);
-  bridgeIndependentCrossings(grid, layout.edges);
-  for (const edge of layout.edges)
-    drawEdgeLabels(grid, edge, vertical);
-  return grid;
-}
-function makeGrid(width, height) {
-  return new DiagramCanvas(width, height, {
-    mergeCell: (existing, incoming) => ({
-      ...incoming,
-      char: existing.style === "edge" && incoming.style === "edge" ? mergeDiagramLineGlyph(existing.char, incoming.char) ?? incoming.char : incoming.char
-    })
-  });
-}
-function setCell(grid, x, y, char, style) {
-  grid.setCell(x, y, char, style);
-}
-function drawBox(grid, box) {
-  const bounds = box.bounds;
-  drawDiagramFrame(bounds, BorderChars2.single, (x, y, char) => setCell(grid, x, y, char, "border"));
-  let y = bounds.top + 1;
-  box.titleLines.forEach((line, index) => {
-    const x = bounds.left + CLASS_CONTENT_OFFSET_X + Math.floor((box.contentWidth - diagramTextWidth(line)) / 2);
-    setText(grid, x, y + index, line, box.definition.stereotype && index === 0 ? "stereotype" : "title");
-  });
-  y += box.titleLines.length;
-  if (box.attributeLines.length) {
-    drawSeparator(grid, bounds, y);
-    y += 1;
-    box.attributeLines.forEach((line, index) => setText(grid, bounds.left + CLASS_CONTENT_OFFSET_X, y + index, line, "member"));
-    y += box.attributeLines.length;
-  }
-  if (box.methodLines.length) {
-    drawSeparator(grid, bounds, y);
-    y += 1;
-    box.methodLines.forEach((line, index) => setText(grid, bounds.left + CLASS_CONTENT_OFFSET_X, y + index, line, "member"));
-  }
-}
-function drawSeparator(grid, bounds, y) {
-  const left = bounds.left;
-  const right = bounds.left + bounds.width - 1;
-  setCell(grid, left, y, "\u251C", "border");
-  for (let x = left + 1;x < right; x++)
-    setCell(grid, x, y, "\u2500", "border");
-  setCell(grid, right, y, "\u2524", "border");
-}
-function drawEdgeLine(grid, edge) {
-  const { relationship, path } = edge;
-  if (path.length < 2)
-    return;
-  drawOrthogonalPath(path, (x, y, char) => setCell(grid, x, y, char, "edge"), {
-    cornerStyle: "square",
-    lineStyle: relationship.dashed ? "dashed" : "single"
-  });
-}
-function rememberOwner(owners, owner) {
-  if (owners.length < 2 && !owners.includes(owner))
-    owners.push(owner);
-}
-function independent(first, second) {
-  return first.length > 0 && second.length > 0 && (first.length > 1 || second.length > 1 || first[0] !== second[0]);
-}
-function bridgeIndependentCrossings(grid, edges) {
-  const cells = new Map;
-  const seenPaths = new Set;
-  edges.forEach((edge, edgeIndex) => {
-    const pathKey = edge.path.map(({ x, y }) => `${x}:${y}`).join(";");
-    if (seenPaths.has(pathKey))
-      return;
-    seenPaths.add(pathKey);
-    for (let index = 1;index < edge.path.length; index++) {
-      const from = edge.path[index - 1];
-      const to = edge.path[index];
-      const horizontal = from.y === to.y;
-      if (!horizontal && from.x !== to.x)
-        continue;
-      const start = horizontal ? from.x : from.y;
-      const end = horizontal ? to.x : to.y;
-      for (let position = Math.min(start, end);position <= Math.max(start, end); position++) {
-        const x = horizontal ? position : from.x;
-        const y = horizontal ? from.y : position;
-        const cellKey = y * grid.width + x;
-        const cell = cells.get(cellKey) ?? {
-          horizontal: { through: [], ends: [] },
-          vertical: { through: [], ends: [] }
-        };
-        const axis = horizontal ? cell.horizontal : cell.vertical;
-        if (position !== start && position !== end)
-          rememberOwner(axis.through, edgeIndex);
-        else if (position === start && index === 1 || position === end && index === edge.path.length - 1) {
-          rememberOwner(axis.ends, edgeIndex);
-        }
-        cells.set(cellKey, cell);
-      }
-    }
-  });
-  for (const [cellKey, cell] of cells) {
-    const x = cellKey % grid.width;
-    const y = Math.floor(cellKey / grid.width);
-    if (grid.getCell(x, y)?.char !== "\u253C")
-      continue;
-    if (independent(cell.horizontal.through, cell.vertical.through) || independent(cell.horizontal.ends, cell.vertical.through)) {
-      grid.replaceCell(x, y, "\u2500", "edge");
-    } else if (independent(cell.horizontal.through, cell.vertical.ends)) {
-      grid.replaceCell(x, y, "\u2502", "edge");
-    }
-  }
-}
-function drawEdgeEndpoints(grid, edge) {
-  const { relationship, path } = edge;
-  if (path.length < 2)
-    return;
-  drawStartCell(grid, path, relationship.headAt === "from" ? relationship.kind : undefined);
-  drawEndCell(grid, path, relationship.headAt === "to" ? relationship.kind : undefined);
-}
-function drawStartCell(grid, path, markerKind) {
-  const start = path[0];
-  const next = path[1];
-  const direction = directionBetween(start, next) ?? "right";
-  const marker = markerKind ? relationshipMarker(markerKind, opposite(direction)) : undefined;
-  if (marker)
-    setCell(grid, start.x, start.y, marker, "edge");
-  else
-    setCell(grid, start.x, start.y, diagramLineGlyph(new Set([direction])), "edge");
-}
-function drawEndCell(grid, path, markerKind) {
-  const end = path[path.length - 1];
-  const previous = path[path.length - 2];
-  const direction = directionBetween(previous, end) ?? "right";
-  const marker = markerKind ? relationshipMarker(markerKind, direction) : undefined;
-  if (marker)
-    setCell(grid, end.x, end.y, marker, "edge");
-  else
-    setCell(grid, end.x, end.y, diagramLineGlyph(new Set([direction])), "edge");
-}
-function relationshipMarker(kind, direction) {
-  switch (kind) {
-    case "inheritance":
-    case "realization":
-      return HOLLOW_TRIANGLE[direction];
-    case "composition":
-      return FILLED_DIAMOND;
-    case "aggregation":
-      return HOLLOW_DIAMOND;
-    case "association":
-    case "dependency":
-      return OPEN_ARROW[direction];
-    case "link":
-      return;
-  }
-}
-function opposite(direction) {
-  switch (direction) {
-    case "up":
-      return "down";
-    case "down":
-      return "up";
-    case "left":
-      return "right";
-    case "right":
-      return "left";
-  }
-}
-function drawEdgeLabels(grid, edge, vertical) {
-  const { relationship, path } = edge;
-  let labelWidth = 0;
-  let labelHeight = 0;
-  let labelX = 0;
-  let labelY = 0;
-  if (relationship.label) {
-    const lines = splitDiagramLines(relationship.label);
-    labelWidth = Math.max(...lines.map(diagramTextWidth));
-    labelHeight = lines.length;
-    const anchor = classLabelAnchor(path, lines.length, labelWidth, vertical);
-    labelX = anchor.x;
-    labelY = anchor.y;
-    drawTextTag(grid, anchor.x, anchor.y, lines);
-  }
-  if (relationship.fromCardinality) {
-    const width = diagramTextWidth(relationship.fromCardinality);
-    const anchor = cardinalityAnchor(path, width, true, labelX, labelY, labelWidth, labelHeight);
-    drawTextTag(grid, anchor.x, anchor.y, [relationship.fromCardinality]);
-  }
-  if (relationship.toCardinality) {
-    const width = diagramTextWidth(relationship.toCardinality);
-    const anchor = cardinalityAnchor(path, width, false, labelX, labelY, labelWidth, labelHeight);
-    drawTextTag(grid, anchor.x, anchor.y, [relationship.toCardinality]);
-  }
-}
-function cardinalityAnchor(path, width, atStart, labelX, labelY, labelWidth, labelHeight) {
-  const point = atStart ? path[0] : path[path.length - 1];
-  const neighbor = atStart ? path[1] : path[path.length - 2];
-  const direction = directionBetween(point, neighbor) ?? "right";
-  const horizontal = direction === "left" || direction === "right";
-  const baseX = point.x + (horizontal ? direction === "right" ? 1 : -1 : 0);
-  const baseY = point.y + (horizontal ? 0 : direction === "down" ? 1 : -1);
-  const candidates = horizontal ? [
-    { x: baseX, y: baseY - 1 },
-    { x: baseX, y: baseY + 1 },
-    { x: baseX, y: baseY - 2 },
-    { x: baseX, y: baseY + 2 }
-  ] : [
-    { x: baseX + 1, y: baseY },
-    { x: baseX - 1, y: baseY },
-    { x: baseX + 1, y: baseY - 1 },
-    { x: baseX + 1, y: baseY + 1 },
-    { x: baseX - 1, y: baseY - 1 },
-    { x: baseX - 1, y: baseY + 1 }
-  ];
-  for (const candidate of candidates) {
-    if (!touchesLabel(candidate.x, width, candidate.y, 1, labelX, labelY, labelWidth, labelHeight))
-      return candidate;
-  }
-  return candidates[0];
-}
-function touchesLabel(x, width, y, height, labelX, labelY, labelWidth, labelHeight) {
-  if (labelWidth <= 0 || labelHeight <= 0)
-    return false;
-  const rowOverlap = y <= labelY + labelHeight - 1 && y + height - 1 >= labelY;
-  if (!rowOverlap)
-    return false;
-  const clearX = x + width < labelX || x > labelX + labelWidth;
-  return !clearX;
-}
-function drawTextTag(grid, x, y, lines) {
-  lines.forEach((line, index) => {
-    const row = y + index;
-    if (grid.getCell(x - 1, row)?.char === " ")
-      setCell(grid, x - 1, row, " ", "label");
-    setText(grid, x, row, line, "label");
-    const rightX = x + diagramTextWidth(line);
-    if (grid.getCell(rightX, row)?.char === " ")
-      setCell(grid, rightX, row, " ", "label");
-  });
-}
-function setText(grid, x, y, text, style) {
-  grid.setText(x, y, text, style);
-}
-
 // node_modules/entities/dist/esm/decode-codepoint.js
 var _a;
 var decodeMap = new Map([
@@ -8872,7 +4515,4570 @@ var EncodingMode;
   EncodingMode[EncodingMode["Text"] = 4] = "Text";
 })(EncodingMode || (EncodingMode = {}));
 
-// node_modules/opentui-markdown-render/src/merman/core/mermaid.ts
+// node_modules/opentui-markdown-render/dist/index.js
+import { StyledText as StyledText2 } from "@opentui/core";
+import { RGBA as RGBA3 } from "@opentui/core";
+import { BorderChars as BorderChars3, TextAttributes as TextAttributes4 } from "@opentui/core";
+import { BorderChars as BorderChars4 } from "@opentui/core";
+import { BorderChars as BorderChars6 } from "@opentui/core";
+import { BorderChars as BorderChars5 } from "@opentui/core";
+import { RGBA as RGBA4 } from "@opentui/core";
+import { effect as _$effect8 } from "@opentui/solid";
+import { insert as _$insert8 } from "@opentui/solid";
+import { createComponent as _$createComponent7 } from "@opentui/solid";
+import { setProp as _$setProp10 } from "@opentui/solid";
+import { createElement as _$createElement10 } from "@opentui/solid";
+import { For as For3, Show as Show3 } from "solid-js";
+import { TextAttributes as TextAttributes5 } from "@opentui/core";
+function resolveGraphicsProtocol(capabilities, hasResolution) {
+  const configured = capabilities?.image_protocol;
+  if (configured && configured !== "auto")
+    return configured === "sixel" && !hasResolution ? "blocks" : configured;
+  if (!capabilities || capabilities.multiplexer === "tmux")
+    return "blocks";
+  if (capabilities.kitty_graphics)
+    return "kitty";
+  if (capabilities.sixel && hasResolution)
+    return "sixel";
+  return "blocks";
+}
+var mosaicScale = (protocol) => protocol === "blocks" ? 2 : 1;
+function useCanvasGraphics(renderer) {
+  const [queried, setQueried] = createSignal(0);
+  const onCapabilities = () => setQueried((value) => value + 1);
+  renderer.on("capabilities", onCapabilities);
+  let refresh;
+  const onResize = () => {
+    if (refresh)
+      clearTimeout(refresh);
+    refresh = setTimeout(() => {
+      refresh = undefined;
+      setQueried((value) => value + 1);
+    }, 250);
+  };
+  renderer.on("resize", onResize);
+  const probe = setInterval(() => {
+    if (!renderer.resolution)
+      return;
+    clearInterval(probe);
+    setQueried((value) => value + 1);
+  }, 50);
+  const stopProbe = setTimeout(() => clearInterval(probe), 1000);
+  onCleanup(() => {
+    renderer.off("capabilities", onCapabilities);
+    renderer.off("resize", onResize);
+    clearInterval(probe);
+    clearTimeout(stopProbe);
+    if (refresh)
+      clearTimeout(refresh);
+  });
+  const resolution = createMemo(() => {
+    queried();
+    const value = renderer.resolution;
+    return value && value.width > 0 && value.height > 0 ? value : null;
+  });
+  const cell = createMemo(() => {
+    const value = resolution();
+    const width = renderer.terminalWidth;
+    const height = renderer.terminalHeight;
+    if (!value || width <= 0 || height <= 0)
+      return null;
+    const cellWidth = value.width / width;
+    const cellHeight = value.height / height;
+    if (cellWidth <= 0 || cellHeight <= 0)
+      return null;
+    return { width: Math.max(1, Math.round(cellWidth)), height: Math.max(1, Math.round(cellHeight)) };
+  });
+  const protocol = createMemo(() => {
+    queried();
+    return resolveGraphicsProtocol(renderer.capabilities, resolution() !== null);
+  });
+  const hyperlinks = createMemo(() => {
+    queried();
+    return renderer.capabilities?.hyperlinks === true;
+  });
+  return { cell, protocol, hyperlinks };
+}
+var headingLevels = [1, 2, 3, 4, 5, 6];
+var defaultHeadingStyles = {
+  1: { bold: true, italic: false, underline: true, dim: false, uppercase: false, marginTop: 2, marginBottom: 1 },
+  2: { bold: true, italic: false, underline: false, dim: false, uppercase: false, marginTop: 1, marginBottom: 0 },
+  3: { bold: true, italic: false, underline: false, dim: false, uppercase: false, marginTop: 1, marginBottom: 0 },
+  4: { bold: false, italic: true, underline: false, dim: false, uppercase: false, marginTop: 1, marginBottom: 0 },
+  5: { bold: false, italic: true, underline: false, dim: true, uppercase: false, marginTop: 1, marginBottom: 0 },
+  6: { bold: false, italic: false, underline: false, dim: true, uppercase: false, marginTop: 1, marginBottom: 0 }
+};
+function mergeHeadingStyle(base, override) {
+  if (!override)
+    return base;
+  return {
+    bold: override.bold ?? base.bold,
+    italic: override.italic ?? base.italic,
+    underline: override.underline ?? base.underline,
+    dim: override.dim ?? base.dim,
+    uppercase: override.uppercase ?? base.uppercase,
+    marginTop: override.marginTop ?? base.marginTop,
+    marginBottom: override.marginBottom ?? base.marginBottom
+  };
+}
+function resolveHeadingStyles(config) {
+  const styles = {};
+  for (const level of headingLevels) {
+    styles[level] = mergeHeadingStyle(defaultHeadingStyles[level], config?.levels?.[`${level}`]);
+  }
+  return styles;
+}
+function headingAttributes(style) {
+  let attributes = TextAttributes.NONE;
+  if (style.bold)
+    attributes |= TextAttributes.BOLD;
+  if (style.italic)
+    attributes |= TextAttributes.ITALIC;
+  if (style.underline)
+    attributes |= TextAttributes.UNDERLINE;
+  if (style.dim)
+    attributes |= TextAttributes.DIM;
+  return attributes;
+}
+function headingColor(theme, level) {
+  return theme.markdown.headingLevels?.[level - 1] ?? theme.markdown.heading;
+}
+var loaded;
+function loadNativeMath() {
+  loaded ??= importNativeMath();
+  return loaded;
+}
+async function importNativeMath() {
+  if (process.platform !== "linux" || process.arch !== "x64")
+    return;
+  const relative = path.join("prebuilds", "linux-x64-gnu", "opentui_markdown_render.node");
+  const candidates = [
+    path.join(import.meta.dir, "..", "..", relative),
+    path.join(import.meta.dir, "..", relative),
+    path.join(import.meta.dir, relative),
+    path.join(import.meta.dir, "node_modules", "opentui-markdown-render", relative)
+  ];
+  for (const file of candidates) {
+    try {
+      return createRequire(import.meta.url)(file);
+    } catch {}
+  }
+  return;
+}
+var limit = 128;
+var cache = new Map;
+function renderMath(request) {
+  if (request.enabled === false)
+    return Promise.resolve(undefined);
+  const scale = request.scale ?? 2;
+  const display = request.display ?? false;
+  const cellWidth = request.cellWidth ?? 8;
+  const cellHeight = request.cellHeight ?? 16;
+  const compact = request.compact ?? false;
+  const standard = request.standard ?? false;
+  const key = JSON.stringify({
+    latex: request.latex,
+    scale,
+    foreground: request.foreground,
+    background: request.background,
+    display,
+    cellWidth,
+    cellHeight,
+    compact,
+    standard
+  });
+  const cached = cache.get(key);
+  if (cached)
+    return cached;
+  const result = loadNativeMath().then(async (native) => {
+    if (!native)
+      return;
+    const image = await native.renderLatex({
+      latex: request.latex,
+      scale,
+      foreground: request.foreground,
+      background: request.background,
+      display,
+      cellWidth,
+      cellHeight,
+      compact,
+      standard
+    });
+    return {
+      png: image.png,
+      pixelWidth: image.pixelWidth,
+      pixelHeight: image.pixelHeight,
+      baseline: image.baseline,
+      clamped: image.clamped
+    };
+  }).catch(() => {
+    return;
+  });
+  cache.set(key, result);
+  if (cache.size > limit)
+    cache.delete(cache.keys().next().value);
+  return result;
+}
+function isRenderableLatex(content) {
+  let depth = 0;
+  let left = 0;
+  let right = 0;
+  for (let index = 0;index < content.length; index++) {
+    const character = content[index];
+    if (character === "\\") {
+      if (content[index + 1] === undefined)
+        return false;
+      if (!/[A-Za-z]/.test(content[index + 1])) {
+        index++;
+        continue;
+      }
+      let cursor = index + 1;
+      while (cursor < content.length && /[A-Za-z]/.test(content[cursor]))
+        cursor++;
+      const name = content.slice(index, cursor);
+      if (name === "\\left")
+        left++;
+      else if (name === "\\right")
+        right++;
+      index = cursor - 1;
+      continue;
+    }
+    if (character === "{") {
+      depth++;
+      continue;
+    }
+    if (character === "}") {
+      if (depth === 0)
+        return false;
+      depth--;
+    }
+  }
+  return depth === 0 && left === right;
+}
+function rgbaToHex(color) {
+  const channel = (value) => Math.round(Math.max(0, Math.min(1, value)) * 255).toString(16).padStart(2, "0");
+  return `#${channel(color.r)}${channel(color.g)}${channel(color.b)}`;
+}
+function mathImageID(content, display, color, cell, scale = 1, compact = false, standard = false) {
+  return createHash("sha256").update(JSON.stringify({ content, display, color, cell, scale, compact, standard, renderer: "mitex-typst-png-v2" })).digest("hex");
+}
+var fontSizePoints = 12;
+async function renderMathImage(content, display, color, background, cell, scale = 1, compact = false, standard = false) {
+  const latex = content.trim();
+  if (!isRenderableLatex(latex))
+    return;
+  const cellWidth = cell?.width ?? 8;
+  const cellHeight = cell?.height ?? 16;
+  const base = cellHeight / fontSizePoints;
+  const rendered = await renderMath({
+    latex,
+    foreground: color,
+    background,
+    scale: base * scale,
+    display,
+    cellWidth,
+    cellHeight,
+    compact,
+    standard
+  });
+  if (!rendered)
+    return;
+  const columns = Math.max(1, Math.round(rendered.pixelWidth / cellWidth));
+  const rows = Math.max(1, Math.round(rendered.pixelHeight / cellHeight));
+  const baseline = rendered.baseline / cellHeight;
+  return { png: rendered.png, columns, rows, baseline, clamped: rendered.clamped };
+}
+var frameAligns = ["left", "center", "right"];
+function isFrameAlign(value) {
+  return typeof value === "string" && frameAligns.includes(value);
+}
+var frameStyles = ["box", "ascii", "rounded", "heavy", "double"];
+function isFrameStyle(value) {
+  return typeof value === "string" && frameStyles.includes(value);
+}
+var borderWidth = 1;
+var noInsets = { left: 0, right: 0, top: 0, bottom: 0 };
+function whole(value, fallback) {
+  if (value === undefined)
+    return fallback;
+  if (!Number.isFinite(value))
+    return fallback;
+  return Math.max(0, Math.floor(value));
+}
+function alignOffset(align, available, width) {
+  if (align === "right")
+    return Math.max(0, available - width);
+  if (align === "center")
+    return Math.max(0, Math.floor((available - width) / 2));
+  return 0;
+}
+function fitTitle(title, columns) {
+  if (!title || columns <= 0)
+    return;
+  let result = "";
+  for (const character of title) {
+    if (stringWidth(result + character) > columns)
+      break;
+    result += character;
+  }
+  return result || undefined;
+}
+function resolveFrame(viewport, config) {
+  const available = Math.max(1, Math.floor(viewport) || 1);
+  const align = config?.align ?? "left";
+  const style = config?.style ?? "box";
+  const titleAlign = config?.titleAlign ?? "left";
+  const enabled = config?.enabled ?? false;
+  if (!enabled) {
+    return {
+      enabled: false,
+      contentWidth: available,
+      width: available,
+      offsetX: 0,
+      insets: noInsets,
+      align,
+      style,
+      paddingX: 0,
+      paddingY: 0,
+      title: undefined,
+      titleAlign
+    };
+  }
+  const paddingX = whole(config?.paddingX, 1);
+  const paddingY = whole(config?.paddingY, 0);
+  const insets = {
+    left: borderWidth + paddingX,
+    right: borderWidth + paddingX,
+    top: borderWidth + paddingY,
+    bottom: borderWidth + paddingY
+  };
+  const minWidth = insets.left + insets.right + 1;
+  const width = config?.width === undefined ? available : Math.max(minWidth, Math.min(available, Math.floor(config.width)));
+  const contentWidth = Math.max(1, width - insets.left - insets.right);
+  return {
+    enabled: true,
+    contentWidth,
+    width,
+    offsetX: alignOffset(align, available, width),
+    insets,
+    align,
+    style,
+    paddingX,
+    paddingY,
+    title: fitTitle(config?.title, Math.max(0, width - borderWidth * 2 - 2)),
+    titleAlign
+  };
+}
+var tableWidthModes = ["content", "full"];
+function isTableWidthMode(value) {
+  return typeof value === "string" && tableWidthModes.includes(value);
+}
+var tableOverflows = ["scroll", "wrap"];
+function isTableOverflow(value) {
+  return typeof value === "string" && tableOverflows.includes(value);
+}
+var tableColumnFitters = ["proportional", "balanced"];
+function isTableColumnFitter(value) {
+  return typeof value === "string" && tableColumnFitters.includes(value);
+}
+function resolveTableOptions(config) {
+  const widthMode = config?.widthMode ?? "content";
+  const overflow = config?.overflow ?? "scroll";
+  return {
+    widthMode,
+    overflow,
+    columnFitter: config?.columnFitter ?? "balanced",
+    cellPaddingX: config?.cellPaddingX ?? 1,
+    wrapMode: overflow === "scroll" && widthMode === "content" ? "none" : "word"
+  };
+}
+var statusLineStyles = ["plain", "bar"];
+function isStatusLineStyle(value) {
+  return typeof value === "string" && statusLineStyles.includes(value);
+}
+var headingLevelKeys = ["1", "2", "3", "4", "5", "6"];
+function isHeadingLevelKey(value) {
+  return headingLevelKeys.includes(value);
+}
+var statusLineFields = [
+  "title",
+  "mode",
+  "protocol",
+  "cell",
+  "mathScale",
+  "position",
+  "hint",
+  "text"
+];
+function isStatusLineField(value) {
+  return typeof value === "string" && statusLineFields.includes(value);
+}
+var colorNames = new Set([
+  "transparent",
+  "black",
+  "white",
+  "red",
+  "green",
+  "blue",
+  "yellow",
+  "cyan",
+  "magenta",
+  "silver",
+  "gray",
+  "grey",
+  "maroon",
+  "olive",
+  "lime",
+  "aqua",
+  "teal",
+  "navy",
+  "fuchsia",
+  "purple",
+  "orange",
+  "brightblack",
+  "brightred",
+  "brightgreen",
+  "brightblue",
+  "brightyellow",
+  "brightcyan",
+  "brightmagenta",
+  "brightwhite"
+]);
+var colors = (keys) => Object.fromEntries(keys.map((key) => [key, "color"]));
+var themeFileFields = {
+  mode: "mode",
+  palette: "colors",
+  accent: "color",
+  categorical: "colors",
+  text: {
+    base: "color",
+    muted: "color",
+    feedback: colors(["error", "warning", "success", "info"]),
+    action: { primary: { focused: "color" } }
+  },
+  background: { base: "color" },
+  border: { base: "color" },
+  frame: colors(["border", "title"]),
+  statusline: colors(["background", "foreground", "title", "muted", "border"]),
+  markdown: colors([
+    "text",
+    "heading",
+    "heading1",
+    "heading2",
+    "heading3",
+    "heading4",
+    "heading5",
+    "heading6",
+    "link",
+    "linkText",
+    "code",
+    "blockQuote",
+    "emphasis",
+    "strong",
+    "horizontalRule",
+    "listItem",
+    "listEnumeration",
+    "image",
+    "imageText",
+    "codeBlock"
+  ]),
+  syntax: colors(["comment", "keyword", "function", "variable", "string", "number", "type", "operator", "punctuation"]),
+  diff: {
+    text: colors(["added", "removed", "context"]),
+    background: colors(["added", "removed", "context"])
+  }
+};
+function isColor(value) {
+  return typeof value === "string" && (/^#?(?:[\da-f]{3}|[\da-f]{4}|[\da-f]{6}|[\da-f]{8})$/i.test(value) || colorNames.has(value.toLowerCase()));
+}
+function isRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function validateTheme(value, file, report) {
+  const warn = (message) => {
+    if (report)
+      report(message);
+    else
+      console.warn(`[opentui-markdown-render] ${message}`);
+  };
+  const validate = (source, fields, prefix) => {
+    const result = Object.create(null);
+    for (const [key, entry] of Object.entries(source)) {
+      const field = Object.hasOwn(fields, key) ? fields[key] : undefined;
+      const location = `${prefix}.${key}`;
+      if (field === undefined) {
+        warn(`Unknown theme option "${location}" in ${file}`);
+        continue;
+      }
+      if (field === "color" && isColor(entry))
+        result[key] = entry;
+      else if (field === "mode" && (entry === "light" || entry === "dark" || entry === "solarized-light" || entry === "solarized-dark"))
+        result[key] = entry;
+      else if (field === "colors" && Array.isArray(entry)) {
+        result[key] = entry.filter((color, index) => {
+          if (isColor(color))
+            return true;
+          warn(`Invalid theme option "${location}[${index}]" in ${file}`);
+          return false;
+        });
+      } else if (typeof field === "object" && isRecord(entry)) {
+        result[key] = validate(entry, field, location);
+      } else {
+        warn(`Invalid theme option "${location}" in ${file}`);
+      }
+    }
+    return result;
+  };
+  return validate(value, themeFileFields, "theme");
+}
+function validateThemeConfig(value, file, report) {
+  const warn = (message) => {
+    if (report)
+      report(message);
+    else
+      console.warn(`[opentui-markdown-render] ${message}`);
+  };
+  const result = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (key !== "name") {
+      warn(`Unknown theme option "theme.${key}" in ${file}`);
+      continue;
+    }
+    if (typeof entry !== "string" || !/^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(entry)) {
+      warn(`Invalid theme option "theme.name" in ${file}`);
+      continue;
+    }
+    result.name = entry;
+  }
+  return result;
+}
+var configFilenames = ["opentui-markdown-render.jsonc", "opentui-markdown-render.json"];
+var xdgConfigFilenames = ["config.jsonc", "config.json"];
+var xdgConfigDirectory = "otmd";
+function warn(report, message) {
+  if (report)
+    report(message);
+  else
+    console.warn(`[opentui-markdown-render] ${message}`);
+}
+function loadConfig(explicitPath, cwd, report) {
+  const file = explicitPath ?? discoverConfig(cwd ?? process.cwd());
+  if (!file)
+    return {};
+  if (!existsSync(file)) {
+    if (explicitPath)
+      throw new Error(`Config not found: ${file}`);
+    return {};
+  }
+  return parseConfig(readFileSync(file, "utf8"), file, report);
+}
+function loadRendererConfig(configPath, cwd, options = {}) {
+  if (options.discover === false && !configPath)
+    return {};
+  try {
+    return loadConfig(configPath, cwd, options.report);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    warn(options.report, message);
+    return {};
+  }
+}
+function discoverConfig(start, environment = { XDG_CONFIG_HOME: process.env.XDG_CONFIG_HOME, HOME: process.env.HOME }) {
+  let directory = path2.resolve(start);
+  while (true) {
+    for (const name of configFilenames) {
+      const candidate = path2.join(directory, name);
+      if (existsSync(candidate) && statSync(candidate).isFile())
+        return candidate;
+    }
+    const parent = path2.dirname(directory);
+    if (parent === directory)
+      break;
+    directory = parent;
+  }
+  return discoverXdgConfig(environment);
+}
+function discoverXdgConfig(environment) {
+  const configured = environment.XDG_CONFIG_HOME;
+  const configHome = configured && path2.isAbsolute(configured) ? configured : path2.join(environment.HOME || os.homedir(), ".config");
+  const directory = path2.join(configHome, xdgConfigDirectory);
+  for (const name of xdgConfigFilenames) {
+    const candidate = path2.join(directory, name);
+    if (existsSync(candidate) && statSync(candidate).isFile())
+      return candidate;
+  }
+  return;
+}
+function parseConfig(source, file = "config", report) {
+  const parsed = parseJsonc(source, file);
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new Error(`Invalid config ${file}: expected a JSON object`);
+  }
+  return validateConfig(parsed, file, report);
+}
+function parseJsonc(source, file = "config") {
+  try {
+    return JSON.parse(stripJsonComments(source));
+  } catch (error) {
+    throw new Error(`Invalid config ${file}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+var sections = ["theme", "statusline", "images", "mermaid", "headings", "frame", "tables"];
+function validateConfig(value, file, report) {
+  for (const key of Object.keys(value)) {
+    if (key === "$schema")
+      continue;
+    if (!sections.includes(key)) {
+      warn(report, `Unknown config section "${key}" in ${file}`);
+    }
+  }
+  return {
+    theme: isRecord2(value.theme) ? validateThemeConfig(value.theme, file, report) : undefined,
+    statusline: isRecord2(value.statusline) ? validateStatusLine(value.statusline, file, report) : undefined,
+    images: isRecord2(value.images) ? validateImages(value.images) : undefined,
+    mermaid: isRecord2(value.mermaid) ? validateMermaid(value.mermaid, file, report) : undefined,
+    headings: isRecord2(value.headings) ? validateHeadings(value.headings, file, report) : undefined,
+    frame: isRecord2(value.frame) ? validateFrame(value.frame, file, report) : undefined,
+    tables: isRecord2(value.tables) ? validateTables(value.tables, file, report) : undefined
+  };
+}
+function validateStatusLine(value, file, report) {
+  const fields = [];
+  if (Array.isArray(value.fields)) {
+    for (const entry of value.fields) {
+      if (isStatusLineField(entry))
+        fields.push(entry);
+      else
+        warn(report, `Unknown status line field "${String(entry)}" in ${file}`);
+    }
+  }
+  if (value.style !== undefined && !isStatusLineStyle(value.style)) {
+    warn(report, `Unknown status line style "${String(value.style)}" in ${file}`);
+  }
+  if (value.highlight !== undefined && !isStatusLineField(value.highlight)) {
+    warn(report, `Unknown status line field "${String(value.highlight)}" in ${file}`);
+  }
+  return {
+    enabled: typeof value.enabled === "boolean" ? value.enabled : undefined,
+    fields: fields.length ? fields : undefined,
+    separator: typeof value.separator === "string" ? value.separator : undefined,
+    border: value.border === "none" || value.border === "top" || value.border === "bottom" ? value.border : undefined,
+    style: isStatusLineStyle(value.style) ? value.style : undefined,
+    highlight: isStatusLineField(value.highlight) ? value.highlight : undefined
+  };
+}
+function validateImages(value) {
+  return {
+    maxColumns: positiveInteger(value.maxColumns),
+    maxRows: positiveInteger(value.maxRows)
+  };
+}
+function validateMermaid(value, file, report) {
+  if (value.classLayout !== undefined && value.classLayout !== "builtin" && value.classLayout !== "dagre") {
+    warn(report, `Unknown Mermaid class layout "${String(value.classLayout)}" in ${file}`);
+  }
+  return {
+    compact: typeof value.compact === "boolean" ? value.compact : undefined,
+    layoutMaxWidth: positiveInteger(value.layoutMaxWidth),
+    classLayout: value.classLayout === "dagre" || value.classLayout === "builtin" ? value.classLayout : undefined
+  };
+}
+function validateFrame(value, file, report) {
+  const option = (name, check) => {
+    const entry = value[name];
+    if (entry === undefined)
+      return;
+    if (check(entry))
+      return entry;
+    warn(report, `Invalid frame option "${name}" in ${file}`);
+    return;
+  };
+  const padding = (name) => {
+    const entry = value[name];
+    if (entry === undefined)
+      return;
+    if (isNonNegativeInteger(entry))
+      return entry;
+    warn(report, `Invalid frame option "${name}" in ${file}`);
+    return;
+  };
+  const boolean = (name) => {
+    const entry = value[name];
+    if (entry === undefined)
+      return;
+    if (typeof entry === "boolean")
+      return entry;
+    warn(report, `Invalid frame option "${name}" in ${file}`);
+    return;
+  };
+  const width = (() => {
+    const entry = value.width;
+    if (entry === undefined)
+      return;
+    if (typeof entry === "number" && Number.isInteger(entry) && entry > 0)
+      return entry;
+    warn(report, `Invalid frame option "width" in ${file}`);
+    return;
+  })();
+  const title = value.title;
+  if (title !== undefined && typeof title !== "string") {
+    warn(report, `Invalid frame option "title" in ${file}`);
+  }
+  return {
+    enabled: boolean("enabled"),
+    width,
+    align: option("align", isFrameAlign),
+    style: option("style", isFrameStyle),
+    paddingX: padding("paddingX"),
+    paddingY: padding("paddingY"),
+    title: typeof title === "string" ? title : undefined,
+    titleAlign: option("titleAlign", isFrameAlign)
+  };
+}
+function validateTables(value, file, report) {
+  const option = (name, check) => {
+    const entry = value[name];
+    if (entry === undefined)
+      return;
+    if (check(entry))
+      return entry;
+    warn(report, `Invalid tables option "${name}" in ${file}`);
+    return;
+  };
+  const padding = value.cellPaddingX;
+  if (padding !== undefined && !isNonNegativeInteger(padding)) {
+    warn(report, `Invalid tables option "cellPaddingX" in ${file}`);
+  }
+  return {
+    widthMode: option("widthMode", isTableWidthMode),
+    overflow: option("overflow", isTableOverflow),
+    columnFitter: option("columnFitter", isTableColumnFitter),
+    cellPaddingX: isNonNegativeInteger(padding) ? padding : undefined
+  };
+}
+function validateHeadings(value, file, report) {
+  if (value.levels !== undefined && !isRecord2(value.levels)) {
+    warn(report, `Invalid heading levels in ${file}`);
+    return;
+  }
+  const levels = {};
+  for (const [key, entry] of Object.entries(value.levels ?? {})) {
+    if (!isHeadingLevelKey(key)) {
+      warn(report, `Unknown heading level "${key}" in ${file}`);
+      continue;
+    }
+    if (!isRecord2(entry)) {
+      warn(report, `Invalid heading level "${key}" in ${file}`);
+      continue;
+    }
+    levels[key] = validateHeadingLevel(key, entry, file, report);
+  }
+  return Object.keys(levels).length ? { levels } : undefined;
+}
+function validateHeadingLevel(key, value, file, report) {
+  const style = {};
+  for (const [name, entry] of Object.entries(value)) {
+    switch (name) {
+      case "bold":
+      case "italic":
+      case "underline":
+      case "dim":
+      case "uppercase":
+        if (typeof entry !== "boolean") {
+          warn(report, `Invalid heading option "${name}" for level ${key} in ${file}`);
+          continue;
+        }
+        style[name] = entry;
+        break;
+      case "marginTop":
+      case "marginBottom":
+        if (!isNonNegativeInteger(entry)) {
+          warn(report, `Invalid heading option "${name}" for level ${key} in ${file}`);
+          continue;
+        }
+        style[name] = entry;
+        break;
+      default:
+        warn(report, `Unknown heading option "${name}" for level ${key} in ${file}`);
+    }
+  }
+  return style;
+}
+function isNonNegativeInteger(value) {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0;
+}
+function positiveInteger(value) {
+  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : undefined;
+}
+function isRecord2(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function stripJsonComments(source) {
+  let result = "";
+  let index = 0;
+  let inString = false;
+  let quote = "";
+  while (index < source.length) {
+    const character = source[index];
+    if (inString) {
+      result += character;
+      if (character === "\\") {
+        result += source[index + 1] ?? "";
+        index += 2;
+        continue;
+      }
+      if (character === quote)
+        inString = false;
+      index++;
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      inString = true;
+      quote = character;
+      result += character;
+      index++;
+      continue;
+    }
+    if (character === "/" && source[index + 1] === "/") {
+      while (index < source.length && source[index] !== `
+`)
+        index++;
+      continue;
+    }
+    if (character === "/" && source[index + 1] === "*") {
+      index += 2;
+      while (index < source.length && !(source[index] === "*" && source[index + 1] === "/"))
+        index++;
+      index += 2;
+      continue;
+    }
+    result += character;
+    index++;
+  }
+  return result.replace(/,(\s*[}\]])/g, "$1");
+}
+var h = (hex) => RGBA.fromHex(hex);
+var solarizedPalette = [
+  "#002b36",
+  "#073642",
+  "#586e75",
+  "#657b83",
+  "#839496",
+  "#93a1a1",
+  "#eee8d5",
+  "#fdf6e3",
+  "#b58900",
+  "#cb4b16",
+  "#dc322f",
+  "#d33682",
+  "#6c71c4",
+  "#268bd2",
+  "#2aa198",
+  "#859900"
+].map(h);
+var light = {
+  mode: "light",
+  accent: h("#0969da"),
+  categorical: [h("#0969da"), h("#8250df"), h("#1a7f37"), h("#9a6700"), h("#cf222e"), h("#bc4c00")],
+  text: {
+    base: h("#1f2328"),
+    muted: h("#59636e"),
+    feedback: {
+      error: h("#cf222e"),
+      warning: h("#9a6700"),
+      success: h("#1a7f37"),
+      info: h("#0969da")
+    },
+    action: { primary: { focused: h("#0969da") } }
+  },
+  background: { base: h("#ffffff") },
+  border: { base: h("#8c959f") },
+  frame: { border: h("#8c959f"), title: h("#59636e") },
+  markdown: {
+    text: h("#1f2328"),
+    heading: h("#8250df"),
+    headingLevels: [h("#0969da"), h("#8250df"), h("#8250df"), h("#6f42c1"), h("#3d444d"), h("#3d444d")],
+    link: h("#0969da"),
+    linkText: h("#0969da"),
+    code: h("#953800"),
+    blockQuote: h("#59636e"),
+    emphasis: h("#1f2328"),
+    strong: h("#1f2328"),
+    horizontalRule: h("#d1d9e0"),
+    listItem: h("#1f2328"),
+    listEnumeration: h("#1f2328"),
+    image: h("#0969da"),
+    imageText: h("#0969da"),
+    codeBlock: h("#1f2328")
+  },
+  syntax: {
+    comment: h("#59636e"),
+    keyword: h("#cf222e"),
+    function: h("#8250df"),
+    variable: h("#1f2328"),
+    string: h("#0a3069"),
+    number: h("#0550ae"),
+    type: h("#0550ae"),
+    operator: h("#0550ae"),
+    punctuation: h("#1f2328")
+  },
+  diff: {
+    text: { added: h("#1a7f37"), removed: h("#cf222e"), context: h("#59636e") },
+    background: { added: h("#dafbe1"), removed: h("#ffebe9"), context: h("#f6f8fa") }
+  }
+};
+var dark = {
+  mode: "dark",
+  accent: h("#58a6ff"),
+  categorical: [h("#58a6ff"), h("#d2a8ff"), h("#3fb950"), h("#d29922"), h("#f85149"), h("#ffa657")],
+  text: {
+    base: h("#e6edf3"),
+    muted: h("#8b949e"),
+    feedback: {
+      error: h("#f85149"),
+      warning: h("#d29922"),
+      success: h("#3fb950"),
+      info: h("#58a6ff")
+    },
+    action: { primary: { focused: h("#58a6ff") } }
+  },
+  background: { base: h("#0d1117") },
+  border: { base: h("#30363d") },
+  frame: { border: h("#30363d"), title: h("#8b949e") },
+  markdown: {
+    text: h("#e6edf3"),
+    heading: h("#d2a8ff"),
+    headingLevels: [h("#58a6ff"), h("#d2a8ff"), h("#d2a8ff"), h("#8b949e"), h("#8b949e"), h("#8b949e")],
+    link: h("#58a6ff"),
+    linkText: h("#58a6ff"),
+    code: h("#ffa657"),
+    blockQuote: h("#8b949e"),
+    emphasis: h("#e6edf3"),
+    strong: h("#e6edf3"),
+    horizontalRule: h("#30363d"),
+    listItem: h("#e6edf3"),
+    listEnumeration: h("#e6edf3"),
+    image: h("#58a6ff"),
+    imageText: h("#58a6ff"),
+    codeBlock: h("#e6edf3")
+  },
+  syntax: {
+    comment: h("#8b949e"),
+    keyword: h("#ff7b72"),
+    function: h("#d2a8ff"),
+    variable: h("#ffa657"),
+    string: h("#a5d6ff"),
+    number: h("#79c0ff"),
+    type: h("#ffa657"),
+    operator: h("#ff7b72"),
+    punctuation: h("#c9d1d9")
+  },
+  diff: {
+    text: { added: h("#3fb950"), removed: h("#f85149"), context: h("#8b949e") },
+    background: { added: h("#12261e"), removed: h("#25171c"), context: h("#161b22") }
+  }
+};
+var solarizedLight = {
+  mode: "light",
+  palette: solarizedPalette,
+  accent: h("#268bd2"),
+  categorical: [h("#268bd2"), h("#6c71c4"), h("#859900"), h("#b58900"), h("#dc322f"), h("#cb4b16")],
+  text: {
+    base: h("#586e75"),
+    muted: h("#657b83"),
+    feedback: { error: h("#dc322f"), warning: h("#b58900"), success: h("#859900"), info: h("#268bd2") },
+    action: { primary: { focused: h("#268bd2") } }
+  },
+  background: { base: h("#fdf6e3") },
+  border: { base: h("#657b83") },
+  frame: { border: h("#657b83"), title: h("#586e75") },
+  markdown: {
+    text: h("#586e75"),
+    heading: h("#268bd2"),
+    headingLevels: [h("#268bd2"), h("#268bd2"), h("#268bd2"), h("#268bd2"), h("#268bd2"), h("#268bd2")],
+    link: h("#268bd2"),
+    linkText: h("#268bd2"),
+    code: h("#cb4b16"),
+    blockQuote: h("#657b83"),
+    emphasis: h("#586e75"),
+    strong: h("#586e75"),
+    horizontalRule: h("#657b83"),
+    listItem: h("#586e75"),
+    listEnumeration: h("#586e75"),
+    image: h("#268bd2"),
+    imageText: h("#268bd2"),
+    codeBlock: h("#586e75")
+  },
+  syntax: {
+    comment: h("#657b83"),
+    keyword: h("#dc322f"),
+    function: h("#6c71c4"),
+    variable: h("#586e75"),
+    string: h("#2aa198"),
+    number: h("#d33682"),
+    type: h("#b58900"),
+    operator: h("#268bd2"),
+    punctuation: h("#586e75")
+  },
+  diff: {
+    text: { added: h("#859900"), removed: h("#dc322f"), context: h("#657b83") },
+    background: { added: h("#eee8d5"), removed: h("#eee8d5"), context: h("#eee8d5") }
+  }
+};
+var solarizedDark = {
+  mode: "dark",
+  palette: solarizedPalette,
+  accent: h("#268bd2"),
+  categorical: [h("#268bd2"), h("#6c71c4"), h("#859900"), h("#b58900"), h("#dc322f"), h("#cb4b16")],
+  text: {
+    base: h("#93a1a1"),
+    muted: h("#839496"),
+    feedback: { error: h("#dc322f"), warning: h("#b58900"), success: h("#859900"), info: h("#268bd2") },
+    action: { primary: { focused: h("#268bd2") } }
+  },
+  background: { base: h("#002b36") },
+  border: { base: h("#586e75") },
+  frame: { border: h("#586e75"), title: h("#93a1a1") },
+  markdown: {
+    text: h("#93a1a1"),
+    heading: h("#268bd2"),
+    headingLevels: [h("#268bd2"), h("#268bd2"), h("#268bd2"), h("#268bd2"), h("#268bd2"), h("#268bd2")],
+    link: h("#268bd2"),
+    linkText: h("#268bd2"),
+    code: h("#cb4b16"),
+    blockQuote: h("#839496"),
+    emphasis: h("#93a1a1"),
+    strong: h("#93a1a1"),
+    horizontalRule: h("#586e75"),
+    listItem: h("#93a1a1"),
+    listEnumeration: h("#93a1a1"),
+    image: h("#268bd2"),
+    imageText: h("#268bd2"),
+    codeBlock: h("#93a1a1")
+  },
+  syntax: {
+    comment: h("#839496"),
+    keyword: h("#dc322f"),
+    function: h("#6c71c4"),
+    variable: h("#93a1a1"),
+    string: h("#2aa198"),
+    number: h("#d33682"),
+    type: h("#b58900"),
+    operator: h("#268bd2"),
+    punctuation: h("#93a1a1")
+  },
+  diff: {
+    text: { added: h("#859900"), removed: h("#dc322f"), context: h("#839496") },
+    background: { added: h("#073642"), removed: h("#073642"), context: h("#073642") }
+  }
+};
+function defaultTheme(preset) {
+  switch (preset) {
+    case "light":
+      return light;
+    case "dark":
+      return dark;
+    case "solarized-light":
+      return solarizedLight;
+    case "solarized-dark":
+      return solarizedDark;
+  }
+}
+function mixColors(over, base, ratio) {
+  const weight = Math.min(Math.max(ratio, 0), 1);
+  const [overR, overG, overB] = over.toInts();
+  const [baseR, baseG, baseB] = base.toInts();
+  const channel = (from, to) => Math.round(to + (from - to) * weight);
+  return RGBA2.fromInts(channel(overR, baseR), channel(overG, baseG), channel(overB, baseB), 255);
+}
+function resolveTheme(options) {
+  const override = options.override;
+  const mode = override?.mode ?? options.mode ?? "light";
+  return mergeTheme(defaultTheme(mode), override);
+}
+function deriveStatusLineTheme(theme) {
+  const ratio = theme.mode === "light" ? 0.12 : 0.14;
+  return {
+    background: theme.palette?.[theme.mode === "light" ? 6 : 1] ?? mixColors(theme.accent, theme.background.base, ratio),
+    foreground: theme.text.base,
+    title: theme.accent,
+    muted: theme.text.muted,
+    border: theme.accent
+  };
+}
+function mergeTheme(base, override) {
+  if (!override)
+    return base;
+  const color = (value, fallback) => value === undefined ? fallback : parseColor(value);
+  const accent = color(override.accent, base.accent);
+  const palette = override.palette ? override.palette.map((entry) => parseColor(entry)) : base.palette;
+  const background = { base: color(override.background?.base, base.background.base) };
+  const text = {
+    base: color(override.text?.base, base.text.base),
+    muted: color(override.text?.muted, base.text.muted)
+  };
+  const border = { base: color(override.border?.base, base.border.base) };
+  const frame = {
+    border: color(override.frame?.border, override.border?.base !== undefined ? border.base : base.frame?.border ?? border.base),
+    title: color(override.frame?.title, override.text?.muted !== undefined ? text.muted : base.frame?.title ?? text.muted)
+  };
+  const mode = override.mode ? override.mode.endsWith("light") ? "light" : "dark" : base.mode;
+  const derived = deriveStatusLineTheme({ mode, accent, background, text, palette });
+  return {
+    mode,
+    palette,
+    accent,
+    categorical: override.categorical ? override.categorical.map((entry) => parseColor(entry)) : base.categorical,
+    text: {
+      base: text.base,
+      muted: text.muted,
+      feedback: {
+        error: color(override.text?.feedback?.error, base.text.feedback.error),
+        warning: color(override.text?.feedback?.warning, base.text.feedback.warning),
+        success: color(override.text?.feedback?.success, base.text.feedback.success),
+        info: color(override.text?.feedback?.info, base.text.feedback.info)
+      },
+      action: {
+        primary: { focused: color(override.text?.action?.primary?.focused, base.text.action.primary.focused) }
+      }
+    },
+    background,
+    border,
+    frame,
+    statusline: mergeStatusLineTheme(derived, base.statusline, override.statusline),
+    markdown: mergeMarkdownTheme(base.markdown, override.markdown),
+    syntax: mergeColors(base.syntax, override.syntax),
+    diff: {
+      text: {
+        added: color(override.diff?.text?.added, base.diff.text.added),
+        removed: color(override.diff?.text?.removed, base.diff.text.removed),
+        context: color(override.diff?.text?.context, base.diff.text.context)
+      },
+      background: {
+        added: color(override.diff?.background?.added, base.diff.background.added),
+        removed: color(override.diff?.background?.removed, base.diff.background.removed),
+        context: color(override.diff?.background?.context, base.diff.background.context)
+      }
+    }
+  };
+}
+function mergeStatusLineTheme(derived, base, override) {
+  const color = (value, fallback) => value === undefined ? fallback : parseColor(value);
+  const pick = (key) => color(override?.[key], base?.[key] ?? derived[key]);
+  return {
+    background: pick("background"),
+    foreground: pick("foreground"),
+    title: pick("title"),
+    muted: pick("muted"),
+    border: pick("border")
+  };
+}
+function mergeColors(base, override) {
+  if (!override)
+    return base;
+  const merged = { ...base };
+  for (const key of Object.keys(base)) {
+    const value = override[key];
+    if (value !== undefined)
+      merged[key] = parseColor(value);
+  }
+  return merged;
+}
+function mergeMarkdownTheme(base, override) {
+  const levels = override ?? {};
+  const pick = (level, fallback) => {
+    const color = levels[`heading${level}`];
+    if (color !== undefined)
+      return parseColor(color);
+    if (levels.heading !== undefined)
+      return parseColor(levels.heading);
+    return fallback;
+  };
+  const [one, two, three, four, five, six] = base.headingLevels ?? [
+    base.heading,
+    base.heading,
+    base.heading,
+    base.heading,
+    base.heading,
+    base.heading
+  ];
+  const headingLevels = [
+    pick(1, one),
+    pick(2, two),
+    pick(3, three),
+    pick(4, four),
+    pick(5, five),
+    pick(6, six)
+  ];
+  const { headingLevels: _levels, ...colors } = base;
+  const merged = mergeColors(colors, override);
+  return { ...merged, headingLevels };
+}
+var themeFileNames = [".jsonc", ".json"];
+function loadTheme(name, environment = { XDG_CONFIG_HOME: process.env.XDG_CONFIG_HOME, HOME: process.env.HOME }) {
+  if (!/^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(name))
+    return;
+  const configured = environment.XDG_CONFIG_HOME;
+  const configHome = configured && path3.isAbsolute(configured) ? configured : path3.join(environment.HOME || os2.homedir(), ".config");
+  const directories = [
+    path3.join(configHome, "otmd", "themes"),
+    path3.resolve(import.meta.dir, "..", "..", "themes")
+  ];
+  for (const directory of directories) {
+    for (const suffix of themeFileNames) {
+      const file = path3.join(directory, `${name}${suffix}`);
+      if (!existsSync2(file) || !statSync2(file).isFile())
+        continue;
+      const parsed = parseJsonc(readFileSync2(file, "utf8"), file);
+      if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed))
+        return;
+      return validateTheme(parsed, file);
+    }
+  }
+  return;
+}
+function createDocumentLayout(input) {
+  const frame = resolveFrame(input.viewport, input.frame);
+  return {
+    frame,
+    contentWidth: frame.contentWidth,
+    tables: resolveTableOptions(input.tables)
+  };
+}
+function assertNever(value) {
+  throw new Error(`Unexpected document node: ${String(value)}`);
+}
+function isEscaped(src, index) {
+  let backslashes = 0;
+  let i = index - 1;
+  while (i >= 0 && src[i] === "\\") {
+    backslashes++;
+    i--;
+  }
+  return backslashes % 2 === 1;
+}
+function closing(src, delimiter, start, singleLine) {
+  for (let index = start;index < src.length; index++) {
+    if (singleLine && src[index] === `
+`)
+      break;
+    if (src.startsWith(delimiter, index) && !isEscaped(src, index))
+      return index;
+  }
+  return -1;
+}
+function createMathInlineExtension() {
+  return {
+    name: "mathInline",
+    level: "inline",
+    start(src) {
+      let i = 0;
+      while (i < src.length) {
+        const ch = src[i];
+        if (ch === "\\") {
+          if (src[i + 1] === "(") {
+            if (!isEscaped(src, i))
+              return i;
+          }
+          i += 2;
+          continue;
+        }
+        if (ch === "$") {
+          if (src[i + 1] === "$") {
+            i += 2;
+            continue;
+          }
+          if (!isEscaped(src, i))
+            return i;
+        }
+        i++;
+      }
+      return;
+    },
+    tokenizer(src) {
+      if (src.startsWith("\\(")) {
+        const end = closing(src, "\\)", 2, true);
+        if (end > 2 && src.slice(2, end).indexOf(`
+`) === -1) {
+          const content = src.slice(2, end);
+          const raw = src.slice(0, end + 2);
+          return {
+            type: "mathInline",
+            raw,
+            text: content,
+            content,
+            open: "\\(",
+            close: "\\)"
+          };
+        }
+      }
+      if (src[0] === "$" && src[1] !== "$") {
+        let j = 1;
+        while (j < src.length) {
+          if (src[j] === `
+`)
+            break;
+          if (src[j] === "$" && !isEscaped(src, j)) {
+            if (j === 1)
+              break;
+            const content = src.slice(1, j);
+            const raw = src.slice(0, j + 1);
+            return {
+              type: "mathInline",
+              raw,
+              text: content,
+              content,
+              open: "$",
+              close: "$"
+            };
+          }
+          j++;
+        }
+      }
+      return;
+    }
+  };
+}
+function createMathDisplayExtension() {
+  return {
+    name: "mathDisplay",
+    level: "inline",
+    start(src) {
+      let i = 0;
+      while (i < src.length) {
+        const ch = src[i];
+        if (ch === "\\") {
+          if (src[i + 1] === "[") {
+            if (!isEscaped(src, i))
+              return i;
+          }
+          i += 2;
+          continue;
+        }
+        if (ch === "$") {
+          if (src[i + 1] === "$" && !isEscaped(src, i))
+            return i;
+        }
+        i++;
+      }
+      return;
+    },
+    tokenizer(src) {
+      if (src.startsWith("$$")) {
+        const end = closing(src, "$$", 2, false);
+        if (end > 2) {
+          const content = src.slice(2, end);
+          const raw = src.slice(0, end + 2);
+          return {
+            type: "mathDisplay",
+            raw,
+            text: content,
+            content,
+            open: "$$",
+            close: "$$"
+          };
+        }
+      }
+      if (src.startsWith("\\[")) {
+        const end = closing(src, "\\]", 2, false);
+        if (end > 2) {
+          const content = src.slice(2, end);
+          const raw = src.slice(0, end + 2);
+          return {
+            type: "mathDisplay",
+            raw,
+            text: content,
+            content,
+            open: "\\[",
+            close: "\\]"
+          };
+        }
+      }
+      return;
+    }
+  };
+}
+var parser = new B({
+  gfm: true,
+  breaks: false,
+  async: false,
+  extensions: [createMathDisplayExtension(), createMathInlineExtension()]
+});
+function isDisplay(token) {
+  return token.type === "mathDisplay";
+}
+function isInlineMath(token) {
+  return token.type === "mathInline";
+}
+function childrenOf(token) {
+  return "tokens" in token && Array.isArray(token.tokens) ? token.tokens : [];
+}
+function inlineToken(token) {
+  if (isInlineMath(token)) {
+    return [{ type: "math", content: token.content, raw: token.raw, open: token.open, close: token.close }];
+  }
+  if (isDisplay(token))
+    return [{ type: "text", text: token.raw }];
+  switch (token.type) {
+    case "text":
+      return childrenOf(token).length ? convertInline(childrenOf(token)) : [{ type: "text", text: token.text }];
+    case "escape":
+      return [{ type: "text", text: token.text }];
+    case "codespan":
+      return [{ type: "code", text: token.text }];
+    case "strong":
+    case "em":
+    case "del":
+      return [{ type: token.type, children: convertInline(token.tokens ?? []) }];
+    case "link":
+      return [{ type: "link", href: token.href, title: token.title ?? null, children: convertInline(token.tokens ?? []) }];
+    case "image":
+      return [{ type: "inline-image", href: token.href, title: token.title ?? null, alt: token.text }];
+    case "br":
+      return [{ type: "break", hard: true }];
+    case "checkbox":
+      return [];
+    default:
+      return token.raw ? [{ type: "text", text: token.raw }] : [];
+  }
+}
+function convertInline(tokens) {
+  return tokens.flatMap(inlineToken);
+}
+function directInline(tokens) {
+  return tokens.flatMap((token) => token.type === "text" && childrenOf(token).length ? childrenOf(token) : [token]);
+}
+function convertParagraph(token, source) {
+  const tokens = directInline(childrenOf(token));
+  const visible = convertInline(tokens).filter((node) => node.type !== "text" || node.text.trim().length > 0);
+  if (visible.length === 1 && visible[0].type === "inline-image") {
+    const image = visible[0];
+    return [{ type: "image", href: image.href, alt: image.alt, title: image.title, raw: token.raw, source }];
+  }
+  if (!tokens.some(isDisplay))
+    return [{ type: "paragraph", children: convertInline(tokens), raw: token.raw, source }];
+  const blocks = [];
+  let pending = [];
+  let offset = source?.start ?? 0;
+  let aligned = source !== null;
+  let pendingStart = offset;
+  const flush = () => {
+    if (!pending.length)
+      return;
+    const raw = pending.map((child) => child.raw).join("");
+    const children = convertInline(pending);
+    if (children.length)
+      blocks.push({ type: "paragraph", raw, source: aligned ? { start: pendingStart, end: offset } : null, children });
+    pending = [];
+    pendingStart = offset;
+  };
+  for (const child of tokens) {
+    if (aligned && token.raw.slice(offset - source.start, offset - source.start + child.raw.length) !== child.raw)
+      aligned = false;
+    if (isDisplay(child)) {
+      flush();
+      offset += child.raw.length;
+      blocks.push({
+        type: "display-math",
+        content: child.content,
+        open: child.open,
+        close: child.close,
+        raw: child.raw,
+        source: aligned ? { start: offset - child.raw.length, end: offset } : null
+      });
+      pendingStart = offset;
+    } else {
+      pending.push(child);
+      offset += child.raw.length;
+    }
+  }
+  flush();
+  return blocks;
+}
+function convertBlocks(tokens, source, start = 0) {
+  const blocks = [];
+  let cursor = start;
+  for (const token of tokens) {
+    const range = source !== null && source.slice(cursor, cursor + token.raw.length) === token.raw ? { start: cursor, end: cursor + token.raw.length } : null;
+    cursor += token.raw.length;
+    if (token.type === "space" || token.type === "def" || token.type === "checkbox")
+      continue;
+    if (isDisplay(token)) {
+      blocks.push({ type: "display-math", content: token.content, open: token.open, close: token.close, raw: token.raw, source: range });
+      continue;
+    }
+    switch (token.type) {
+      case "paragraph":
+      case "text":
+        blocks.push(...convertParagraph(token, range));
+        break;
+      case "heading":
+        blocks.push({ type: "heading", level: token.depth, children: convertInline(childrenOf(token)), raw: token.raw, source: range });
+        break;
+      case "blockquote":
+        blocks.push({ type: "quote", blocks: convertBlocks(childrenOf(token), null), raw: token.raw, source: range });
+        break;
+      case "list": {
+        const list = token;
+        let cursor = 0;
+        const items = list.items.map((item) => {
+          let itemSource = null;
+          if (range !== null && list.raw.slice(cursor, cursor + item.raw.length) === item.raw) {
+            itemSource = { start: range.start + cursor, end: range.start + cursor + item.raw.length };
+          }
+          cursor += item.raw.length;
+          return {
+            task: item.task,
+            checked: item.task ? item.checked ?? false : null,
+            loose: item.loose,
+            blocks: convertBlocks(item.tokens, null),
+            source: itemSource
+          };
+        });
+        blocks.push({
+          type: "list",
+          raw: list.raw,
+          source: range,
+          ordered: list.ordered,
+          start: list.start === "" ? 1 : list.start,
+          loose: list.loose,
+          items
+        });
+        break;
+      }
+      case "table": {
+        const table = token;
+        const convertCell = (cell, header, align) => ({
+          children: cell ? convertInline(cell.tokens) : [],
+          header,
+          align
+        });
+        const align = table.align;
+        const header = table.header.map((cell, i) => convertCell(cell, true, align[i] ?? null));
+        const rows = table.rows.map((row) => header.map((_, i) => convertCell(row[i], false, align[i] ?? null)));
+        blocks.push({ type: "table", align, header, rows, raw: table.raw, source: range });
+        break;
+      }
+      case "code": {
+        const language = token.lang ?? null;
+        if (language?.trim().split(/\s+/)[0]?.toLowerCase() === "mermaid") {
+          blocks.push({ type: "mermaid", content: token.text, language: "mermaid", raw: token.raw, source: range });
+        } else {
+          blocks.push({ type: "code", content: token.text, language, fenced: /^ {0,3}(?:`{3,}|~{3,})/.test(token.raw), raw: token.raw, source: range });
+        }
+        break;
+      }
+      case "hr":
+        blocks.push({ type: "rule", raw: token.raw, source: range });
+        break;
+      default:
+        if (token.raw)
+          blocks.push({ type: "literal", text: token.raw, raw: token.raw, source: range });
+    }
+  }
+  return blocks;
+}
+function parseDocument(source) {
+  const normalized = source.replace(/\r\n?/g, `
+`);
+  const blocks = convertBlocks(parser.lexer(normalized), normalized);
+  if (normalized === source)
+    return { source, blocks };
+  const offsets = [0];
+  for (let index = 0;index < source.length; index++) {
+    if (source[index] === "\r" && source[index + 1] === `
+`)
+      index++;
+    offsets.push(index + 1);
+  }
+  const originalRange = (range) => range === null ? null : { start: offsets[range.start], end: offsets[range.end] };
+  const originalBlock = (block) => {
+    if (block.type === "list")
+      return {
+        ...block,
+        source: originalRange(block.source),
+        items: block.items.map((item) => ({ ...item, source: originalRange(item.source) }))
+      };
+    return { ...block, source: originalRange(block.source) };
+  };
+  return { source, blocks: blocks.map(originalBlock) };
+}
+function resolveConfiguredTheme(config, runtime = {}) {
+  if (runtime.theme)
+    return runtime.theme;
+  const explicit = runtime.themeMode ?? undefined;
+  const override = loadTheme(explicit ?? config.theme?.name ?? "light");
+  const mode = override?.mode ?? "light";
+  return resolveTheme({ mode, override });
+}
+function resolveConfiguredLayout(config, runtime) {
+  return createDocumentLayout({
+    viewport: runtime.viewport,
+    frame: runtime.frame ?? config.frame,
+    tables: runtime.tables ?? config.tables
+  });
+}
+var asciiBorder = {
+  topLeft: "+",
+  topRight: "+",
+  bottomLeft: "+",
+  bottomRight: "+",
+  horizontal: "-",
+  vertical: "|",
+  topT: "+",
+  bottomT: "+",
+  leftT: "+",
+  rightT: "+",
+  cross: "+"
+};
+function borderStyle(style) {
+  if (style === "rounded" || style === "heavy" || style === "double")
+    return style;
+  return "single";
+}
+function alignSelf(align) {
+  if (align === "left")
+    return "flex-start";
+  if (align === "right")
+    return "flex-end";
+  return "center";
+}
+function frameBorderColor(theme) {
+  return theme.frame?.border ?? theme.border.base;
+}
+function frameTitleColor(theme) {
+  return theme.frame?.title ?? theme.text.muted;
+}
+function borderProps(frame, theme) {
+  if (!frame.enabled)
+    return {};
+  return {
+    border: true,
+    borderStyle: borderStyle(frame.style),
+    customBorderChars: frame.style === "ascii" ? asciiBorder : undefined,
+    borderColor: frameBorderColor(theme),
+    title: frame.title,
+    titleColor: frameTitleColor(theme),
+    titleAlignment: frame.titleAlign
+  };
+}
+function MarkdownFrame(props) {
+  return (() => {
+    var _el$ = _$createElement("box");
+    _$setProp(_el$, "flexDirection", "column");
+    _$setProp(_el$, "flexShrink", 0);
+    _$spread(_el$, _$mergeProps({
+      get width() {
+        return props.frame.width;
+      },
+      get alignSelf() {
+        return alignSelf(props.frame.align);
+      },
+      get backgroundColor() {
+        return props.theme.background.base;
+      },
+      get paddingLeft() {
+        return props.frame.paddingX;
+      },
+      get paddingRight() {
+        return props.frame.paddingX;
+      },
+      get paddingTop() {
+        return props.frame.paddingY;
+      },
+      get paddingBottom() {
+        return props.frame.paddingY;
+      }
+    }, () => borderProps(props.frame, props.theme)), true);
+    _$insert(_el$, () => props.children);
+    return _el$;
+  })();
+}
+var maxRows = 32;
+var maxColumns = 80;
+var TRANSPARENT_BACKGROUND = "#000000";
+function isRgba(value) {
+  return typeof value === "object" && value !== null && "r" in value && "g" in value && "b" in value;
+}
+function resolveBackground(input) {
+  if (input === undefined)
+    return [0, 0, 0];
+  if (isRgba(input)) {
+    const channel = (value) => Math.round(Math.max(0, Math.min(1, Number(value) || 0)) * 255);
+    return [channel(input.r), channel(input.g), channel(input.b)];
+  }
+  try {
+    const color = parseColor2(input);
+    const channel = (value) => Math.round(Math.max(0, Math.min(1, value)) * 255);
+    return [channel(color.r), channel(color.g), channel(color.b)];
+  } catch {
+    const color = parseColor2(TRANSPARENT_BACKGROUND);
+    return [Math.round(color.r * 255), Math.round(color.g * 255), Math.round(color.b * 255)];
+  }
+}
+function rgbToHex(color) {
+  const channel = (value) => Math.round(value).toString(16).padStart(2, "0");
+  return `#${channel(color[0])}${channel(color[1])}${channel(color[2])}`;
+}
+function resolveLocalImage(base, href) {
+  if (!base)
+    return {
+      error: "No asset base is configured"
+    };
+  if (/^[a-z][a-z\d+.-]*:/i.test(href) || href.startsWith("//"))
+    return {
+      error: "Only local image paths are supported"
+    };
+  const root = path4.resolve(base);
+  const target = path4.resolve(root, href);
+  if (target !== root && !target.startsWith(`${root}${path4.sep}`))
+    return {
+      error: "Image path escapes the asset root"
+    };
+  return {
+    path: target
+  };
+}
+function imageBox(width, height, columns, cellAspectRatio, limits) {
+  const ratio = width / height;
+  const aspect = Number.isFinite(cellAspectRatio) && cellAspectRatio > 0 ? cellAspectRatio : 2;
+  const columnLimit = Math.max(1, limits?.maxColumns ?? maxColumns);
+  const rowLimit = Math.max(1, limits?.maxRows ?? maxRows);
+  const clamped = Math.max(1, Math.min(Math.max(1, columns), columnLimit));
+  const naturalRows = Math.max(1, Math.ceil(clamped / (ratio * aspect)));
+  if (naturalRows <= rowLimit)
+    return {
+      columns: clamped,
+      rows: naturalRows
+    };
+  return {
+    columns: Math.max(1, Math.round(ratio * rowLimit * aspect)),
+    rows: rowLimit
+  };
+}
+function LocalImage(props) {
+  const renderer = useRenderer();
+  const [failure, setFailure] = createSignal2();
+  const [loaded] = createResource(() => JSON.stringify({
+    href: props.href,
+    base: props.base(),
+    columns: props.columns(),
+    cell: props.cell() ?? null,
+    background: rgbToHex(resolveBackground(props.background())),
+    limits: props.limits ?? null
+  }), async (key) => {
+    const input = JSON.parse(key);
+    const resolved = resolveLocalImage(input.base, input.href);
+    if (resolved.path === undefined)
+      return {
+        error: resolved.error ?? "Image path is invalid"
+      };
+    const file = Bun.file(resolved.path);
+    if (!await file.exists())
+      return {
+        error: `Image does not exist: ${input.href}`
+      };
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const info = imageInfo(bytes);
+      const box = imageBox(info.width, info.height, Math.max(1, input.columns), input.cell ? input.cell.height / input.cell.width : 2, input.limits ?? undefined);
+      const target = {
+        width: Math.max(1, Math.round(box.columns * (input.cell?.width ?? 8))),
+        height: Math.max(1, Math.round(box.rows * (input.cell?.height ?? 16)))
+      };
+      const background = resolveBackground(input.background);
+      if (info.format === "gif")
+        return loadGif(bytes, box, target, background);
+      return {
+        box,
+        image: prepareImage(NativeImage.decode(bytes), target, background)
+      };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
+  });
+  const media = () => {
+    const value = loaded();
+    return value && !("error" in value) ? value : undefined;
+  };
+  const error = () => {
+    const value = loaded();
+    return failure() ?? (value && "error" in value ? value.error : undefined);
+  };
+  const [frame, setFrame] = createSignal2();
+  createEffect(() => {
+    const value = media();
+    if (!value?.animation) {
+      setFrame(value?.image);
+      return;
+    }
+    const animation = value.animation;
+    const canvas = new Uint8Array(animation.width * animation.height * 4);
+    let index = 0;
+    let current;
+    let timer;
+    const next = () => {
+      const decoded = import_gifuct_js.decompressFrame(animation.frames[index], animation.colorTable, true);
+      const before = decoded.disposalType === 3 ? canvas.slice() : undefined;
+      drawPatch(canvas, animation.width, animation.height, decoded.patch, decoded.dims.left, decoded.dims.top, decoded.dims.width, decoded.dims.height);
+      const image = prepareImage(NativeImage.fromRgba(canvas.slice(), animation.width, animation.height), animation.target, animation.background);
+      const previous = current;
+      current = image;
+      setFrame(image);
+      if (previous)
+        renderer.idle().then(() => previous.dispose());
+      if (decoded.disposalType === 2)
+        clearPatch(canvas, animation.width, decoded.dims.left, decoded.dims.top, decoded.dims.width, decoded.dims.height);
+      if (before)
+        canvas.set(before);
+      index = (index + 1) % animation.frames.length;
+      timer = setTimeout(next, Math.max(50, decoded.delay || 100));
+    };
+    next();
+    onCleanup2(() => {
+      if (timer)
+        clearTimeout(timer);
+      const image = current;
+      if (image)
+        renderer.idle().then(() => image.dispose());
+      setFrame();
+    });
+  });
+  createEffect(() => {
+    const value = media();
+    onCleanup2(() => void renderer.idle().then(() => disposeMedia(value)));
+  });
+  return (() => {
+    var _el$ = _$createElement2("box");
+    _$setProp2(_el$, "width", "100%");
+    _$setProp2(_el$, "flexDirection", "column");
+    _$setProp2(_el$, "flexShrink", 0);
+    _$setProp2(_el$, "overflow", "hidden");
+    _$insert2(_el$, _$createComponent(Switch, {
+      get children() {
+        return [_$createComponent(Match, {
+          get when() {
+            return loaded.loading;
+          },
+          get children() {
+            var _el$2 = _$createElement2("box"), _el$3 = _$createElement2("text"), _el$5 = _$createElement2("text");
+            _$insertNode(_el$2, _el$3);
+            _$insertNode(_el$2, _el$5);
+            _$setProp2(_el$2, "width", "100%");
+            _$setProp2(_el$2, "flexDirection", "row");
+            _$insertNode(_el$3, _$createTextNode(`Loading image: `));
+            _$setProp2(_el$3, "flexShrink", 0);
+            _$setProp2(_el$5, "wrapMode", "word");
+            _$setProp2(_el$5, "flexGrow", 1);
+            _$insert2(_el$5, () => props.alt || props.href);
+            _$effect((_p$) => {
+              var _v$ = props.labelColor?.(), _v$2 = props.textColor?.();
+              _v$ !== _p$.e && (_p$.e = _$setProp2(_el$3, "fg", _v$, _p$.e));
+              _v$2 !== _p$.t && (_p$.t = _$setProp2(_el$5, "fg", _v$2, _p$.t));
+              return _p$;
+            }, {
+              e: undefined,
+              t: undefined
+            });
+            return _el$2;
+          }
+        }), _$createComponent(Match, {
+          get when() {
+            return error();
+          },
+          get children() {
+            var _el$6 = _$createElement2("box"), _el$7 = _$createElement2("text"), _el$9 = _$createElement2("text");
+            _$insertNode(_el$6, _el$7);
+            _$insertNode(_el$6, _el$9);
+            _$setProp2(_el$6, "width", "100%");
+            _$setProp2(_el$6, "flexDirection", "row");
+            _$insertNode(_el$7, _$createTextNode(`Could not render image `));
+            _$setProp2(_el$7, "flexShrink", 0);
+            _$setProp2(_el$9, "wrapMode", "word");
+            _$setProp2(_el$9, "flexGrow", 1);
+            _$insert2(_el$9, () => `${props.alt || props.href}: ${error()}`);
+            _$effect((_p$) => {
+              var _v$3 = props.labelColor?.(), _v$4 = props.textColor?.();
+              _v$3 !== _p$.e && (_p$.e = _$setProp2(_el$7, "fg", _v$3, _p$.e));
+              _v$4 !== _p$.t && (_p$.t = _$setProp2(_el$9, "fg", _v$4, _p$.t));
+              return _p$;
+            }, {
+              e: undefined,
+              t: undefined
+            });
+            return _el$6;
+          }
+        }), _$createComponent(Match, {
+          get when() {
+            return _$memo(() => !!media())() && frame();
+          },
+          get children() {
+            var _el$0 = _$createElement2("image");
+            _$setProp2(_el$0, "fit", "fit");
+            _$setProp2(_el$0, "protocol", "auto");
+            _$setProp2(_el$0, "onError", (error) => setFailure(error instanceof Error ? error.message : String(error)));
+            _$effect((_p$) => {
+              var _v$5 = `opentui-markdown-image-${props.href}`, _v$6 = frame(), _v$7 = media().box.columns, _v$8 = media().box.rows;
+              _v$5 !== _p$.e && (_p$.e = _$setProp2(_el$0, "id", _v$5, _p$.e));
+              _v$6 !== _p$.t && (_p$.t = _$setProp2(_el$0, "source", _v$6, _p$.t));
+              _v$7 !== _p$.a && (_p$.a = _$setProp2(_el$0, "width", _v$7, _p$.a));
+              _v$8 !== _p$.o && (_p$.o = _$setProp2(_el$0, "height", _v$8, _p$.o));
+              return _p$;
+            }, {
+              e: undefined,
+              t: undefined,
+              a: undefined,
+              o: undefined
+            });
+            return _el$0;
+          }
+        }), " "];
+      }
+    }));
+    return _el$;
+  })();
+}
+function loadGif(bytes, box, target, background) {
+  const gif = import_gifuct_js.parseGIF(bytes.slice().buffer);
+  const width = gif.lsd.width;
+  const height = gif.lsd.height;
+  const frames = gif.frames.filter((frame) => ("image" in frame));
+  if (!frames.length)
+    throw new Error("GIF contains no frames");
+  return {
+    box,
+    animation: {
+      width,
+      height,
+      frames,
+      colorTable: gif.gct,
+      target,
+      background
+    }
+  };
+}
+function drawPatch(canvas, width, height, patch, left, top, patchWidth, patchHeight) {
+  for (let y = 0;y < patchHeight; y++) {
+    if (top + y < 0 || top + y >= height)
+      continue;
+    for (let x = 0;x < patchWidth; x++) {
+      if (left + x < 0 || left + x >= width)
+        continue;
+      const source = (y * patchWidth + x) * 4;
+      const target = ((top + y) * width + left + x) * 4;
+      const alpha = patch[source + 3] / 255;
+      const inverse = 1 - alpha;
+      canvas[target] = Math.round(patch[source] * alpha + canvas[target] * inverse);
+      canvas[target + 1] = Math.round(patch[source + 1] * alpha + canvas[target + 1] * inverse);
+      canvas[target + 2] = Math.round(patch[source + 2] * alpha + canvas[target + 2] * inverse);
+      canvas[target + 3] = Math.round((alpha + canvas[target + 3] / 255 * inverse) * 255);
+    }
+  }
+}
+function clearPatch(canvas, width, left, top, patchWidth, patchHeight) {
+  for (let y = 0;y < patchHeight; y++) {
+    for (let x = 0;x < patchWidth; x++)
+      canvas.fill(0, ((top + y) * width + left + x) * 4, ((top + y) * width + left + x + 1) * 4);
+  }
+}
+function prepareImage(image, target, background) {
+  const targetWidth = Math.max(1, Math.round(target.width));
+  const targetHeight = Math.max(1, Math.round(target.height));
+  const scale = Math.min(targetWidth / image.width, targetHeight / image.height);
+  const newWidth = Math.max(1, Math.round(image.width * scale));
+  const newHeight = Math.max(1, Math.round(image.height * scale));
+  const resized = scale !== 1 ? image.resize({
+    width: newWidth,
+    height: newHeight
+  }) : image;
+  if (resized !== image)
+    image.dispose();
+  if (!resized.info().hasAlpha)
+    return resized;
+  const raw = resized.raw();
+  const pixels = new Uint8Array(raw.width * raw.height * 4);
+  const color = background;
+  for (let index = 0;index < pixels.length; index += 4) {
+    const alpha = raw.data[index + 3] / 255;
+    pixels[index] = Math.round(raw.data[index] * alpha + color[0] * (1 - alpha));
+    pixels[index + 1] = Math.round(raw.data[index + 1] * alpha + color[1] * (1 - alpha));
+    pixels[index + 2] = Math.round(raw.data[index + 2] * alpha + color[2] * (1 - alpha));
+    pixels[index + 3] = 255;
+  }
+  const composited = NativeImage.fromRgba(pixels, raw.width, raw.height);
+  resized.dispose();
+  return composited;
+}
+function disposeMedia(media) {
+  media?.image?.dispose();
+}
+function generateSyntax(theme, headings = defaultHeadingStyles, defaultColor = theme.text.base, owner) {
+  const { markdown, syntax, text } = theme;
+  const feedback = text.feedback;
+  const headingStyle = (level) => {
+    const style = headings[level];
+    return {
+      bold: style.bold,
+      italic: style.italic,
+      underline: style.underline,
+      dim: style.dim
+    };
+  };
+  const headingRules = headingLevels.map((level) => rule([`markup.heading.${level}`], headingColor(theme, level), headingStyle(level)));
+  const rules = [
+    rule(["default"], defaultColor),
+    rule(["prompt"], theme.accent),
+    rule(["comment", "comment.documentation"], syntax.comment, { italic: true }),
+    rule(["string", "symbol", "character.special", "character"], syntax.string),
+    rule(["number", "boolean", "constant", "float"], syntax.number),
+    rule(["keyword.return", "keyword.conditional", "keyword.repeat", "keyword.coroutine"], syntax.keyword, {
+      italic: true
+    }),
+    rule(["keyword.type"], syntax.type, { bold: true, italic: true }),
+    rule(["keyword.function", "function.method"], syntax.function),
+    rule(["keyword"], syntax.keyword, { italic: true }),
+    rule(["keyword.import", "string.escape", "string.regexp", "tag.attribute", "keyword.export"], syntax.keyword),
+    rule(["operator", "keyword.operator", "punctuation.delimiter", "keyword.conditional.ternary"], syntax.operator),
+    rule(["variable", "variable.parameter", "function.method.call", "function.call", "property", "parameter", "field"], syntax.variable),
+    rule(["variable.member", "function", "constructor"], syntax.function),
+    rule(["type", "module", "class", "namespace"], syntax.type),
+    rule(["type.definition"], syntax.type, { bold: true }),
+    rule(["punctuation", "punctuation.bracket"], syntax.punctuation),
+    rule(["variable.builtin", "type.builtin", "function.builtin", "module.builtin", "constant.builtin", "variable.super"], feedback.error),
+    rule(["keyword.directive", "keyword.modifier", "keyword.exception"], syntax.keyword, { italic: true }),
+    rule(["punctuation.special", "tag.delimiter"], syntax.operator),
+    rule(["markup.heading"], headingColor(theme, 1), headingStyle(1)),
+    ...headingRules,
+    rule(["markup.bold", "markup.strong"], markdown.strong, { bold: true }),
+    rule(["markup.italic"], markdown.emphasis, { italic: true }),
+    rule(["markup.list"], markdown.listItem),
+    rule(["markup.list.enumeration"], markdown.listEnumeration),
+    rule(["markup.quote"], markdown.blockQuote, { italic: true }),
+    rule(["markup.raw"], markdown.code),
+    rule(["markup.raw.block"], markdown.codeBlock),
+    rule(["markup.raw.inline"], markdown.code, { background: theme.background.base }),
+    rule(["markup.link", "markup.link.url", "string.special", "string.special.url"], markdown.link, {
+      underline: true
+    }),
+    rule(["markup.link.label"], markdown.linkText, { underline: true }),
+    rule(["label"], markdown.linkText),
+    rule(["markup.underline"], text.base, { underline: true }),
+    rule(["markup.strikethrough", "markup.list.unchecked", "debug"], text.muted),
+    rule(["markup.list.checked"], feedback.success),
+    rule(["comment.error"], feedback.error, { italic: true, bold: true }),
+    rule(["comment.warning"], feedback.warning, { italic: true, bold: true }),
+    rule(["comment.todo", "comment.note"], feedback.info, { italic: true, bold: true }),
+    rule(["attribute", "annotation"], feedback.warning),
+    rule(["tag"], feedback.error),
+    rule(["diff.plus"], theme.diff.text.added, { background: theme.diff.background.added }),
+    rule(["diff.minus"], theme.diff.text.removed, { background: theme.diff.background.removed }),
+    rule(["diff.delta"], theme.diff.text.context, { background: theme.diff.background.context }),
+    rule(["error"], feedback.error, { bold: true }),
+    rule(["warning"], feedback.warning, { bold: true }),
+    rule(["info"], feedback.info)
+  ];
+  const fromTheme = SyntaxStyle.fromTheme;
+  return fromTheme(rules, owner);
+}
+function rule(scope, foreground, style = {}) {
+  return { scope, style: { foreground, ...style } };
+}
+function resolveCodeFiletype(language) {
+  const token = language?.trim().split(/\s+/, 1)[0]?.toLowerCase() ?? "";
+  return token === "jsonc" ? "json" : infoStringToFiletype(language ?? "");
+}
+function CodeBlock(props) {
+  const renderer = useRenderer2();
+  const nativeScene = renderer.nativeScene;
+  const owned = props.syntaxStyle ? undefined : generateSyntax(props.theme, props.headings, props.theme.markdown.codeBlock, nativeScene);
+  onCleanup3(() => {
+    if (owned)
+      renderer.idle().then(() => owned.destroy());
+  });
+  return (() => {
+    var _el$ = _$createElement3("code");
+    _$setProp3(_el$, "conceal", false);
+    _$setProp3(_el$, "drawUnstyledText", true);
+    _$setProp3(_el$, "streaming", false);
+    _$setProp3(_el$, "width", "100%");
+    _$effect2((_p$) => {
+      var _v$ = props.content, _v$2 = resolveCodeFiletype(props.language), _v$3 = props.syntaxStyle ?? owned, _v$4 = props.theme.markdown.codeBlock, _v$5 = props.theme.background.base;
+      _v$ !== _p$.e && (_p$.e = _$setProp3(_el$, "content", _v$, _p$.e));
+      _v$2 !== _p$.t && (_p$.t = _$setProp3(_el$, "filetype", _v$2, _p$.t));
+      _v$3 !== _p$.a && (_p$.a = _$setProp3(_el$, "syntaxStyle", _v$3, _p$.a));
+      _v$4 !== _p$.o && (_p$.o = _$setProp3(_el$, "fg", _v$4, _p$.o));
+      _v$5 !== _p$.i && (_p$.i = _$setProp3(_el$, "bg", _v$5, _p$.i));
+      return _p$;
+    }, {
+      e: undefined,
+      t: undefined,
+      a: undefined,
+      o: undefined,
+      i: undefined
+    });
+    return _el$;
+  })();
+}
+function sameKind(old, next) {
+  if (old.type !== next.type)
+    return false;
+  return old.type !== "mermaid" || next.type === "mermaid" && old.language === next.language;
+}
+function sameValue(a, b) {
+  if (Object.is(a, b))
+    return true;
+  if (typeof a !== "object" || a === null || typeof b !== "object" || b === null)
+    return false;
+  if (Array.isArray(a) !== Array.isArray(b))
+    return false;
+  if (Array.isArray(a)) {
+    const other = b;
+    return a.length === other.length && a.every((value, index) => sameValue(value, other[index]));
+  }
+  const left = a;
+  const right = b;
+  const keys = Object.keys(left);
+  const otherKeys = Object.keys(right);
+  return keys.filter((key) => key !== "source").length === otherKeys.filter((key) => key !== "source").length && keys.every((key) => key === "source" || Object.prototype.hasOwnProperty.call(right, key) && sameValue(left[key], right[key]));
+}
+function sameBlock(old, next) {
+  return sameValue(old, next);
+}
+function sameRange(old, next) {
+  return old?.start === next?.start && old?.end === next?.end;
+}
+function sameUnitRanges(old, next) {
+  if (!sameRange(old.source, next.source))
+    return false;
+  if (old.type !== "list" || next.type !== "list")
+    return true;
+  return old.items.length === next.items.length && old.items.every((item, index) => sameRange(item.source, next.items[index]?.source));
+}
+function refresh(slot, next) {
+  const changed = !sameBlock(slot.block(), next);
+  if (changed)
+    slot.update(next);
+  if (changed || !sameUnitRanges(slot.latest(), next))
+    slot.updateLatest(next);
+}
+function createSlot(block) {
+  const [get, set] = createSignal3(block);
+  const [latest, updateLatest] = createSignal3(block);
+  return { kind: block.type, block: get, update: set, latest, updateLatest };
+}
+function reconcileSlots(prev, next) {
+  if (prev.length === 0) {
+    return next.map(createSlot);
+  }
+  let prefix = 0;
+  while (prefix < prev.length && prefix < next.length) {
+    const old = prev[prefix].block();
+    const incoming = next[prefix];
+    if (!sameKind(old, incoming) || old.raw !== incoming.raw)
+      break;
+    refresh(prev[prefix], incoming);
+    prefix++;
+  }
+  let suffix = 0;
+  while (suffix < prev.length - prefix && suffix < next.length - prefix) {
+    const old = prev[prev.length - 1 - suffix].block();
+    const incoming = next[next.length - 1 - suffix];
+    if (!sameKind(old, incoming) || old.raw !== incoming.raw)
+      break;
+    refresh(prev[prev.length - 1 - suffix], incoming);
+    suffix++;
+  }
+  const result = [];
+  for (let i = 0;i < prefix; i++)
+    result.push(prev[i]);
+  if (prev.length - prefix - suffix === 1 && next.length - prefix - suffix === 1) {
+    const slot = prev[prefix];
+    const incoming = next[prefix];
+    if (sameKind(slot.block(), incoming)) {
+      refresh(slot, incoming);
+      result.push(slot);
+    } else {
+      result.push(createSlot(incoming));
+    }
+  } else {
+    for (let i = prefix;i < next.length - suffix; i++) {
+      const b = next[i];
+      result.push(createSlot(b));
+    }
+  }
+  for (let i = prev.length - suffix;i < prev.length; i++)
+    result.push(prev[i]);
+  return result;
+}
+function tableWidth(table) {
+  const layout = table.computeLayout?.(undefined);
+  const width = layout?.tableWidth;
+  if (typeof width === "number" && Number.isFinite(width) && width > 0)
+    return Math.round(width);
+  return Number.isFinite(table.width) ? Math.round(table.width) : 0;
+}
+
+class ScrollableTableRenderable extends BoxRenderable {
+  table;
+  offset = 0;
+  panEnabled = true;
+  dragX;
+  constructor(ctx, table) {
+    super(ctx, {
+      width: "100%",
+      flexDirection: "row",
+      flexShrink: 0,
+      overflow: "hidden"
+    });
+    this.table = table;
+    table.flexShrink = 0;
+    this.add(table);
+    this.onMouseDown = (event) => {
+      if (event.button !== 0)
+        return;
+      this.dragX = event.x;
+    };
+    this.onMouseDrag = (event) => {
+      if (this.dragX === undefined || !this.panEnabled)
+        return;
+      const dx = event.x - this.dragX;
+      this.dragX = event.x;
+      if (!dx || !this.overflows())
+        return;
+      event.preventDefault();
+      event.stopPropagation();
+      this.scrollBy(-dx);
+    };
+    this.onMouseDragEnd = () => {
+      this.dragX = undefined;
+    };
+    this.onMouseUp = () => {
+      this.dragX = undefined;
+    };
+    this.onMouseScroll = (event) => {
+      const direction = event.scroll?.direction;
+      if (!this.panEnabled || direction !== "left" && direction !== "right")
+        return;
+      if (!this.overflows())
+        return;
+      event.preventDefault();
+      event.stopPropagation();
+      this.scrollBy(direction === "left" ? -2 : 2);
+    };
+  }
+  onResize(width, _height) {
+    super.onResize(width, _height);
+    this.syncOverflowState(width);
+  }
+  syncOverflowState(width = this.width) {
+    if (!Number.isFinite(width) || width <= 0)
+      return;
+    const viewport = Math.round(width);
+    const max = Math.max(0, tableWidth(this.table) - viewport);
+    this.offset = this.panEnabled ? Math.min(this.offset, max) : 0;
+    this.table.marginLeft = -this.offset;
+    this.table.selectable = !this.panEnabled || max === 0;
+  }
+  overflows(width = this.width) {
+    const viewportWidth = Number.isFinite(width) ? Math.round(width) : 0;
+    return tableWidth(this.table) > viewportWidth;
+  }
+  scrollBy(delta) {
+    const viewportWidth = Number.isFinite(this.width) ? Math.round(this.width) : 0;
+    const max = Math.max(0, tableWidth(this.table) - viewportWidth);
+    this.offset = Math.max(0, Math.min(max, this.offset + delta));
+    this.table.marginLeft = -this.offset;
+  }
+}
+function flattenInline(inlines, ctx) {
+  const out = [];
+  const baseAttr = (ctx.attributes ?? 0) | (ctx.heading ? headingAttributes(ctx.headings[ctx.heading.level]) : 0) | (ctx.quote ? TextAttributes2.ITALIC : 0);
+  const quote = !!ctx.quote;
+  const linkCtx = ctx.link;
+  function walk(list, attr, link) {
+    for (const node of list) {
+      if (node.type === "text") {
+        let fg = ctx.theme.markdown.text;
+        if (quote && !link && !ctx.heading)
+          fg = ctx.theme.markdown.blockQuote;
+        if (ctx.heading)
+          fg = headingColor(ctx.theme, ctx.heading.level);
+        if (link)
+          fg = ctx.theme.markdown.linkText;
+        else if (attr & TextAttributes2.BOLD && !ctx.heading)
+          fg = ctx.theme.markdown.strong;
+        else if (attr & TextAttributes2.ITALIC && !ctx.heading && !quote)
+          fg = ctx.theme.markdown.emphasis;
+        if (node.text)
+          out.push({ type: "text", text: node.text, fg, attributes: baseAttr | attr | (link ? TextAttributes2.UNDERLINE : 0), href: link?.href });
+        continue;
+      }
+      if (node.type === "code") {
+        const fg = ctx.theme.markdown.code;
+        out.push({ type: "text", text: node.text, fg, attributes: TextAttributes2.NONE, href: link?.href });
+        continue;
+      }
+      if (node.type === "math") {
+        out.push({ type: "math", content: node.content, raw: node.raw, open: node.open, close: node.close });
+        continue;
+      }
+      if (node.type === "break") {
+        out.push({ type: "break", hard: true });
+        continue;
+      }
+      if (node.type === "strong") {
+        walk(node.children, attr | TextAttributes2.BOLD, link);
+        continue;
+      }
+      if (node.type === "em") {
+        walk(node.children, attr | TextAttributes2.ITALIC, link);
+        continue;
+      }
+      if (node.type === "del") {
+        walk(node.children, attr | TextAttributes2.STRIKETHROUGH, link);
+        continue;
+      }
+      if (node.type === "link") {
+        const l = { href: node.href, title: node.title };
+        walk(node.children, attr, l);
+        const label = node.children.map((child) => child.type === "text" || child.type === "code" ? child.text : "").join("");
+        if (ctx.hyperlinks === false && label !== node.href) {
+          out.push({ type: "text", text: ` (${node.href})`, fg: ctx.theme.markdown.link, attributes: baseAttr, href: node.href });
+        }
+        continue;
+      }
+      if (node.type === "inline-image") {
+        const l = link;
+        out.push({ type: "text", text: node.alt || node.href || "image", fg: ctx.theme.markdown.linkText, attributes: baseAttr | attr, href: l?.href || node.href });
+        continue;
+      }
+    }
+  }
+  walk(inlines, baseAttr, linkCtx);
+  return out;
+}
+function toTableChunks(inlines, theme, headings, hyperlinks = true) {
+  const chunks = [];
+  for (const atom of flattenInline(inlines, { theme, headings, hyperlinks })) {
+    if (atom.type === "text") {
+      chunks.push({
+        __isChunk: true,
+        text: atom.text,
+        fg: atom.fg,
+        attributes: atom.attributes,
+        ...atom.href ? { link: { url: atom.href } } : {}
+      });
+    } else if (atom.type === "math") {
+      chunks.push({ __isChunk: true, text: atom.raw, fg: theme.markdown.text });
+    } else {
+      chunks.push({ __isChunk: true, text: `
+`, fg: theme.markdown.text });
+    }
+  }
+  return chunks.length ? chunks : [{ __isChunk: true, text: " ", fg: theme.markdown.text }];
+}
+
+class MarkdownTableRenderable extends ScrollableTableRenderable {
+  constructor(ctx, _options) {
+    const defaults = resolveTableOptions();
+    const table = new TextTableRenderable2(ctx, {
+      content: [],
+      columnWidthMode: defaults.widthMode,
+      columnFitter: defaults.columnFitter,
+      cellPaddingX: defaults.cellPaddingX,
+      wrapMode: defaults.wrapMode,
+      showBorders: true,
+      border: true,
+      outerBorder: true,
+      borderStyle: "single",
+      selectable: true
+    });
+    super(ctx, table);
+  }
+  get tableData() {
+    return this.table.content;
+  }
+  set tableData(value) {
+    this.table.content = value;
+    this.syncOverflowState();
+  }
+  get resolved() {
+    return {
+      widthMode: this.table.columnWidthMode,
+      columnFitter: this.table.columnFitter,
+      cellPaddingX: this.table.cellPaddingX,
+      wrapMode: this.table.wrapMode === "none" ? "none" : "word",
+      overflow: this.panEnabled ? "scroll" : "wrap"
+    };
+  }
+  set resolved(value) {
+    this.table.columnWidthMode = value.widthMode;
+    this.table.columnFitter = value.columnFitter;
+    this.table.cellPaddingX = value.cellPaddingX;
+    this.table.wrapMode = value.wrapMode;
+    this.panEnabled = value.widthMode === "content" && value.overflow === "scroll";
+    this.syncOverflowState();
+  }
+  get foreground() {
+    return this.table.fg;
+  }
+  set foreground(value) {
+    this.table.fg = value;
+    this.syncOverflowState();
+  }
+  get tableBorderColor() {
+    return this.table.borderColor;
+  }
+  set tableBorderColor(value) {
+    this.table.borderColor = value;
+  }
+  get background() {
+    return this.backgroundColor;
+  }
+  set background(value) {
+    this.backgroundColor = value;
+    this.syncOverflowState();
+  }
+}
+extend({
+  md_text_table: MarkdownTableRenderable
+});
+function TableBlock(props) {
+  const cell = (inlines, header) => {
+    const chunks = toTableChunks(inlines, props.theme, props.headings, props.hyperlinks);
+    if (!header)
+      return chunks;
+    return chunks.map((chunk) => ({
+      ...chunk,
+      fg: props.theme.markdown.heading,
+      attributes: TextAttributes3.BOLD
+    }));
+  };
+  const content = () => [props.block.header.map((value) => cell(value.children, true)), ...props.block.rows.map((row) => row.map((value) => cell(value.children, false)))];
+  return (() => {
+    var _el$ = _$createElement4("md_text_table");
+    _$effect3((_p$) => {
+      var _v$ = content(), _v$2 = props.options, _v$3 = props.theme.markdown.text, _v$4 = props.theme.background.base, _v$5 = props.theme.border.base;
+      _v$ !== _p$.e && (_p$.e = _$setProp4(_el$, "tableData", _v$, _p$.e));
+      _v$2 !== _p$.t && (_p$.t = _$setProp4(_el$, "resolved", _v$2, _p$.t));
+      _v$3 !== _p$.a && (_p$.a = _$setProp4(_el$, "foreground", _v$3, _p$.a));
+      _v$4 !== _p$.o && (_p$.o = _$setProp4(_el$, "background", _v$4, _p$.o));
+      _v$5 !== _p$.i && (_p$.i = _$setProp4(_el$, "tableBorderColor", _v$5, _p$.i));
+      return _p$;
+    }, {
+      e: undefined,
+      t: undefined,
+      a: undefined,
+      o: undefined,
+      i: undefined
+    });
+    return _el$;
+  })();
+}
+function hardChunks(content, columns) {
+  const chunks = [];
+  let current = "";
+  for (const character of content) {
+    if (current && stringWidth(current + character) > columns) {
+      chunks.push(current);
+      current = character;
+      continue;
+    }
+    current += character;
+  }
+  if (current)
+    chunks.push(current);
+  return chunks;
+}
+function layoutAtoms(atoms, columns, measureOf, compactOverflow) {
+  columns = Math.max(1, columns);
+  const lines = [];
+  let current = { runs: [], columns: 0, height: 1, textRow: 0 };
+  const flush = (force = false) => {
+    if (!current.runs.length && !force)
+      return;
+    lines.push(current);
+    current = { runs: [], columns: 0, height: 1, textRow: 0 };
+  };
+  const place = (run, textRow = 0) => {
+    const add = (entry) => {
+      current.runs.push(entry);
+      current.columns += entry.columns;
+      current.height = Math.max(current.height, entry.rows, textRow + 1);
+      current.textRow = Math.max(current.textRow, textRow);
+    };
+    if (current.columns + run.columns <= columns || !current.runs.length) {
+      add(run);
+      return;
+    }
+    if (run.atom.type === "text") {
+      const text = run.atom.text.trimStart();
+      const trimmed = { ...run, atom: { ...run.atom, text }, columns: stringWidth(text) };
+      if (current.columns + trimmed.columns <= columns) {
+        add(trimmed);
+        return;
+      }
+      flush();
+      add(trimmed);
+      return;
+    }
+    flush();
+    add(run);
+  };
+  for (const atom of atoms) {
+    if (atom.type === "break") {
+      flush(true);
+      continue;
+    }
+    if (atom.type === "math") {
+      const natural = measureOf(atom.content)?.normal;
+      const squeezed = natural ? natural.columns > columns : false;
+      const entry = natural ? { atom, columns: squeezed ? columns : natural.columns, rows: Math.max(1, Math.round(squeezed ? natural.rows * columns / natural.columns : natural.rows)) } : { atom, columns: Math.min(columns, Math.max(3, atom.raw.length)), rows: 1 };
+      place(entry, natural ? Math.max(0, Math.ceil(natural.baseline) - 1) : 0);
+      continue;
+    }
+    const normalized = atom.text.replace(/\r?\n/g, " ");
+    const words = normalized.match(/\s*\S+\s*/g) ?? (normalized ? [normalized] : []);
+    for (const word of words) {
+      if (stringWidth(word) > columns) {
+        for (const chunk of hardChunks(word.trimEnd(), columns)) {
+          place({ atom: { ...atom, text: chunk }, columns: stringWidth(chunk), rows: 1 });
+        }
+      } else {
+        place({ atom: { ...atom, text: word }, columns: stringWidth(word), rows: 1 });
+      }
+    }
+  }
+  flush();
+  if (compactOverflow) {
+    let changed = true;
+    while (changed) {
+      changed = false;
+      const occupied = lines.flatMap((line, row) => {
+        let column = 0;
+        return line.runs.map((entry) => {
+          const area = {
+            entry,
+            column,
+            row: row + (entry.atom.type === "text" ? line.textRow : 0),
+            rows: entry.atom.type === "math" ? entry.rows : 1
+          };
+          column += entry.columns;
+          return area;
+        });
+      });
+      for (const area of occupied) {
+        if (area.entry.atom.type !== "math" || area.entry.variant === "compact" || area.rows <= 1)
+          continue;
+        const collision = occupied.some((other) => other.entry !== area.entry && other.column < area.column + area.entry.columns && area.column < other.column + other.entry.columns && other.row < area.row + area.rows && area.row + 1 < other.row + other.rows);
+        if (!collision)
+          continue;
+        const compact = measureOf(area.entry.atom.content)?.compact;
+        if (!compact)
+          continue;
+        area.entry.variant = "compact";
+        area.entry.columns = compact.columns;
+        area.entry.rows = compact.rows;
+        changed = true;
+      }
+    }
+  }
+  for (const line of lines) {
+    const entry = line.runs.at(-1);
+    if (!entry || entry.atom.type !== "math" || entry.variant === "compact")
+      continue;
+    const standard = measureOf(entry.atom.content)?.standard;
+    if (!standard || line.columns - entry.columns + standard.columns > columns)
+      continue;
+    entry.variant = "standard";
+    entry.columns = standard.columns;
+    entry.rows = standard.rows;
+  }
+  for (const line of lines) {
+    line.columns = line.runs.reduce((total, entry) => total + entry.columns, 0);
+    line.textRow = Math.max(0, ...line.runs.flatMap((entry) => {
+      if (entry.atom.type !== "math")
+        return [];
+      const measured = measureOf(entry.atom.content);
+      return measured ? [Math.max(0, Math.ceil(measured[entry.variant ?? "normal"].baseline) - 1)] : [];
+    }));
+    line.height = Math.max(1, line.textRow + 1, ...line.runs.map((entry) => entry.rows));
+  }
+  return lines;
+}
+function useInlineMathImages(contents, foreground, background, cell) {
+  const [rendered] = createResource2(() => JSON.stringify({ contents: contents(), color: foreground(), surface: background(), cell: cell() }), async (key) => {
+    const input = JSON.parse(key);
+    return Promise.all(input.contents.map(async (content) => {
+      try {
+        const normal = await renderMathImage(content, false, input.color, input.surface, input.cell);
+        if (!normal)
+          return;
+        const compact = normal.rows > 1 ? await renderMathImage(content, false, input.color, input.surface, input.cell, 1, true) : normal;
+        const standard = normal.clamped ? await renderMathImage(content, false, input.color, input.surface, input.cell, 1, false, true) : normal;
+        return { normal, compact: compact ?? normal, standard: standard ?? normal };
+      } catch {
+        return;
+      }
+    }));
+  });
+  return createMemo2(() => {
+    const values = rendered();
+    if (!values)
+      return new Map;
+    return new Map(contents().flatMap((content, index) => {
+      const image = values[index];
+      return image ? [[content, image]] : [];
+    }));
+  });
+}
+function PrefixSegment(props) {
+  let ref;
+  const update = () => {
+    const content = new StyledText(props.chunks());
+    if (ref)
+      ref.content = content;
+    return content;
+  };
+  createEffect2(update);
+  return (() => {
+    var _el$ = _$createElement5("text");
+    _$use((renderable) => {
+      ref = renderable;
+      renderable.content = update();
+    }, _el$);
+    _$setProp5(_el$, "wrapMode", "none");
+    _$setProp5(_el$, "flexShrink", 0);
+    _$effect4((_$p) => _$setProp5(_el$, "width", props.width, _$p));
+    return _el$;
+  })();
+}
+function StyledSegment(props) {
+  let ref;
+  const update = () => {
+    const atom = props.entry.atom;
+    const content = atom.type === "text" ? new StyledText([{
+      __isChunk: true,
+      text: atom.text,
+      fg: atom.fg,
+      attributes: atom.attributes,
+      ...atom.href ? {
+        link: {
+          url: atom.href
+        }
+      } : {}
+    }]) : new StyledText([]);
+    if (ref)
+      ref.content = content;
+    return content;
+  };
+  createEffect2(update);
+  return (() => {
+    var _el$2 = _$createElement5("text");
+    _$use((renderable) => {
+      ref = renderable;
+      renderable.content = update();
+    }, _el$2);
+    _$setProp5(_el$2, "flexShrink", 0);
+    _$setProp5(_el$2, "wrapMode", "none");
+    _$effect4((_p$) => {
+      var _v$ = props.entry.columns, _v$2 = props.textRow;
+      _v$ !== _p$.e && (_p$.e = _$setProp5(_el$2, "width", _v$, _p$.e));
+      _v$2 !== _p$.t && (_p$.t = _$setProp5(_el$2, "marginTop", _v$2, _p$.t));
+      return _p$;
+    }, {
+      e: undefined,
+      t: undefined
+    });
+    return _el$2;
+  })();
+}
+function InlineFlow(props) {
+  const atoms = createMemo3(() => {
+    const ctx = {
+      theme: props.theme,
+      headings: props.headings,
+      quote: props.quote,
+      heading: props.heading,
+      hyperlinks: props.graphics.hyperlinks?.() ?? true
+    };
+    return flattenInline(props.inlines, ctx);
+  });
+  const contents = createMemo3(() => [...new Set(atoms().flatMap((atom) => atom.type === "math" ? [atom.content] : []))]);
+  const foreground = () => rgbaToHex(props.heading ? headingColor(props.theme, props.heading.level) : props.theme.text.base);
+  const images = useInlineMathImages(contents, foreground, props.surface, props.graphics.cell);
+  const scale = createMemo3(() => mosaicScale(props.graphics.protocol()));
+  const prefixWidth = () => props.prefix?.(0).length ?? 0;
+  const columns = () => Math.max(1, props.columns - prefixWidth());
+  const lines = createMemo3(() => layoutAtoms(atoms(), columns(), (content) => {
+    const image = images().get(content);
+    if (!image)
+      return;
+    return {
+      normal: {
+        columns: Math.max(1, Math.round(image.normal.columns * scale())),
+        rows: Math.max(1, Math.round(image.normal.rows * scale())),
+        baseline: image.normal.baseline * scale()
+      },
+      compact: {
+        columns: Math.max(1, Math.round(image.compact.columns * scale())),
+        rows: image.compact.rows === 1 ? 1 : Math.max(1, Math.round(image.compact.rows * scale())),
+        baseline: image.compact.baseline * scale()
+      },
+      standard: {
+        columns: Math.max(1, Math.round(image.standard.columns * scale())),
+        rows: Math.max(1, Math.round(image.standard.rows * scale())),
+        baseline: image.standard.baseline * scale()
+      }
+    };
+  }, props.graphics.protocol() !== "blocks"));
+  return (() => {
+    var _el$3 = _$createElement5("box");
+    _$setProp5(_el$3, "width", "100%");
+    _$setProp5(_el$3, "flexDirection", "column");
+    _$setProp5(_el$3, "flexShrink", 0);
+    _$insert3(_el$3, _$createComponent2(For, {
+      get each() {
+        return lines();
+      },
+      children: (line, index) => (() => {
+        var _el$4 = _$createElement5("box");
+        _$setProp5(_el$4, "flexDirection", "row");
+        _$setProp5(_el$4, "alignItems", "flex-start");
+        _$setProp5(_el$4, "width", "100%");
+        _$setProp5(_el$4, "flexShrink", 0);
+        _$insert3(_el$4, _$createComponent2(Show, {
+          get when() {
+            return props.prefix;
+          },
+          get children() {
+            return _$createComponent2(Show, {
+              get when() {
+                return props.prefixChunks;
+              },
+              get fallback() {
+                return (() => {
+                  var _el$5 = _$createElement5("text");
+                  _$setProp5(_el$5, "wrapMode", "none");
+                  _$setProp5(_el$5, "flexShrink", 0);
+                  _$insert3(_el$5, () => props.prefix?.(index()) ?? "");
+                  _$effect4((_p$) => {
+                    var _v$5 = props.prefixColor?.() ?? props.theme.markdown.text, _v$6 = prefixWidth();
+                    _v$5 !== _p$.e && (_p$.e = _$setProp5(_el$5, "fg", _v$5, _p$.e));
+                    _v$6 !== _p$.t && (_p$.t = _$setProp5(_el$5, "width", _v$6, _p$.t));
+                    return _p$;
+                  }, {
+                    e: undefined,
+                    t: undefined
+                  });
+                  return _el$5;
+                })();
+              },
+              children: (chunks) => _$createComponent2(PrefixSegment, {
+                chunks: () => chunks()(index()),
+                get width() {
+                  return prefixWidth();
+                }
+              })
+            });
+          }
+        }), null);
+        _$insert3(_el$4, _$createComponent2(For, {
+          get each() {
+            return line.runs;
+          },
+          children: (entry, position) => {
+            const atom = entry.atom;
+            if (atom.type === "text") {
+              const visible = position() === line.runs.length - 1 ? atom.text.trimEnd() : atom.text;
+              return _$createComponent2(StyledSegment, {
+                get entry() {
+                  return {
+                    ...entry,
+                    atom: {
+                      ...atom,
+                      text: visible
+                    }
+                  };
+                },
+                get textRow() {
+                  return line.textRow;
+                }
+              });
+            }
+            const variant = entry.variant ?? "normal";
+            return _$createComponent2(Show, {
+              get when() {
+                return images().get(atom.content)?.[variant];
+              },
+              get fallback() {
+                return (() => {
+                  var _el$6 = _$createElement5("text");
+                  _$setProp5(_el$6, "wrapMode", "none");
+                  _$setProp5(_el$6, "flexShrink", 0);
+                  _$insert3(_el$6, () => atom.raw);
+                  _$effect4((_p$) => {
+                    var _v$7 = props.theme.text.muted, _v$8 = entry.columns;
+                    _v$7 !== _p$.e && (_p$.e = _$setProp5(_el$6, "fg", _v$7, _p$.e));
+                    _v$8 !== _p$.t && (_p$.t = _$setProp5(_el$6, "width", _v$8, _p$.t));
+                    return _p$;
+                  }, {
+                    e: undefined,
+                    t: undefined
+                  });
+                  return _el$6;
+                })();
+              },
+              children: (image) => (() => {
+                var _el$7 = _$createElement5("image");
+                _$setProp5(_el$7, "fit", "fit");
+                _$setProp5(_el$7, "protocol", "auto");
+                _$setProp5(_el$7, "flexShrink", 0);
+                _$effect4((_p$) => {
+                  var _v$9 = `opentui-markdown-math-${mathImageID(atom.content, false, foreground(), props.graphics.cell(), 1, variant === "compact", variant === "standard")}-${props.surface()}`, _v$0 = image().png, { columns: _v$1, rows: _v$10 } = entry;
+                  _v$9 !== _p$.e && (_p$.e = _$setProp5(_el$7, "id", _v$9, _p$.e));
+                  _v$0 !== _p$.t && (_p$.t = _$setProp5(_el$7, "source", _v$0, _p$.t));
+                  _v$1 !== _p$.a && (_p$.a = _$setProp5(_el$7, "width", _v$1, _p$.a));
+                  _v$10 !== _p$.o && (_p$.o = _$setProp5(_el$7, "height", _v$10, _p$.o));
+                  return _p$;
+                }, {
+                  e: undefined,
+                  t: undefined,
+                  a: undefined,
+                  o: undefined
+                });
+                return _el$7;
+              })()
+            });
+          }
+        }), null);
+        _$effect4((_p$) => {
+          var _v$3 = line.height, _v$4 = props.theme.background.base;
+          _v$3 !== _p$.e && (_p$.e = _$setProp5(_el$4, "height", _v$3, _p$.e));
+          _v$4 !== _p$.t && (_p$.t = _$setProp5(_el$4, "backgroundColor", _v$4, _p$.t));
+          return _p$;
+        }, {
+          e: undefined,
+          t: undefined
+        });
+        return _el$4;
+      })()
+    }));
+    return _el$3;
+  })();
+}
+function DisplayMath(props) {
+  const [failed, setFailed] = createSignal4(false);
+  const color = () => rgbaToHex(props.theme().text.base);
+  const mosaic = () => mosaicScale(props.graphics.protocol());
+  const [rendered] = createResource3(() => JSON.stringify({
+    content: props.content,
+    color: color(),
+    background: props.surface(),
+    cell: props.graphics.cell(),
+    scale: props.scale()
+  }), async (key) => {
+    const input = JSON.parse(key);
+    try {
+      const raster = await renderMathImage(input.content, true, input.color, input.background, input.cell, input.scale);
+      return raster ? {
+        raster
+      } : {
+        error: "Renderer returned no image"
+      };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
+  });
+  const raster = () => {
+    const value = rendered();
+    return value && "raster" in value ? value.raster : undefined;
+  };
+  const source = () => `${props.open}${props.content}${props.close}`;
+  const box = () => {
+    const image = raster();
+    const columns = (image ? image.columns : Math.min(24, props.maxWidth())) * mosaic();
+    const rows = (image ? image.rows : 3) * mosaic();
+    const max = props.maxWidth();
+    if (columns <= max)
+      return {
+        columns,
+        rows: Math.max(1, rows)
+      };
+    return {
+      columns: max,
+      rows: Math.max(1, Math.round(rows * max / columns))
+    };
+  };
+  return (() => {
+    var _el$ = _$createElement6("box");
+    _$setProp6(_el$, "width", "100%");
+    _$setProp6(_el$, "flexShrink", 0);
+    _$setProp6(_el$, "flexDirection", "column");
+    _$setProp6(_el$, "marginTop", 1);
+    _$setProp6(_el$, "marginBottom", 1);
+    _$insert4(_el$, _$createComponent3(Switch2, {
+      get children() {
+        return [_$createComponent3(Match2, {
+          get when() {
+            return rendered.loading;
+          },
+          get children() {
+            var _el$2 = _$createElement6("text");
+            _$insertNode2(_el$2, _$createTextNode2(`Rendering math...`));
+            _$setProp6(_el$2, "alignSelf", "center");
+            _$effect5((_$p) => _$setProp6(_el$2, "fg", props.theme().text.muted, _$p));
+            return _el$2;
+          }
+        }), _$createComponent3(Match2, {
+          get when() {
+            return failed() || rendered() && "error" in rendered();
+          },
+          get children() {
+            var _el$4 = _$createElement6("box"), _el$5 = _$createElement6("text"), _el$7 = _$createElement6("text");
+            _$insertNode2(_el$4, _el$5);
+            _$insertNode2(_el$4, _el$7);
+            _$setProp6(_el$4, "flexDirection", "column");
+            _$setProp6(_el$4, "border", ["left"]);
+            _$setProp6(_el$4, "paddingLeft", 1);
+            _$setProp6(_el$4, "alignSelf", "center");
+            _$insertNode2(_el$5, _$createTextNode2(`Could not render TeX; showing source`));
+            _$setProp6(_el$7, "wrapMode", "word");
+            _$insert4(_el$7, source);
+            _$effect5((_p$) => {
+              var _v$ = props.theme().text.feedback.error, _v$2 = props.theme().text.feedback.error, _v$3 = props.theme().text.base;
+              _v$ !== _p$.e && (_p$.e = _$setProp6(_el$4, "borderColor", _v$, _p$.e));
+              _v$2 !== _p$.t && (_p$.t = _$setProp6(_el$5, "fg", _v$2, _p$.t));
+              _v$3 !== _p$.a && (_p$.a = _$setProp6(_el$7, "fg", _v$3, _p$.a));
+              return _p$;
+            }, {
+              e: undefined,
+              t: undefined,
+              a: undefined
+            });
+            return _el$4;
+          }
+        }), _$createComponent3(Match2, {
+          get when() {
+            return raster();
+          },
+          get children() {
+            var _el$8 = _$createElement6("box"), _el$9 = _$createElement6("image");
+            _$insertNode2(_el$8, _el$9);
+            _$setProp6(_el$8, "width", "100%");
+            _$setProp6(_el$8, "flexShrink", 0);
+            _$setProp6(_el$8, "alignItems", "center");
+            _$setProp6(_el$8, "justifyContent", "center");
+            _$setProp6(_el$9, "fit", "fit");
+            _$setProp6(_el$9, "protocol", "auto");
+            _$setProp6(_el$9, "onError", () => setFailed(true));
+            _$effect5((_p$) => {
+              var _v$4 = box().rows, _v$5 = `opentui-markdown-math-${mathImageID(props.content, true, color(), props.graphics.cell(), props.scale())}-${props.surface()}`, _v$6 = raster().png, _v$7 = box().columns, _v$8 = box().rows;
+              _v$4 !== _p$.e && (_p$.e = _$setProp6(_el$8, "height", _v$4, _p$.e));
+              _v$5 !== _p$.t && (_p$.t = _$setProp6(_el$9, "id", _v$5, _p$.t));
+              _v$6 !== _p$.a && (_p$.a = _$setProp6(_el$9, "source", _v$6, _p$.a));
+              _v$7 !== _p$.o && (_p$.o = _$setProp6(_el$9, "width", _v$7, _p$.o));
+              _v$8 !== _p$.i && (_p$.i = _$setProp6(_el$9, "height", _v$8, _p$.i));
+              return _p$;
+            }, {
+              e: undefined,
+              t: undefined,
+              a: undefined,
+              o: undefined,
+              i: undefined
+            });
+            return _el$8;
+          }
+        })];
+      }
+    }));
+    return _el$;
+  })();
+}
+function parseDiagramTextLines(value) {
+  return value.split(/<br\s*\/?>/i).map((line) => {
+    const runs = [];
+    const source = line.trim();
+    const tag = /<\/?(?:i|em)\s*>/gi;
+    let italic = false;
+    let offset = 0;
+    for (const match of source.matchAll(tag)) {
+      if (match.index > offset)
+        runs.push({ text: source.slice(offset, match.index), italic });
+      italic = !match[0].startsWith("</");
+      offset = match.index + match[0].length;
+    }
+    if (offset < source.length)
+      runs.push({ text: source.slice(offset), italic });
+    return { text: runs.map((run) => run.text).join(""), runs };
+  });
+}
+function splitDiagramLines(value) {
+  return parseDiagramTextLines(value).map((line) => line.text);
+}
+function diagramTextWidth(value) {
+  return stringWidth(value);
+}
+var DIAGRAM_LABEL_PADDING_X = 1;
+function padDiagramLabelLine(value) {
+  const padding = " ".repeat(DIAGRAM_LABEL_PADDING_X);
+  return `${padding}${value}${padding}`;
+}
+function measureDiagramLabelWidth(value, measure = diagramTextWidth) {
+  return Math.max(...splitDiagramLines(value).map((line) => measure(line) + DIAGRAM_LABEL_PADDING_X * 2));
+}
+var graphemeSegmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+function* diagramTextGraphemes(value) {
+  for (const { segment } of graphemeSegmenter.segment(value))
+    yield segment;
+}
+function measureDiagramTextBox(value, options = {}) {
+  const lines = splitDiagramLines(value);
+  const innerWidth = Math.max(...lines.map(diagramTextWidth), options.minInnerWidth ?? 1);
+  return {
+    width: innerWidth + (options.paddingX ?? 0) * 2,
+    height: lines.length + (options.paddingY ?? 0) * 2,
+    lines
+  };
+}
+var MAX_DIAGRAM_CELLS = 250000;
+
+class DiagramCanvasSizeError extends Error {
+  width;
+  height;
+  constructor(width, height) {
+    const invalid = !Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width < 0 || height < 0;
+    super(invalid ? `Diagram canvas dimensions must be non-negative safe integers, received ${width}x${height}` : `Diagram canvas ${width}x${height} exceeds the ${MAX_DIAGRAM_CELLS.toLocaleString()} cell limit`);
+    this.width = width;
+    this.height = height;
+    this.name = "DiagramCanvasSizeError";
+  }
+}
+function createEmptyCell() {
+  return { char: " " };
+}
+function sameKey(left, right) {
+  return Boolean(left && left.length === right.length && left.every((value, index) => Object.is(value, right[index])));
+}
+
+class DiagramCanvas {
+  width;
+  height;
+  cells;
+  measure;
+  mergeCell;
+  rowEnds;
+  constructor(width, height, options = {}) {
+    this.width = width;
+    this.height = height;
+    if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width < 0 || height < 0) {
+      throw new DiagramCanvasSizeError(width, height);
+    }
+    if (width * height > MAX_DIAGRAM_CELLS)
+      throw new DiagramCanvasSizeError(width, height);
+    this.measure = options.measure ?? stringWidth;
+    this.mergeCell = options.mergeCell;
+    this.cells = Array.from({ length: height }, () => Array.from({ length: width }, () => createEmptyCell()));
+    this.rowEnds = new Uint32Array(height);
+  }
+  get rows() {
+    return this.cells;
+  }
+  rowText(row, rowEnd) {
+    return row.slice(0, rowEnd).map((cell) => cell.char).join("");
+  }
+  textRowRange(trimTop, trimBottom) {
+    let start = 0;
+    let end = this.cells.length;
+    if (trimTop)
+      while (start < end && this.rowEnds[start] === 0)
+        start += 1;
+    if (trimBottom)
+      while (end > start && this.rowEnds[end - 1] === 0)
+        end -= 1;
+    return { start, end };
+  }
+  setCell(x, y, char, style, metadata) {
+    this.writeCell(x, y, char, style, metadata, true);
+  }
+  replaceCell(x, y, char, style, metadata) {
+    this.writeCell(x, y, char, style, metadata, false);
+  }
+  writeCell(x, y, char, style, metadata, merge) {
+    if (y < 0 || y >= this.cells.length || x < 0 || x >= this.cells[y].length)
+      return;
+    const incoming = { char, style, ...metadata };
+    const cell = merge ? this.mergeCell?.(this.cells[y][x], incoming) ?? incoming : incoming;
+    this.cells[y][x] = cell;
+    if (cell.char !== " ") {
+      this.rowEnds[y] = Math.max(this.rowEnds[y], x + 1);
+    } else if (this.rowEnds[y] === x + 1) {
+      let end = x;
+      while (end > 0 && this.cells[y][end - 1]?.char === " ")
+        end -= 1;
+      this.rowEnds[y] = end;
+    }
+  }
+  getCell(x, y) {
+    return this.cells[y]?.[x];
+  }
+  setText(x, y, text, style, metadata) {
+    const metadataAt = (cellX) => typeof metadata === "function" ? metadata(cellX, y) : metadata;
+    if (this.measure === stringWidth && /^[\x20-\x7e]*$/.test(text)) {
+      for (let index = 0;index < text.length; index++) {
+        this.setCell(x + index, y, text[index], style, metadataAt(x + index));
+      }
+      return;
+    }
+    let offset = 0;
+    for (const grapheme of diagramTextGraphemes(text)) {
+      const width = Math.max(1, this.measure(grapheme));
+      if (x + offset < 0 || x + offset + width > this.width) {
+        offset += width;
+        continue;
+      }
+      this.setCell(x + offset, y, grapheme, style, metadataAt(x + offset));
+      for (let continuation = 1;continuation < width; continuation++) {
+        this.setCell(x + offset + continuation, y, "", style, metadataAt(x + offset + continuation));
+      }
+      offset += width;
+    }
+  }
+  toString(options = {}) {
+    const lines = [];
+    const rows = this.textRowRange(options.trimTop ?? false, options.trimBottom ?? false);
+    for (let rowIndex = rows.start;rowIndex < rows.end; rowIndex++) {
+      lines.push(this.rowText(this.cells[rowIndex], this.rowEnds[rowIndex]));
+    }
+    return lines.join(`
+`);
+  }
+  getTextSize(options = {}) {
+    const rows = this.textRowRange(options.trimTop ?? false, options.trimBottom ?? false);
+    let width = 0;
+    for (let rowIndex = rows.start;rowIndex < rows.end; rowIndex++) {
+      const row = this.cells[rowIndex];
+      const rowEnd = this.rowEnds[rowIndex];
+      if (rowEnd > 0)
+        width = Math.max(width, this.measure(this.rowText(row, rowEnd)));
+    }
+    return { width, height: rows.end - rows.start };
+  }
+  getTextHeight(options = {}) {
+    const rows = this.textRowRange(options.trimTop ?? false, options.trimBottom ?? false);
+    return rows.end - rows.start;
+  }
+  forEachRun(onRun, onLineEnd, options = {}) {
+    const key = options.key;
+    const rows = this.textRowRange(options.trimTop ?? false, options.trimBottom ?? false);
+    for (let rowIndex = rows.start;rowIndex < rows.end; rowIndex++) {
+      const row = this.cells[rowIndex];
+      let rowEnd = this.rowEnds[rowIndex];
+      while (rowEnd < row.length && row[rowEnd]?.style !== undefined)
+        rowEnd += 1;
+      let currentCell;
+      let currentKey;
+      let currentText = "";
+      const flush = () => {
+        if (!currentText || !currentCell)
+          return;
+        onRun({ text: currentText, style: currentCell.style, cell: currentCell });
+        currentText = "";
+      };
+      for (let x = 0;x < rowEnd; x++) {
+        const cell = row[x];
+        const nextKey = key?.(cell);
+        const sameRun = currentCell && (key ? sameKey(currentKey, nextKey) : currentCell.style === cell.style);
+        if (!sameRun) {
+          flush();
+          currentCell = cell;
+          currentKey = nextKey;
+        }
+        currentText += cell.char;
+      }
+      flush();
+      if (rowIndex < rows.end - 1)
+        onLineEnd();
+    }
+  }
+}
+var DIRECTION_AXIS = {
+  left: "x",
+  right: "x",
+  up: "y",
+  down: "y"
+};
+var DIRECTION_SIGN = {
+  left: -1,
+  right: 1,
+  up: -1,
+  down: 1
+};
+var DIRECTION_SIDE = {
+  left: "left",
+  right: "right",
+  up: "top",
+  down: "bottom"
+};
+var OPPOSITE_SIDE = {
+  left: "right",
+  right: "left",
+  top: "bottom",
+  bottom: "top"
+};
+function point(x, y) {
+  return { x, y };
+}
+function diagramBoundsFromRect(left, top, width, height) {
+  return {
+    left,
+    top,
+    width,
+    height,
+    centerX: left + Math.floor(width / 2),
+    centerY: top + Math.floor(height / 2)
+  };
+}
+function translateDiagramBounds(bounds, dx, dy) {
+  bounds.left += dx;
+  bounds.top += dy;
+  bounds.centerX += dx;
+  bounds.centerY += dy;
+}
+function diagramBoundsFromBounds(bounds) {
+  if (bounds.length === 0)
+    return;
+  const left = Math.min(...bounds.map((bound) => bound.left));
+  const top = Math.min(...bounds.map((bound) => bound.top));
+  const right = Math.max(...bounds.map((bound) => bound.left + bound.width));
+  const bottom = Math.max(...bounds.map((bound) => bound.top + bound.height));
+  return diagramBoundsFromRect(left, top, right - left, bottom - top);
+}
+function diagramBoundsFromPoints(points) {
+  if (points.length === 0)
+    return;
+  const left = Math.min(...points.map((point) => point.x));
+  const top = Math.min(...points.map((point) => point.y));
+  const right = Math.max(...points.map((point) => point.x));
+  const bottom = Math.max(...points.map((point) => point.y));
+  return diagramBoundsFromRect(left, top, right - left + 1, bottom - top + 1);
+}
+function coordinate(point, axis) {
+  return point[axis];
+}
+function withCoordinate(point, axis, value) {
+  return axis === "x" ? { x: value, y: point.y } : { x: point.x, y: value };
+}
+function shiftPoint(point, direction, distance = 1) {
+  switch (direction) {
+    case "left":
+      return { x: point.x - distance, y: point.y };
+    case "right":
+      return { x: point.x + distance, y: point.y };
+    case "up":
+      return { x: point.x, y: point.y - distance };
+    case "down":
+      return { x: point.x, y: point.y + distance };
+  }
+}
+function clampPoint(point, min = { x: 0, y: 0 }) {
+  return { x: Math.max(min.x, point.x), y: Math.max(min.y, point.y) };
+}
+function samePoint(left, right) {
+  return left.x === right.x && left.y === right.y;
+}
+function directionAxis(direction) {
+  return DIRECTION_AXIS[direction];
+}
+function directionSign(direction) {
+  return DIRECTION_SIGN[direction];
+}
+function sideForDirection(direction) {
+  return DIRECTION_SIDE[direction];
+}
+function oppositeSide(side) {
+  return OPPOSITE_SIDE[side];
+}
+function directionBetween(from, to) {
+  if (from.y === to.y) {
+    if (to.x > from.x)
+      return "right";
+    if (to.x < from.x)
+      return "left";
+  }
+  if (from.x === to.x) {
+    if (to.y > from.y)
+      return "down";
+    if (to.y < from.y)
+      return "up";
+  }
+  return;
+}
+function boundsCenter(bounds) {
+  return point(bounds.centerX, bounds.centerY);
+}
+function boundsSidePoint(bounds, side, surface = "outside") {
+  switch (side) {
+    case "left":
+      return point(bounds.left - (surface === "outside" ? 1 : 0), bounds.centerY);
+    case "right":
+      return point(bounds.left + bounds.width - (surface === "outside" ? 0 : 1), bounds.centerY);
+    case "top":
+      return point(bounds.centerX, bounds.top - (surface === "outside" ? 1 : 0));
+    case "bottom":
+      return point(bounds.centerX, bounds.top + bounds.height - (surface === "outside" ? 0 : 1));
+  }
+}
+function centerCoordinate(bounds, axis) {
+  return axis === "x" ? bounds.centerX : bounds.centerY;
+}
+function snapCoordinate(source, target, tolerance) {
+  return Math.abs(source - target) <= tolerance ? target : source;
+}
+function pathThrough(points) {
+  const path5 = [];
+  for (const next of points) {
+    if (!path5.length || !samePoint(path5[path5.length - 1], next))
+      path5.push(point(next.x, next.y));
+  }
+  return path5;
+}
+function lane(axis, coordinate) {
+  return { axis, coordinate };
+}
+function pathViaLane(start, routeLane, end) {
+  return pathThrough([
+    start,
+    withCoordinate(start, routeLane.axis, routeLane.coordinate),
+    withCoordinate(end, routeLane.axis, routeLane.coordinate),
+    end
+  ]);
+}
+function dominantAxis(start, end) {
+  return Math.abs(end.x - start.x) >= Math.abs(end.y - start.y) ? "x" : "y";
+}
+function terminalLane(start, end, axis, terminalClearance) {
+  const startCoordinate = coordinate(start, axis);
+  const endCoordinate = coordinate(end, axis);
+  const delta = endCoordinate - startCoordinate;
+  const sign = Math.sign(delta);
+  if (sign === 0)
+    return endCoordinate;
+  return endCoordinate - sign * Math.min(terminalClearance, Math.max(1, Math.abs(delta) - 1));
+}
+function orthogonalPath(start, end, options = {}) {
+  if (start.x === end.x || start.y === end.y)
+    return pathThrough([start, end]);
+  const laneAxis = options.preferredAxis ?? dominantAxis(start, end);
+  return pathViaLane(start, lane(laneAxis, terminalLane(start, end, laneAxis, options.terminalClearance ?? 4)), end);
+}
+function segmentBetween(from, to) {
+  const direction = directionBetween(from, to);
+  if (!direction)
+    return;
+  return {
+    from,
+    to,
+    axis: directionAxis(direction),
+    direction,
+    length: Math.abs(coordinate(to, directionAxis(direction)) - coordinate(from, directionAxis(direction)))
+  };
+}
+function walkOrthogonalSegment(from, to, includeStart, visit) {
+  const direction = directionBetween(from, to);
+  if (!direction)
+    return;
+  const dx = direction === "right" ? 1 : direction === "left" ? -1 : 0;
+  const dy = direction === "down" ? 1 : direction === "up" ? -1 : 0;
+  let cursor = includeStart ? from : point(from.x + dx, from.y + dy);
+  while (!samePoint(cursor, to)) {
+    if (visit(cursor) === false)
+      return;
+    cursor = point(cursor.x + dx, cursor.y + dy);
+  }
+}
+function orthogonalPathPoints(points) {
+  const path5 = [];
+  for (let index = 1;index < points.length; index++) {
+    const from = points[index - 1];
+    const to = points[index];
+    const direction = directionBetween(from, to);
+    if (!direction)
+      continue;
+    const dx = direction === "right" ? 1 : direction === "left" ? -1 : 0;
+    const dy = direction === "down" ? 1 : direction === "up" ? -1 : 0;
+    let cursor = path5.length === 0 ? point(from.x, from.y) : point(from.x + dx, from.y + dy);
+    while (true) {
+      path5.push(cursor);
+      if (samePoint(cursor, to))
+        break;
+      cursor = point(cursor.x + dx, cursor.y + dy);
+    }
+  }
+  return path5;
+}
+function orderedSpan(left, right) {
+  return left <= right ? { start: left, end: right } : { start: right, end: left };
+}
+function segmentSpan(segment) {
+  return orderedSpan(coordinate(segment.from, segment.axis), coordinate(segment.to, segment.axis));
+}
+function pointOnSegment(segment, coordinateValue) {
+  return withCoordinate(segment.from, segment.axis, coordinateValue);
+}
+function insetSpan(span, amount) {
+  return { start: span.start + amount, end: span.end - amount };
+}
+function spanCapacity(span) {
+  return Math.max(0, span.end - span.start + 1);
+}
+function centeredSpanStart(span, width) {
+  return span.start + Math.floor((spanCapacity(span) - width) / 2);
+}
+function midpoint(span) {
+  return Math.round((span.start + span.end) / 2);
+}
+function advanceCoordinate(origin, direction, distance) {
+  return origin + directionSign(direction) * distance;
+}
+function beforeNearestCoordinate(points, axis, direction, clearance) {
+  const coordinates = points.map((point) => coordinate(point, axis));
+  const nearest = directionSign(direction) > 0 ? Math.min(...coordinates) : Math.max(...coordinates);
+  return advanceCoordinate(nearest, direction, -clearance);
+}
+function afterFarthestCoordinate(points, axis, direction, clearance) {
+  const coordinates = points.map((point) => coordinate(point, axis));
+  const farthest = directionSign(direction) > 0 ? Math.max(...coordinates) : Math.min(...coordinates);
+  return advanceCoordinate(farthest, direction, clearance);
+}
+function keepBefore(preferred, boundary, direction) {
+  return directionSign(direction) > 0 ? Math.min(preferred, boundary) : Math.max(preferred, boundary);
+}
+function keepAfter(preferred, boundary, direction) {
+  return directionSign(direction) > 0 ? Math.max(preferred, boundary) : Math.min(preferred, boundary);
+}
+var DIAGRAM_ARROW_HEADS = new Set(["\u25B6", "\u25C0", "\u25BC", "\u25B2", "\u2192", "\u2190", "\u2193", "\u2191"]);
+var HEAVY_LINE_GLYPHS = new Set(Object.values(BorderChars.heavy));
+var DIAGRAM_DIAMOND_CHARS = {
+  topLeft: "\u256D",
+  topRight: "\u256E",
+  upperLeft: "\u256D",
+  upperLeftJoin: "\u256F",
+  upperRightJoin: "\u2570",
+  upperRight: "\u256E",
+  vertical: "\u2502",
+  lowerLeft: "\u2570",
+  lowerLeftJoin: "\u256E",
+  lowerRightJoin: "\u256D",
+  lowerRight: "\u256F",
+  bottomLeft: "\u2570",
+  bottomRight: "\u256F",
+  horizontal: "\u2500"
+};
+function diagramDiamondCharactersFromBorder(chars) {
+  return {
+    topLeft: chars.topLeft,
+    topRight: chars.topRight,
+    upperLeft: chars.topLeft,
+    upperLeftJoin: chars.bottomRight,
+    upperRightJoin: chars.bottomLeft,
+    upperRight: chars.topRight,
+    vertical: chars.vertical,
+    lowerLeft: chars.bottomLeft,
+    lowerLeftJoin: chars.topRight,
+    lowerRightJoin: chars.topLeft,
+    lowerRight: chars.bottomRight,
+    bottomLeft: chars.bottomLeft,
+    bottomRight: chars.bottomRight,
+    horizontal: chars.horizontal
+  };
+}
+function lineDirections(char) {
+  switch (char) {
+    case "\u2500":
+      return ["left", "right"];
+    case "\u2502":
+      return ["up", "down"];
+    case "\u2501":
+      return ["left", "right"];
+    case "\u2503":
+      return ["up", "down"];
+    case "\u250C":
+    case "\u256D":
+    case "\u250F":
+      return ["right", "down"];
+    case "\u2510":
+    case "\u256E":
+    case "\u2513":
+      return ["left", "down"];
+    case "\u2514":
+    case "\u2570":
+    case "\u2517":
+      return ["up", "right"];
+    case "\u2518":
+    case "\u256F":
+    case "\u251B":
+      return ["up", "left"];
+    case "\u251C":
+    case "\u2523":
+      return ["up", "down", "right"];
+    case "\u2524":
+    case "\u252B":
+      return ["up", "down", "left"];
+    case "\u252C":
+    case "\u2533":
+      return ["left", "right", "down"];
+    case "\u2534":
+    case "\u253B":
+      return ["left", "right", "up"];
+    case "\u253C":
+    case "\u254B":
+      return ["up", "down", "left", "right"];
+    default:
+      return;
+  }
+}
+function diagramLineGlyph(directions, cornerStyle = "square", lineStyle = "single") {
+  const up = directions.has("up");
+  const down = directions.has("down");
+  const left = directions.has("left");
+  const right = directions.has("right");
+  if (lineStyle === "heavy") {
+    const chars = BorderChars.heavy;
+    if (up && down && left && right)
+      return chars.cross;
+    if (up && down && right)
+      return chars.leftT;
+    if (up && down && left)
+      return chars.rightT;
+    if (left && right && down)
+      return chars.topT;
+    if (left && right && up)
+      return chars.bottomT;
+    if (up && right)
+      return chars.bottomLeft;
+    if (up && left)
+      return chars.bottomRight;
+    if (down && right)
+      return chars.topLeft;
+    if (down && left)
+      return chars.topRight;
+    if (up || down)
+      return chars.vertical;
+    return chars.horizontal;
+  }
+  if (up && down && left && right)
+    return "\u253C";
+  if (up && down && right)
+    return "\u251C";
+  if (up && down && left)
+    return "\u2524";
+  if (left && right && down)
+    return "\u252C";
+  if (left && right && up)
+    return "\u2534";
+  if (up && right)
+    return cornerStyle === "rounded" ? "\u2570" : "\u2514";
+  if (up && left)
+    return cornerStyle === "rounded" ? "\u256F" : "\u2518";
+  if (down && right)
+    return cornerStyle === "rounded" ? "\u256D" : "\u250C";
+  if (down && left)
+    return cornerStyle === "rounded" ? "\u256E" : "\u2510";
+  if (up || down)
+    return "\u2502";
+  return "\u2500";
+}
+function isHeavyLineGlyph(char) {
+  return HEAVY_LINE_GLYPHS.has(char);
+}
+function segmentGlyph(direction, lineStyle) {
+  const directions = new Set(direction === "left" || direction === "right" ? ["left", "right"] : ["up", "down"]);
+  return diagramLineGlyph(directions, "square", lineStyle === "heavy" ? "heavy" : "single");
+}
+function mergeDiagramLineGlyph(existing, incoming, cornerStyle = "square") {
+  const existingDirections = lineDirections(existing);
+  const incomingDirections = lineDirections(incoming);
+  if (!existingDirections || !incomingDirections)
+    return;
+  return diagramLineGlyph(new Set([...existingDirections, ...incomingDirections]), cornerStyle, isHeavyLineGlyph(existing) && isHeavyLineGlyph(incoming) ? "heavy" : "single");
+}
+function diagramArrowHead(direction, style = "filled") {
+  if (style === "line") {
+    if (direction === "right")
+      return "\u2192";
+    if (direction === "left")
+      return "\u2190";
+    if (direction === "up")
+      return "\u2191";
+    return "\u2193";
+  }
+  if (direction === "right")
+    return "\u25B6";
+  if (direction === "left")
+    return "\u25C0";
+  if (direction === "up")
+    return "\u25B2";
+  return "\u25BC";
+}
+function diagramArrowHeadBetween(from, to, style = "filled") {
+  const direction = directionBetween(from, to);
+  return direction ? diagramArrowHead(direction, style) : diagramArrowHead("right", style);
+}
+function drawDiagramFrame(bounds, chars, setCell) {
+  setCell(bounds.left, bounds.top, chars.topLeft);
+  setCell(bounds.left + bounds.width - 1, bounds.top, chars.topRight);
+  setCell(bounds.left, bounds.top + bounds.height - 1, chars.bottomLeft);
+  setCell(bounds.left + bounds.width - 1, bounds.top + bounds.height - 1, chars.bottomRight);
+  for (let x = bounds.left + 1;x < bounds.left + bounds.width - 1; x++) {
+    setCell(x, bounds.top, chars.horizontal);
+    setCell(x, bounds.top + bounds.height - 1, chars.horizontal);
+  }
+  for (let y = bounds.top + 1;y < bounds.top + bounds.height - 1; y++) {
+    setCell(bounds.left, y, chars.vertical);
+    setCell(bounds.left + bounds.width - 1, y, chars.vertical);
+  }
+}
+function fillDiagramFrameInterior(bounds, setCell) {
+  for (let y = bounds.top + 1;y < bounds.top + bounds.height - 1; y++) {
+    for (let x = bounds.left + 1;x < bounds.left + bounds.width - 1; x++)
+      setCell(x, y);
+  }
+}
+function drawDiagramDiamond(bounds, setCell, chars = DIAGRAM_DIAMOND_CHARS) {
+  const left = bounds.left;
+  const right = bounds.left + bounds.width - 1;
+  const top = bounds.top;
+  const bottom = bounds.top + bounds.height - 1;
+  const capInset = Math.min(2, Math.max(1, Math.floor((bounds.width - 1) / 2)));
+  const capLeft = left + capInset;
+  const capRight = right - capInset;
+  setCell(capLeft, top, chars.topLeft);
+  for (let x = capLeft + 1;x < capRight; x++)
+    setCell(x, top, chars.horizontal);
+  setCell(capRight, top, chars.topRight);
+  setCell(left, top + 1, chars.upperLeft);
+  for (let x = left + 1;x < capLeft; x++)
+    setCell(x, top + 1, chars.horizontal);
+  setCell(capLeft, top + 1, chars.upperLeftJoin);
+  setCell(capRight, top + 1, chars.upperRightJoin);
+  for (let x = capRight + 1;x < right; x++)
+    setCell(x, top + 1, chars.horizontal);
+  setCell(right, top + 1, chars.upperRight);
+  for (let y = top + 2;y < bottom - 1; y++) {
+    setCell(left, y, chars.vertical);
+    setCell(right, y, chars.vertical);
+  }
+  setCell(left, bottom - 1, chars.lowerLeft);
+  for (let x = left + 1;x < capLeft; x++)
+    setCell(x, bottom - 1, chars.horizontal);
+  setCell(capLeft, bottom - 1, chars.lowerLeftJoin);
+  setCell(capRight, bottom - 1, chars.lowerRightJoin);
+  for (let x = capRight + 1;x < right; x++)
+    setCell(x, bottom - 1, chars.horizontal);
+  setCell(right, bottom - 1, chars.lowerRight);
+  setCell(capLeft, bottom, chars.bottomLeft);
+  for (let x = capLeft + 1;x < capRight; x++)
+    setCell(x, bottom, chars.horizontal);
+  setCell(capRight, bottom, chars.bottomRight);
+}
+function drawOrthogonalPath(points, setCell, options = {}) {
+  for (let index = 1;index < points.length; index++) {
+    const from = points[index - 1];
+    const to = points[index];
+    const direction = directionBetween(from, to);
+    if (!direction)
+      continue;
+    const glyph = segmentGlyph(direction, options.lineStyle);
+    const horizontal = direction === "left" || direction === "right";
+    const dashOn = horizontal ? 2 : 1;
+    const dashPeriod = horizontal ? 4 : 2;
+    let step = index === 1 ? 0 : 1;
+    walkOrthogonalSegment(from, to, index === 1, (point) => {
+      if (options.lineStyle !== "dashed" || step % dashPeriod < dashOn)
+        setCell(point.x, point.y, glyph);
+      step += 1;
+    });
+  }
+  for (let index = 1;index < points.length - 1; index++) {
+    const previous = points[index - 1];
+    const current = points[index];
+    const next = points[index + 1];
+    const fromDirection = directionBetween(current, previous);
+    const toDirection = directionBetween(current, next);
+    const directions = new Set;
+    if (fromDirection)
+      directions.add(fromDirection);
+    if (toDirection)
+      directions.add(toDirection);
+    setCell(current.x, current.y, diagramLineGlyph(directions, options.cornerStyle, options.lineStyle === "heavy" ? "heavy" : "single"));
+  }
+}
+function classLabelAnchor(path5, lineCount, width, vertical) {
+  let bestFrom = path5[0];
+  let bestTo = path5[path5.length - 1];
+  let bestLength = -1;
+  const preferredLength = (from, to) => {
+    const horizontal = from.y === to.y;
+    return horizontal === vertical ? Math.abs(from.x - to.x) + Math.abs(from.y - to.y) : -1;
+  };
+  for (let index = 1;index < path5.length; index++) {
+    const from = path5[index - 1];
+    const to = path5[index];
+    const length = preferredLength(from, to);
+    if (length > bestLength) {
+      bestLength = length;
+      bestFrom = from;
+      bestTo = to;
+    }
+  }
+  if (bestLength < 0) {
+    for (let index = 1;index < path5.length; index++) {
+      const from = path5[index - 1];
+      const to = path5[index];
+      const length = Math.abs(from.x - to.x) + Math.abs(from.y - to.y);
+      if (length > bestLength) {
+        bestLength = length;
+        bestFrom = from;
+        bestTo = to;
+      }
+    }
+  }
+  const midX = Math.floor((bestFrom.x + bestTo.x) / 2);
+  const midY = Math.floor((bestFrom.y + bestTo.y) / 2);
+  if (bestFrom.y === bestTo.y)
+    return { x: midX - Math.floor(width / 2), y: bestFrom.y - lineCount };
+  if (bestFrom.x === bestTo.x)
+    return { x: bestFrom.x + 2, y: midY - Math.floor(lineCount / 2) };
+  return { x: midX, y: midY };
+}
+var CLASS_CONTENT_OFFSET_X = 2;
+var CONTENT_PADDING = 2;
+var NODE_H_GAP = 6;
+var NODE_MIN_GAP = 3;
+var MARGIN_TOP = 2;
+var MARGIN_RIGHT = 4;
+var MARGIN_BOTTOM = 2;
+function displayClassName(id) {
+  let open = true;
+  return id.replace(/~/g, () => {
+    const glyph = open ? "<" : ">";
+    open = !open;
+    return glyph;
+  });
+}
+function classBoxSectionLines(definition) {
+  return {
+    titleLines: [
+      ...definition.stereotype ? [`\xAB${definition.stereotype}\xBB`] : [],
+      displayClassName(definition.label ?? definition.id)
+    ],
+    attributeLines: [
+      ...definition.members.filter((member) => !member.method).map((member) => member.text),
+      ...(definition.notes ?? []).map((note) => `\u24D8 ${note}`)
+    ],
+    methodLines: definition.members.filter((member) => member.method).map((member) => member.text)
+  };
+}
+function measureClassBox(definition) {
+  const { titleLines, attributeLines, methodLines } = classBoxSectionLines(definition);
+  const contentWidth = Math.max(1, ...titleLines.map(diagramTextWidth), ...attributeLines.map(diagramTextWidth), ...methodLines.map(diagramTextWidth));
+  let height = 2 + titleLines.length;
+  if (attributeLines.length)
+    height += 1 + attributeLines.length;
+  if (methodLines.length)
+    height += 1 + methodLines.length;
+  return { titleLines, attributeLines, methodLines, contentWidth, width: contentWidth + CONTENT_PADDING * 2, height };
+}
+function layoutClassDiagram(diagram, direction) {
+  const vertical = direction === "TB" || direction === "BT";
+  const metrics = new Map(diagram.classes.map((definition) => [definition.id, measureClassBox(definition)]));
+  const rank = computeRanks(diagram, direction);
+  const byId = new Map(diagram.classes.map((definition) => [definition.id, definition]));
+  const groups = new Map;
+  for (const definition of diagram.classes) {
+    const key = rank.get(definition.id) ?? 0;
+    const list = groups.get(key) ?? [];
+    list.push(definition);
+    groups.set(key, list);
+  }
+  const rankKeys = [...groups.keys()].sort((left, right) => left - right);
+  const records = diagram.relationships.map((relationship) => ({
+    relationship,
+    from: byId.get(relationship.from),
+    to: byId.get(relationship.to),
+    fromRank: rank.get(relationship.from) ?? 0,
+    toRank: rank.get(relationship.to) ?? 0
+  }));
+  const spacing = computeSpacing(records, vertical);
+  const boxes = [];
+  const boxById = new Map;
+  const bands = new Map;
+  let mainExtent = 0;
+  if (vertical) {
+    const laneWidths = rankKeys.map((key) => laneWidth(groups.get(key), metrics));
+    const totalWidth = Math.max(0, ...laneWidths);
+    let y = 0;
+    rankKeys.forEach((key, index) => {
+      const nodes = groups.get(key);
+      const bandHeight = Math.max(0, ...nodes.map((node) => metrics.get(node.id).height));
+      let x = Math.floor((totalWidth - laneWidths[index]) / 2);
+      for (const definition of nodes) {
+        const size = metrics.get(definition.id);
+        const box = makeClassBox(definition, x, y, size);
+        boxes.push(box);
+        boxById.set(definition.id, box);
+        x += size.width + NODE_H_GAP;
+      }
+      bands.set(key, { start: y, end: y + bandHeight - 1 });
+      y += bandHeight + spacing.gapFor(key);
+    });
+    mainExtent = Math.max(0, ...boxes.map((box) => box.bounds.left + box.bounds.width));
+  } else {
+    const laneHeights = rankKeys.map((key) => laneHeight(groups.get(key), metrics));
+    const totalHeight = Math.max(0, ...laneHeights);
+    let x = 0;
+    rankKeys.forEach((key, index) => {
+      const nodes = groups.get(key);
+      const bandWidth = Math.max(0, ...nodes.map((node) => metrics.get(node.id).width));
+      let y = Math.floor((totalHeight - laneHeights[index]) / 2);
+      for (const definition of nodes) {
+        const size = metrics.get(definition.id);
+        const box = makeClassBox(definition, x, y, size);
+        boxes.push(box);
+        boxById.set(definition.id, box);
+        y += size.height + NODE_MIN_GAP;
+      }
+      bands.set(key, { start: x, end: x + bandWidth - 1 });
+      x += bandWidth + spacing.gapFor(key);
+    });
+    mainExtent = Math.max(0, ...boxes.map((box) => box.bounds.top + box.bounds.height));
+  }
+  const corridors = { low: 0, high: 0 };
+  const takeCorridor = (side) => {
+    const index = corridors[side]++;
+    return side === "low" ? -3 - index : mainExtent + 3 + index;
+  };
+  const bandFor = (rank) => bands.get(rank);
+  const edges = records.map((record, edgeIndex) => {
+    const from = boxById.get(record.from.id);
+    const to = boxById.get(record.to.id);
+    const lane = (gap) => bands.get(gap).end + spacing.laneBase + spacing.laneFor(gap, edgeIndex) * spacing.stride;
+    const tieBreak = edgeIndex % 2 === 0 ? "low" : "high";
+    const path5 = vertical ? verticalRoute(record, from.bounds, to.bounds, lane, bandFor, mainExtent, tieBreak, takeCorridor) : horizontalRoute(record, from.bounds, to.bounds, lane, bandFor, mainExtent, tieBreak, takeCorridor);
+    return {
+      relationship: record.relationship,
+      fromId: record.from.id,
+      toId: record.to.id,
+      from: from.bounds,
+      to: to.bounds,
+      path: dedupePath(path5)
+    };
+  });
+  return finalizeClassDiagramLayout(boxes, edges, direction);
+}
+function makeClassBox(definition, x, y, size) {
+  return {
+    definition,
+    bounds: diagramBoundsFromRect(x, y, size.width, size.height),
+    titleLines: size.titleLines,
+    attributeLines: size.attributeLines,
+    methodLines: size.methodLines,
+    contentWidth: size.contentWidth
+  };
+}
+function laneWidth(nodes, metrics) {
+  if (nodes.length === 0)
+    return 0;
+  return nodes.reduce((sum, node) => sum + metrics.get(node.id).width, 0) + (nodes.length - 1) * NODE_H_GAP;
+}
+function laneHeight(nodes, metrics) {
+  if (nodes.length === 0)
+    return 0;
+  return nodes.reduce((sum, node) => sum + metrics.get(node.id).height, 0) + (nodes.length - 1) * NODE_MIN_GAP;
+}
+function gapIndices(record) {
+  const upper = Math.min(record.fromRank, record.toRank);
+  const lower = Math.max(record.fromRank, record.toRank);
+  return lower - upper <= 1 ? [upper] : [];
+}
+function computeSpacing(records, vertical) {
+  const groupsByGap = new Map;
+  const laneByEdge = new Map;
+  const labelWidthByGap = new Map;
+  for (const [edgeIndex, record] of records.entries()) {
+    const label = record.relationship.label ?? "";
+    for (const gap of new Set(gapIndices(record))) {
+      const groups = groupsByGap.get(gap) ?? new Map;
+      const groupKey = `${record.from.id}\x00${label}`;
+      let slot = groups.get(groupKey);
+      if (slot === undefined) {
+        slot = groups.size;
+        groups.set(groupKey, slot);
+      }
+      groupsByGap.set(gap, groups);
+      laneByEdge.set(`${edgeIndex}:${gap}`, slot);
+      if (label) {
+        const labelWidth = Math.max(...splitDiagramLines(label).map(diagramTextWidth));
+        labelWidthByGap.set(gap, Math.max(labelWidthByGap.get(gap) ?? 0, labelWidth));
+      }
+    }
+  }
+  const stride = vertical ? 2 : Math.max(2, Math.max(0, ...labelWidthByGap.values()) + 2);
+  const laneBase = vertical ? 2 : 1;
+  const gapSizes = new Map;
+  for (const [gap, groups] of groupsByGap) {
+    const gapSize = vertical ? Math.max(NODE_MIN_GAP, laneBase + groups.size * stride) : Math.max(NODE_MIN_GAP, Math.max(0, groups.size - 1) * stride + (labelWidthByGap.get(gap) ?? 0) + 3);
+    gapSizes.set(gap, gapSize);
+  }
+  return {
+    stride,
+    laneBase,
+    gapFor: (gap) => gapSizes.get(gap) ?? NODE_MIN_GAP,
+    laneFor: (gap, edgeIndex) => laneByEdge.get(`${edgeIndex}:${gap}`) ?? 0
+  };
+}
+function chooseCorridorSide(from, to, extent, tieBreak) {
+  const low = -3;
+  const high = extent + 3;
+  const lowCost = Math.abs(from - low) + Math.abs(to - low);
+  const highCost = Math.abs(from - high) + Math.abs(to - high);
+  if (lowCost === highCost)
+    return tieBreak;
+  return lowCost < highCost ? "low" : "high";
+}
+function sideInset(size) {
+  return Math.max(1, Math.min(2, Math.floor((size - 2) / 2)));
+}
+function sidePortX(bounds, side) {
+  const inset = sideInset(bounds.width);
+  return side === "low" ? bounds.left + inset : bounds.left + bounds.width - 1 - inset;
+}
+function sidePortY(bounds, side) {
+  const inset = sideInset(bounds.height);
+  return side === "low" ? bounds.top + inset : bounds.top + bounds.height - 1 - inset;
+}
+function verticalRoute(record, from, to, laneFor, bandFor, mainExtent, tieBreak, takeCorridor) {
+  const { fromRank, toRank } = record;
+  if (fromRank === toRank) {
+    const lane = laneFor(fromRank);
+    return [
+      point2(from.centerX, from.top + from.height),
+      point2(from.centerX, lane),
+      point2(to.centerX, lane),
+      point2(to.centerX, to.top + to.height)
+    ];
+  }
+  const upper = Math.min(fromRank, toRank);
+  const lower = Math.max(fromRank, toRank);
+  if (lower - upper === 1) {
+    const lane = laneFor(upper);
+    return fromRank < toRank ? [
+      point2(from.centerX, from.top + from.height),
+      point2(from.centerX, lane),
+      point2(to.centerX, lane),
+      point2(to.centerX, to.top - 1)
+    ] : [
+      point2(from.centerX, from.top - 1),
+      point2(from.centerX, lane),
+      point2(to.centerX, lane),
+      point2(to.centerX, to.top + to.height)
+    ];
+  }
+  const side = chooseCorridorSide(from.centerX, to.centerX, mainExtent, tieBreak);
+  const corridorX = takeCorridor(side);
+  const sourceX = sidePortX(from, side);
+  const targetX = sidePortX(to, side);
+  if (fromRank < toRank) {
+    const sourceLane = bandFor(fromRank + 1).start - 1;
+    const targetLane = to.top - 2;
+    return [
+      point2(sourceX, from.top + from.height),
+      point2(sourceX, sourceLane),
+      point2(corridorX, sourceLane),
+      point2(corridorX, targetLane),
+      point2(targetX, targetLane),
+      point2(targetX, to.top - 1)
+    ];
+  }
+  const sourceLane = bandFor(fromRank).start - 1;
+  const targetLane = bandFor(toRank + 1).start - 1;
+  return [
+    point2(sourceX, from.top - 1),
+    point2(sourceX, sourceLane),
+    point2(corridorX, sourceLane),
+    point2(corridorX, targetLane),
+    point2(targetX, targetLane),
+    point2(targetX, to.top + to.height)
+  ];
+}
+function horizontalRoute(record, from, to, laneFor, bandFor, mainExtent, tieBreak, takeCorridor) {
+  const { fromRank, toRank } = record;
+  if (fromRank === toRank) {
+    const lane = laneFor(fromRank);
+    return [
+      point2(from.left + from.width, from.centerY),
+      point2(lane, from.centerY),
+      point2(lane, to.centerY),
+      point2(to.left + to.width, to.centerY)
+    ];
+  }
+  const upper = Math.min(fromRank, toRank);
+  const lower = Math.max(fromRank, toRank);
+  if (lower - upper === 1) {
+    const lane = laneFor(upper);
+    return fromRank < toRank ? [
+      point2(from.left + from.width, from.centerY),
+      point2(lane, from.centerY),
+      point2(lane, to.centerY),
+      point2(to.left - 1, to.centerY)
+    ] : [
+      point2(from.left - 1, from.centerY),
+      point2(lane, from.centerY),
+      point2(lane, to.centerY),
+      point2(to.left + to.width, to.centerY)
+    ];
+  }
+  const side = chooseCorridorSide(from.centerY, to.centerY, mainExtent, tieBreak);
+  const corridorY = takeCorridor(side);
+  const sourceY = sidePortY(from, side);
+  const targetY = sidePortY(to, side);
+  if (fromRank < toRank) {
+    const sourceLane = bandFor(fromRank + 1).start - 1;
+    const targetLane = to.left - 2;
+    return [
+      point2(from.left + from.width, sourceY),
+      point2(sourceLane, sourceY),
+      point2(sourceLane, corridorY),
+      point2(targetLane, corridorY),
+      point2(targetLane, targetY),
+      point2(to.left - 1, targetY)
+    ];
+  }
+  const sourceLane = bandFor(fromRank).start - 1;
+  const targetLane = bandFor(toRank + 1).start - 1;
+  return [
+    point2(from.left - 1, sourceY),
+    point2(sourceLane, sourceY),
+    point2(sourceLane, corridorY),
+    point2(targetLane, corridorY),
+    point2(targetLane, targetY),
+    point2(to.left + to.width, targetY)
+  ];
+}
+function point2(x, y) {
+  return { x, y };
+}
+function dedupePath(points) {
+  const result = [];
+  for (const point of points) {
+    const last = result[result.length - 1];
+    if (!last || last.x !== point.x || last.y !== point.y)
+      result.push(point);
+  }
+  return result;
+}
+function computeRanks(diagram, direction) {
+  const ids = diagram.classes.map((definition) => definition.id);
+  const adjacency = new Map(ids.map((id) => [id, []]));
+  const edges = [];
+  for (const relationship of diagram.relationships) {
+    const key = `${relationship.from}\x00${relationship.to}\x00${edges.length}`;
+    edges.push({ from: relationship.from, to: relationship.to, key });
+    adjacency.get(relationship.from)?.push({ to: relationship.to, key });
+  }
+  const state = new Map;
+  const back = new Set;
+  const visit = (id) => {
+    state.set(id, 1);
+    for (const { to, key } of adjacency.get(id) ?? []) {
+      const seen = state.get(to) ?? 0;
+      if (seen === 1)
+        back.add(key);
+      else if (seen === 0)
+        visit(to);
+    }
+    state.set(id, 2);
+  };
+  for (const id of ids)
+    if ((state.get(id) ?? 0) === 0)
+      visit(id);
+  const rank = new Map(ids.map((id) => [id, 0]));
+  let changed = true;
+  let guard = ids.length + 1;
+  while (changed && guard-- > 0) {
+    changed = false;
+    for (const edge of edges) {
+      if (back.has(edge.key))
+        continue;
+      const next = (rank.get(edge.from) ?? 0) + 1;
+      if (next > (rank.get(edge.to) ?? 0)) {
+        rank.set(edge.to, next);
+        changed = true;
+      }
+    }
+  }
+  if (direction === "BT" || direction === "RL") {
+    const maxRank = Math.max(0, ...rank.values());
+    for (const [id, value] of rank)
+      rank.set(id, maxRank - value);
+  }
+  return rank;
+}
+function finalizeClassDiagramLayout(boxes, edges, direction) {
+  const points = [
+    ...boxes.flatMap((box) => [
+      { x: box.bounds.left, y: box.bounds.top },
+      { x: box.bounds.left + box.bounds.width, y: box.bounds.top + box.bounds.height }
+    ]),
+    ...edges.flatMap((edge) => edge.path)
+  ];
+  const minX = Math.min(0, ...points.map((p) => p.x));
+  const minY = Math.min(0, ...points.map((p) => p.y));
+  const dx = -minX;
+  const dy = -minY + MARGIN_TOP;
+  if (dx !== 0 || dy !== 0) {
+    for (const box of boxes)
+      translateDiagramBounds(box.bounds, dx, dy);
+    for (const edge of edges) {
+      for (const p of edge.path) {
+        p.x += dx;
+        p.y += dy;
+      }
+    }
+  }
+  const maxX = Math.max(0, ...boxes.map((box) => box.bounds.left + box.bounds.width), ...edges.flatMap((edge) => edge.path.map((p) => p.x + 1)));
+  const maxY = Math.max(0, ...boxes.map((box) => box.bounds.top + box.bounds.height), ...edges.flatMap((edge) => edge.path.map((p) => p.y + 1)));
+  return { direction, boxes, edges, width: maxX + MARGIN_RIGHT, height: maxY + MARGIN_BOTTOM };
+}
+function attachment(box, center, size, point) {
+  const sides = [
+    ["top", Math.abs(point.y - (center.y - size.height / 2))],
+    ["bottom", Math.abs(point.y - (center.y + size.height / 2))],
+    ["left", Math.abs(point.x - (center.x - size.width / 2))],
+    ["right", Math.abs(point.x - (center.x + size.width / 2))]
+  ];
+  const side = sides.reduce((best, entry) => entry[1] < best[1] ? entry : best)[0];
+  const x = Math.max(box.left + 1, Math.min(box.left + box.width - 2, Math.round(point.x)));
+  const y = Math.max(box.top + 1, Math.min(box.top + box.height - 2, Math.round(point.y)));
+  if (side === "top")
+    return { x, y: box.top - 1 };
+  if (side === "bottom")
+    return { x, y: box.top + box.height };
+  if (side === "left")
+    return { x: box.left - 1, y };
+  return { x: box.left + box.width, y };
+}
+function intersectsBox(from, to, box) {
+  const right = box.left + box.width - 1;
+  const bottom = box.top + box.height - 1;
+  if (from.y === to.y)
+    return from.y >= box.top && from.y <= bottom && Math.max(from.x, to.x) >= box.left && Math.min(from.x, to.x) <= right;
+  return from.x >= box.left && from.x <= right && Math.max(from.y, to.y) >= box.top && Math.min(from.y, to.y) <= bottom;
+}
+function orthogonalize(points, boxes, vertical) {
+  const result = [points[0]];
+  for (const to of points.slice(1)) {
+    const from = result[result.length - 1];
+    if (from.x !== to.x && from.y !== to.y) {
+      const candidates = vertical ? [{ x: from.x, y: to.y }, { x: to.x, y: from.y }] : [{ x: to.x, y: from.y }, { x: from.x, y: to.y }];
+      const cost = (bend) => boxes.reduce((total, box) => total + Number(intersectsBox(from, bend, box.bounds)) + Number(intersectsBox(bend, to, box.bounds)), 0);
+      const bend = cost(candidates[1]) < cost(candidates[0]) ? candidates[1] : candidates[0];
+      if (from.x !== bend.x || from.y !== bend.y)
+        result.push(bend);
+    }
+    if (result.at(-1).x !== to.x || result.at(-1).y !== to.y)
+      result.push(to);
+  }
+  return result;
+}
+function selfLoop(box, vertical, offset, labelWidth) {
+  const left = box.left;
+  const right = box.left + box.width - 1;
+  const top = box.top;
+  const bottom = box.top + box.height - 1;
+  if (vertical) {
+    const portX = right - 1;
+    const outsideX = right + Math.max(3, labelWidth + 3) + offset * 2;
+    return [
+      { x: portX, y: bottom + 1 },
+      { x: portX, y: bottom + 3 + offset },
+      { x: outsideX, y: bottom + 3 + offset },
+      { x: outsideX, y: top - 3 - offset },
+      { x: portX, y: top - 3 - offset },
+      { x: portX, y: top - 1 }
+    ];
+  }
+  const portY = bottom - 1;
+  const outsideY = bottom + 3 + offset * 2;
+  return [
+    { x: right + 1, y: portY },
+    { x: right + 3 + offset, y: portY },
+    { x: right + 3 + offset, y: outsideY },
+    { x: left - 3 - offset, y: outsideY },
+    { x: left - 3 - offset, y: portY },
+    { x: left - 1, y: portY }
+  ];
+}
+function layoutDagreClassDiagram(diagram, direction) {
+  if (diagram.classes.length === 0)
+    return { direction, boxes: [], edges: [], width: 0, height: 0 };
+  const graph = new T2({ multigraph: true });
+  graph.setGraph({ rankdir: direction, nodesep: 8, ranksep: 10, edgesep: 4 });
+  graph.setDefaultEdgeLabel(() => ({}));
+  const metrics = new Map(diagram.classes.map((definition) => [definition.id, measureClassBox(definition)]));
+  for (const definition of diagram.classes) {
+    const size = metrics.get(definition.id);
+    graph.setNode(definition.id, { width: size.width, height: size.height });
+  }
+  diagram.relationships.forEach((edge, index) => {
+    const width = edge.label ? Math.max(...splitDiagramLines(edge.label).map(diagramTextWidth)) + 2 : 0;
+    const height = edge.label ? splitDiagramLines(edge.label).length + 1 : 0;
+    graph.setEdge(edge.from, edge.to, { width, height, weight: edge.kind === "inheritance" ? 2 : 1 }, String(index));
+  });
+  Oe2(graph);
+  const boxes = diagram.classes.map((definition) => {
+    const node = graph.node(definition.id);
+    const size = metrics.get(definition.id);
+    return makeClassBox(definition, Math.round(node.x - size.width / 2), Math.round(node.y - size.height / 2), size);
+  });
+  const boxById = new Map(boxes.map((box) => [box.definition.id, box]));
+  const vertical = direction === "TB" || direction === "BT";
+  const loopCounts = new Map;
+  const edges = diagram.relationships.map((relationship, index) => {
+    const from = boxById.get(relationship.from).bounds;
+    const to = boxById.get(relationship.to).bounds;
+    if (relationship.from === relationship.to) {
+      const offset = loopCounts.get(relationship.from) ?? 0;
+      loopCounts.set(relationship.from, offset + 1);
+      return {
+        relationship,
+        fromId: relationship.from,
+        toId: relationship.to,
+        from,
+        to,
+        path: selfLoop(from, vertical, offset, relationship.label ? Math.max(...splitDiagramLines(relationship.label).map(diagramTextWidth)) : 0)
+      };
+    }
+    const waypoints = graph.edge({ v: relationship.from, w: relationship.to, name: String(index) })?.points ?? [];
+    const source = graph.node(relationship.from);
+    const target = graph.node(relationship.to);
+    const first = waypoints[0] ?? { x: source.x, y: source.y };
+    const last = waypoints.at(-1) ?? { x: target.x, y: target.y };
+    const start = attachment(from, { x: source.x, y: source.y }, metrics.get(relationship.from), first);
+    const end = attachment(to, { x: target.x, y: target.y }, metrics.get(relationship.to), last);
+    const direct = (start.x === end.x || start.y === end.y) && boxes.every((box) => !intersectsBox(start, end, box.bounds));
+    const path5 = direct ? [start, end] : orthogonalize([
+      start,
+      ...waypoints.slice(1, -1).map((point) => ({ x: Math.round(point.x), y: Math.round(point.y) })),
+      end
+    ], boxes, vertical);
+    return { relationship, fromId: relationship.from, toId: relationship.to, from, to, path: path5 };
+  });
+  const result = finalizeClassDiagramLayout(boxes, edges, direction);
+  let minX = 0;
+  let minY = 0;
+  let maxX = result.width;
+  let maxY = result.height;
+  for (const edge of result.edges) {
+    if (!edge.relationship.label)
+      continue;
+    const lines = splitDiagramLines(edge.relationship.label);
+    const width = Math.max(...lines.map(diagramTextWidth));
+    const anchor = classLabelAnchor(edge.path, lines.length, width, vertical);
+    minX = Math.min(minX, anchor.x - 1);
+    minY = Math.min(minY, anchor.y);
+    maxX = Math.max(maxX, anchor.x + width + 2);
+    maxY = Math.max(maxY, anchor.y + lines.length + 1);
+  }
+  const dx = -minX;
+  const dy = -minY;
+  if (dx || dy) {
+    for (const box of result.boxes)
+      translateDiagramBounds(box.bounds, dx, dy);
+    for (const edge of result.edges)
+      for (const point of edge.path) {
+        point.x += dx;
+        point.y += dy;
+      }
+  }
+  result.width = maxX + dx;
+  result.height = maxY + dy;
+  return result;
+}
+var HOLLOW_TRIANGLE = { up: "\u25B3", down: "\u25BD", left: "\u25C1", right: "\u25B7" };
+var OPEN_ARROW = { up: "\u2191", down: "\u2193", left: "\u2190", right: "\u2192" };
+var FILLED_DIAMOND = "\u25C6";
+var HOLLOW_DIAMOND = "\u25C7";
+function drawClassDiagramGrid(diagram, options = {}) {
+  return drawClassDiagramLayout(createClassDiagramLayout(diagram, options));
+}
+function createClassDiagramLayout(diagram, options = {}) {
+  const place = options.classLayout === "dagre" ? layoutDagreClassDiagram : layoutClassDiagram;
+  const requested = diagram.direction;
+  const maxWidth = options.layoutMaxWidth !== undefined && Number.isFinite(options.layoutMaxWidth) ? Math.max(1, Math.trunc(options.layoutMaxWidth)) : undefined;
+  if (maxWidth === undefined || requested !== "LR" && requested !== "RL") {
+    return place(diagram, requested);
+  }
+  const wide = place(diagram, requested);
+  if (wide.width <= maxWidth)
+    return wide;
+  const fallbackDirection = requested === "RL" ? "BT" : "TB";
+  const fallback = place(diagram, fallbackDirection);
+  return fallback.width < wide.width ? fallback : wide;
+}
+function drawClassDiagramLayout(layout) {
+  if (layout.boxes.length === 0)
+    return new DiagramCanvas(0, 0);
+  const grid = makeGrid(Math.max(1, layout.width), Math.max(1, layout.height));
+  const vertical = layout.direction === "TB" || layout.direction === "BT";
+  for (const box of layout.boxes)
+    drawBox(grid, box);
+  for (const edge of layout.edges)
+    drawEdgeLine(grid, edge);
+  for (const edge of layout.edges)
+    drawEdgeEndpoints(grid, edge);
+  bridgeIndependentCrossings(grid, layout.edges);
+  for (const edge of layout.edges)
+    drawEdgeLabels(grid, edge, vertical);
+  return grid;
+}
+function makeGrid(width, height) {
+  return new DiagramCanvas(width, height, {
+    mergeCell: (existing, incoming) => ({
+      ...incoming,
+      char: existing.style === "edge" && incoming.style === "edge" ? mergeDiagramLineGlyph(existing.char, incoming.char) ?? incoming.char : incoming.char
+    })
+  });
+}
+function setCell(grid, x, y, char, style) {
+  grid.setCell(x, y, char, style);
+}
+function drawBox(grid, box) {
+  const bounds = box.bounds;
+  drawDiagramFrame(bounds, BorderChars2.single, (x, y, char) => setCell(grid, x, y, char, "border"));
+  let y = bounds.top + 1;
+  box.titleLines.forEach((line, index) => {
+    const x = bounds.left + CLASS_CONTENT_OFFSET_X + Math.floor((box.contentWidth - diagramTextWidth(line)) / 2);
+    setText(grid, x, y + index, line, box.definition.stereotype && index === 0 ? "stereotype" : "title");
+  });
+  y += box.titleLines.length;
+  if (box.attributeLines.length) {
+    drawSeparator(grid, bounds, y);
+    y += 1;
+    box.attributeLines.forEach((line, index) => setText(grid, bounds.left + CLASS_CONTENT_OFFSET_X, y + index, line, "member"));
+    y += box.attributeLines.length;
+  }
+  if (box.methodLines.length) {
+    drawSeparator(grid, bounds, y);
+    y += 1;
+    box.methodLines.forEach((line, index) => setText(grid, bounds.left + CLASS_CONTENT_OFFSET_X, y + index, line, "member"));
+  }
+}
+function drawSeparator(grid, bounds, y) {
+  const left = bounds.left;
+  const right = bounds.left + bounds.width - 1;
+  setCell(grid, left, y, "\u251C", "border");
+  for (let x = left + 1;x < right; x++)
+    setCell(grid, x, y, "\u2500", "border");
+  setCell(grid, right, y, "\u2524", "border");
+}
+function drawEdgeLine(grid, edge) {
+  const { relationship, path: path5 } = edge;
+  if (path5.length < 2)
+    return;
+  drawOrthogonalPath(path5, (x, y, char) => setCell(grid, x, y, char, "edge"), {
+    cornerStyle: "square",
+    lineStyle: relationship.dashed ? "dashed" : "single"
+  });
+}
+function rememberOwner(owners, owner) {
+  if (owners.length < 2 && !owners.includes(owner))
+    owners.push(owner);
+}
+function independent(first, second) {
+  return first.length > 0 && second.length > 0 && (first.length > 1 || second.length > 1 || first[0] !== second[0]);
+}
+function bridgeIndependentCrossings(grid, edges) {
+  const cells = new Map;
+  const seenPaths = new Set;
+  edges.forEach((edge, edgeIndex) => {
+    const pathKey = edge.path.map(({ x, y }) => `${x}:${y}`).join(";");
+    if (seenPaths.has(pathKey))
+      return;
+    seenPaths.add(pathKey);
+    for (let index = 1;index < edge.path.length; index++) {
+      const from = edge.path[index - 1];
+      const to = edge.path[index];
+      const horizontal = from.y === to.y;
+      if (!horizontal && from.x !== to.x)
+        continue;
+      const start = horizontal ? from.x : from.y;
+      const end = horizontal ? to.x : to.y;
+      for (let position = Math.min(start, end);position <= Math.max(start, end); position++) {
+        const x = horizontal ? position : from.x;
+        const y = horizontal ? from.y : position;
+        const cellKey = y * grid.width + x;
+        const cell = cells.get(cellKey) ?? {
+          horizontal: { through: [], ends: [] },
+          vertical: { through: [], ends: [] }
+        };
+        const axis = horizontal ? cell.horizontal : cell.vertical;
+        if (position !== start && position !== end)
+          rememberOwner(axis.through, edgeIndex);
+        else if (position === start && index === 1 || position === end && index === edge.path.length - 1) {
+          rememberOwner(axis.ends, edgeIndex);
+        }
+        cells.set(cellKey, cell);
+      }
+    }
+  });
+  for (const [cellKey, cell] of cells) {
+    const x = cellKey % grid.width;
+    const y = Math.floor(cellKey / grid.width);
+    if (grid.getCell(x, y)?.char !== "\u253C")
+      continue;
+    if (independent(cell.horizontal.through, cell.vertical.through) || independent(cell.horizontal.ends, cell.vertical.through)) {
+      grid.replaceCell(x, y, "\u2500", "edge");
+    } else if (independent(cell.horizontal.through, cell.vertical.ends)) {
+      grid.replaceCell(x, y, "\u2502", "edge");
+    }
+  }
+}
+function drawEdgeEndpoints(grid, edge) {
+  const { relationship, path: path5 } = edge;
+  if (path5.length < 2)
+    return;
+  drawStartCell(grid, path5, relationship.headAt === "from" ? relationship.kind : undefined);
+  drawEndCell(grid, path5, relationship.headAt === "to" ? relationship.kind : undefined);
+}
+function drawStartCell(grid, path5, markerKind) {
+  const start = path5[0];
+  const next = path5[1];
+  const direction = directionBetween(start, next) ?? "right";
+  const marker = markerKind ? relationshipMarker(markerKind, opposite(direction)) : undefined;
+  if (marker)
+    setCell(grid, start.x, start.y, marker, "edge");
+  else
+    setCell(grid, start.x, start.y, diagramLineGlyph(new Set([direction])), "edge");
+}
+function drawEndCell(grid, path5, markerKind) {
+  const end = path5[path5.length - 1];
+  const previous = path5[path5.length - 2];
+  const direction = directionBetween(previous, end) ?? "right";
+  const marker = markerKind ? relationshipMarker(markerKind, direction) : undefined;
+  if (marker)
+    setCell(grid, end.x, end.y, marker, "edge");
+  else
+    setCell(grid, end.x, end.y, diagramLineGlyph(new Set([direction])), "edge");
+}
+function relationshipMarker(kind, direction) {
+  switch (kind) {
+    case "inheritance":
+    case "realization":
+      return HOLLOW_TRIANGLE[direction];
+    case "composition":
+      return FILLED_DIAMOND;
+    case "aggregation":
+      return HOLLOW_DIAMOND;
+    case "association":
+    case "dependency":
+      return OPEN_ARROW[direction];
+    case "link":
+      return;
+  }
+}
+function opposite(direction) {
+  switch (direction) {
+    case "up":
+      return "down";
+    case "down":
+      return "up";
+    case "left":
+      return "right";
+    case "right":
+      return "left";
+  }
+}
+function drawEdgeLabels(grid, edge, vertical) {
+  const { relationship, path: path5 } = edge;
+  let labelWidth = 0;
+  let labelHeight = 0;
+  let labelX = 0;
+  let labelY = 0;
+  if (relationship.label) {
+    const lines = splitDiagramLines(relationship.label);
+    labelWidth = Math.max(...lines.map(diagramTextWidth));
+    labelHeight = lines.length;
+    const anchor = classLabelAnchor(path5, lines.length, labelWidth, vertical);
+    labelX = anchor.x;
+    labelY = anchor.y;
+    drawTextTag(grid, anchor.x, anchor.y, lines);
+  }
+  if (relationship.fromCardinality) {
+    const width = diagramTextWidth(relationship.fromCardinality);
+    const anchor = cardinalityAnchor(path5, width, true, labelX, labelY, labelWidth, labelHeight);
+    drawTextTag(grid, anchor.x, anchor.y, [relationship.fromCardinality]);
+  }
+  if (relationship.toCardinality) {
+    const width = diagramTextWidth(relationship.toCardinality);
+    const anchor = cardinalityAnchor(path5, width, false, labelX, labelY, labelWidth, labelHeight);
+    drawTextTag(grid, anchor.x, anchor.y, [relationship.toCardinality]);
+  }
+}
+function cardinalityAnchor(path5, width, atStart, labelX, labelY, labelWidth, labelHeight) {
+  const point = atStart ? path5[0] : path5[path5.length - 1];
+  const neighbor = atStart ? path5[1] : path5[path5.length - 2];
+  const direction = directionBetween(point, neighbor) ?? "right";
+  const horizontal = direction === "left" || direction === "right";
+  const baseX = point.x + (horizontal ? direction === "right" ? 1 : -1 : 0);
+  const baseY = point.y + (horizontal ? 0 : direction === "down" ? 1 : -1);
+  const candidates = horizontal ? [
+    { x: baseX, y: baseY - 1 },
+    { x: baseX, y: baseY + 1 },
+    { x: baseX, y: baseY - 2 },
+    { x: baseX, y: baseY + 2 }
+  ] : [
+    { x: baseX + 1, y: baseY },
+    { x: baseX - 1, y: baseY },
+    { x: baseX + 1, y: baseY - 1 },
+    { x: baseX + 1, y: baseY + 1 },
+    { x: baseX - 1, y: baseY - 1 },
+    { x: baseX - 1, y: baseY + 1 }
+  ];
+  for (const candidate of candidates) {
+    if (!touchesLabel(candidate.x, width, candidate.y, 1, labelX, labelY, labelWidth, labelHeight))
+      return candidate;
+  }
+  return candidates[0];
+}
+function touchesLabel(x, width, y, height, labelX, labelY, labelWidth, labelHeight) {
+  if (labelWidth <= 0 || labelHeight <= 0)
+    return false;
+  const rowOverlap = y <= labelY + labelHeight - 1 && y + height - 1 >= labelY;
+  if (!rowOverlap)
+    return false;
+  const clearX = x + width < labelX || x > labelX + labelWidth;
+  return !clearX;
+}
+function drawTextTag(grid, x, y, lines) {
+  lines.forEach((line, index) => {
+    const row = y + index;
+    if (grid.getCell(x - 1, row)?.char === " ")
+      setCell(grid, x - 1, row, " ", "label");
+    setText(grid, x, row, line, "label");
+    const rightX = x + diagramTextWidth(line);
+    if (grid.getCell(rightX, row)?.char === " ")
+      setCell(grid, rightX, row, " ", "label");
+  });
+}
+function setText(grid, x, y, text, style) {
+  grid.setText(x, y, text, style);
+}
 function* numberedMermaidLines(content) {
   const lines = content.split(/\r?\n/);
   for (let index = 0;index < lines.length; index += 1) {
@@ -8904,7 +9110,6 @@ function decodeMermaidText(value) {
   return decodeHTMLStrict(value);
 }
 
-// node_modules/opentui-markdown-render/src/merman/diagnostics.ts
 class MermaidSyntaxError extends Error {
   kind;
   lineNumber;
@@ -8918,8 +9123,6 @@ class MermaidSyntaxError extends Error {
     this.name = "MermaidSyntaxError";
   }
 }
-
-// node_modules/opentui-markdown-render/src/merman/class/parser.ts
 var HEADER_RE = /^classDiagram(?:\s+(TB|BT|LR|RL))?$/i;
 var DIRECTION_RE = /^direction\s+(TB|BT|LR|RL)$/i;
 var ACCESSIBILITY_RE = /^acc(?:Title|Descr)(?::|\s|$)/i;
@@ -9193,9 +9396,6 @@ function unsupportedReason(line) {
 function syntaxError(lineNumber, sourceLine, reason) {
   return new MermaidSyntaxError("classDiagram", lineNumber, sourceLine, reason);
 }
-
-// node_modules/opentui-markdown-render/src/merman/core/render-grid.ts
-import { StyledText as StyledText2 } from "@opentui/core";
 function renderDiagramGridStyledText(grid, fg, bg, options) {
   const chunks = [];
   grid.forEachRun((run) => {
@@ -9216,17 +9416,12 @@ function renderDiagramGridStyledTextByStyle(grid, foregrounds, backgrounds, opti
   const background = backgrounds && Object.values(backgrounds).some((value) => value !== undefined) ? (run) => run.style ? backgrounds[run.style] : undefined : undefined;
   return renderDiagramGridStyledText(grid, (run) => run.style ? foregrounds[run.style] : undefined, background, options);
 }
-
-// node_modules/opentui-markdown-render/src/merman/class/render-grid.ts
 function renderClassGridStyledText(grid, colors) {
   return renderDiagramGridStyledText(grid, (run) => run.style ? colors[run.style] : undefined, undefined, {
     trimTop: true,
     trimBottom: true
   });
 }
-
-// node_modules/opentui-markdown-render/src/merman/core/color/style.ts
-import { RGBA as RGBA3 } from "@opentui/core";
 var DIAGRAM_FADE_STEPS = [1, 2, 3, 4, 5];
 function numberedStyleKeys(prefix, steps) {
   return steps.map((step) => `${prefix}${step}`);
@@ -9249,8 +9444,6 @@ function blendColor(from, to, amount) {
 function createColorRampTheme(styles, from, to) {
   return Object.fromEntries(styles.map((style, index) => [style, blendColor(from, to, (index + 1) / (styles.length + 1))]));
 }
-
-// node_modules/opentui-markdown-render/src/merman/class/style.ts
 var DEFAULT_THEME_RGB = {
   border: [141, 169, 155],
   title: [228, 239, 232],
@@ -9269,8 +9462,6 @@ function resolveClassStyleColors(colors = {}) {
     label: colors.label ?? colors.edge ?? rgba(DEFAULT_THEME_RGB.label)
   };
 }
-
-// node_modules/opentui-markdown-render/src/merman/flowchart/parser.ts
 var DEFAULT_DIRECTION = "TD";
 var FLOWCHART_HEADER_RE = /^(flowchart|graph)(?:\s+(TB|TD|BT|LR|RL))?$/i;
 var ID_RE = "[A-Za-z_][A-Za-z0-9_.-]*";
@@ -9652,8 +9843,6 @@ function parseMermaidFlowchartDiagram(content) {
   }
   return { direction, nodes: [...nodes.values()], edges, subgraphs };
 }
-
-// node_modules/opentui-markdown-render/src/merman/gantt/parser.ts
 var HEADER_RE2 = /^gantt$/i;
 var DIRECTIVE_RE = /^(title|dateFormat|axisFormat|tickInterval|excludes|todayMarker)\s+(.+)$/i;
 var SECTION_RE = /^section(?:\s+(.+))?$/i;
@@ -9853,8 +10042,6 @@ function stripComment2(value) {
 function syntaxError2(lineNumber, sourceLine, reason) {
   return new MermaidSyntaxError("gantt", lineNumber, sourceLine, reason);
 }
-
-// node_modules/opentui-markdown-render/src/merman/gitgraph/parser.ts
 var HEADER_RE3 = /^gitGraph(?:\s+(LR|TB|BT))?\s*:?$/i;
 var ACCESSIBILITY_RE3 = /^acc(?:Title|Descr)(?::|\s|$)/i;
 function isMermaidGitGraphDiagram(content) {
@@ -10094,8 +10281,6 @@ function stripComment3(value) {
 function syntaxError3(lineNumber, sourceLine, reason) {
   return new MermaidSyntaxError("gitGraph", lineNumber, sourceLine, reason);
 }
-
-// node_modules/opentui-markdown-render/src/merman/sequence/parser.ts
 var MESSAGE_RE = /^(.+?)\s*(-->>|->>|--x|-x|--\)|-\)|-->|->)([+-]?)\s*(.+?)\s*:\s*(.*)$/;
 var NOTE_RE = /^note\s+(over|left\s+of|right\s+of)\s+(.+?)\s*:\s*(.*)$/i;
 var PARTICIPANT_RE = /^(?:participant|actor)\s+(\S+)(?:\s+as\s+(.+))?$/i;
@@ -10344,8 +10529,6 @@ function parseMermaidSequenceDiagram(content) {
   }
   return { participants, messages, steps, groups };
 }
-
-// node_modules/opentui-markdown-render/src/merman/state/endpoint.ts
 function stateDiagramStartMarkerId(scope) {
   return scope ? `${scope}.__start` : "__start";
 }
@@ -10358,8 +10541,6 @@ function stateDiagramMarkerId(position, scope) {
 function normalizeStateDiagramEndpoint(value, position, scope) {
   return value === "[*]" ? stateDiagramMarkerId(position, scope) : value;
 }
-
-// node_modules/opentui-markdown-render/src/merman/state/parser.ts
 var DEFAULT_DIRECTION2 = "LR";
 var STATE_RE = /^state\s+"([^"]+)"\s+as\s+(\S+)$/i;
 var STATE_DECLARE_RE = /^state\s+([A-Za-z_][A-Za-z0-9_.-]*)$/i;
@@ -10544,8 +10725,6 @@ function parseMermaidStateDiagram(content) {
     notes
   };
 }
-
-// node_modules/opentui-markdown-render/src/merman/timeline/parser.ts
 var HEADER_RE4 = /^timeline(?:\s+(TD|LR))?$/i;
 var TITLE_RE = /^title(?:\s+(.+))?$/i;
 var SECTION_RE2 = /^section(?:\s+(.+))?$/i;
@@ -10656,8 +10835,6 @@ function stripTimelineComment(value) {
 function syntaxError4(lineNumber, sourceLine, reason) {
   return new MermaidSyntaxError("timeline", lineNumber, sourceLine, reason);
 }
-
-// node_modules/opentui-markdown-render/src/merman/detect.ts
 function detectMermaidDiagram(content) {
   if (isMermaidClassDiagram(content))
     return "classDiagram";
@@ -10675,11 +10852,6 @@ function detectMermaidDiagram(content) {
     return "timeline";
   return;
 }
-
-// node_modules/opentui-markdown-render/src/merman/flowchart/drawing.ts
-import { BorderChars as BorderChars3, TextAttributes as TextAttributes4 } from "@opentui/core";
-
-// node_modules/opentui-markdown-render/src/merman/flowchart/labels.ts
 var LABEL_BUS_CLEARANCE = 3;
 var LABEL_NODE_CLEARANCE = 2;
 var LABEL_LINE_CLEARANCE = 2;
@@ -10769,8 +10941,6 @@ function flowchartRouteLabelLayout(route, measure) {
     height
   };
 }
-
-// node_modules/opentui-markdown-render/src/merman/flowchart/routing.ts
 var BUS_CLEARANCE = 3;
 var NODE_CLEARANCE = 2;
 var ROUTING_CANDIDATE_BUDGET = 1024;
@@ -11713,8 +11883,6 @@ function flowchartSourceConnector(from, sourcePoint) {
     char: connectorChar(side)
   };
 }
-
-// node_modules/opentui-markdown-render/src/merman/flowchart/layout.ts
 var DEFAULT_MIN_NODE_GAP = 5;
 var DEFAULT_MIN_BRANCH_LABEL_GAP = 12;
 var DEFAULT_MAX_UNLABELED_RANK_WIDTH = 120;
@@ -12534,8 +12702,6 @@ function layoutFlowchartDiagram(sourceDiagram, options = {}) {
     return layout;
   return layoutFlowchartWithDirection(sourceDiagram, options, direction === "RL" ? "BT" : "TD", true);
 }
-
-// node_modules/opentui-markdown-render/src/merman/flowchart/style.ts
 var DEFAULT_THEME_RGB2 = {
   node: [228, 239, 232],
   nodeBorder: [141, 163, 151],
@@ -12575,8 +12741,6 @@ function renderGridStyledText(grid, colors, backgrounds) {
     trimBottom: true
   });
 }
-
-// node_modules/opentui-markdown-render/src/merman/flowchart/drawing.ts
 var DEFAULT_BORDER_STYLE = "rounded";
 function mergeFlowchartCell(existing, incoming) {
   if (incoming.style !== "edge")
@@ -12888,8 +13052,6 @@ function drawFlowchartDiagramGrid(diagram, options = {}) {
   }
   return grid;
 }
-
-// node_modules/opentui-markdown-render/src/merman/gantt/drawing.ts
 var LABEL_GAP = 2;
 var MIN_CHART_WIDTH = 24;
 var MAX_CHART_WIDTH = 64;
@@ -13061,15 +13223,11 @@ function formatTime(value, format) {
   };
   return Object.entries(parts).reduce((result, [token, replacement]) => result.replaceAll(token, replacement), format);
 }
-
-// node_modules/opentui-markdown-render/src/merman/gantt/render-grid.ts
 function renderGanttGridStyledText(grid, colors) {
   return renderDiagramGridStyledText(grid, (run) => run.style ? colors[run.style] : undefined, undefined, {
     trimBottom: true
   });
 }
-
-// node_modules/opentui-markdown-render/src/merman/gantt/style.ts
 var DEFAULT_THEME_RGB3 = {
   title: [228, 239, 232],
   axis: [111, 138, 126],
@@ -13097,8 +13255,6 @@ function resolveGanttStyleColors(colors = {}) {
     trackFaint: blendColor(axis, background, 0.72)
   };
 }
-
-// node_modules/opentui-markdown-render/src/merman/gitgraph/drawing.ts
 var LANE_WIDTH = 2;
 var LABEL_GAP2 = 2;
 function drawGitGraphDiagramGrid(diagram, _options = {}) {
@@ -13261,15 +13417,11 @@ function commitLabel(commit, heads) {
 function branchStyle(lane) {
   return `branch${lane % 8}`;
 }
-
-// node_modules/opentui-markdown-render/src/merman/gitgraph/render-grid.ts
 function renderGitGraphGridStyledText(grid, colors) {
   return renderDiagramGridStyledText(grid, (run) => run.style ? colors[run.style] : undefined, undefined, {
     trimBottom: true
   });
 }
-
-// node_modules/opentui-markdown-render/src/merman/gitgraph/style.ts
 var BRANCH_RGB = [
   [134, 225, 200],
   [230, 177, 126],
@@ -13298,18 +13450,11 @@ function resolveGitGraphStyleColors(colors = {}) {
     label: colors.text ?? rgba([228, 239, 232])
   };
 }
-
-// node_modules/opentui-markdown-render/src/merman/sequence/drawing.ts
-import { BorderChars as BorderChars4 } from "@opentui/core";
-
-// node_modules/opentui-markdown-render/src/merman/sequence/options.ts
 var DEFAULT_MIN_PARTICIPANT_GAP = 18;
 var DEFAULT_FRAGMENT_BORDER_STYLE = "rounded";
 function normalizeSequenceMinParticipantGap(value) {
   return value === undefined || !Number.isFinite(value) ? DEFAULT_MIN_PARTICIPANT_GAP : Math.max(1, Math.floor(value));
 }
-
-// node_modules/opentui-markdown-render/src/merman/sequence/placement.ts
 var NOTE_HORIZONTAL_PADDING = 2;
 var GROUP_HORIZONTAL_PADDING = 2;
 var FRAGMENT_HORIZONTAL_OVERHANG = 3;
@@ -13807,8 +13952,6 @@ function createSequencePlacementPlan(diagram, options = {}) {
     steps
   };
 }
-
-// node_modules/opentui-markdown-render/src/merman/sequence/style.ts
 var SEQUENCE_FADE_STEPS = DIAGRAM_FADE_STEPS;
 var LIFELINE_RAMP_STYLES = [
   "lifelineRamp1",
@@ -13860,8 +14003,6 @@ function sequenceStyleBackgroundColor(style, colors) {
     return colors.fragmentLabelBg;
   return;
 }
-
-// node_modules/opentui-markdown-render/src/merman/sequence/drawing.ts
 var SEQUENCE_BORDER = BorderChars4.rounded;
 function centeredStart(center, text) {
   return center - Math.floor(diagramTextWidth(text) / 2);
@@ -14042,16 +14183,9 @@ function drawSequenceDiagramGrid(diagram, options = {}) {
   }
   return grid;
 }
-
-// node_modules/opentui-markdown-render/src/merman/sequence/render-grid.ts
 function renderSequenceGridStyledText(grid, colors) {
   return renderDiagramGridStyledText(grid, (run) => sequenceStyleColor(run.style, colors), (run) => sequenceStyleBackgroundColor(run.style, colors));
 }
-
-// node_modules/opentui-markdown-render/src/merman/state/drawing.ts
-import { BorderChars as BorderChars6 } from "@opentui/core";
-
-// node_modules/opentui-markdown-render/src/merman/core/spatial.ts
 function normalizedSpan(y, fromX, toX) {
   return { y, fromX: Math.min(fromX, toX), toX: Math.max(fromX, toX) };
 }
@@ -14200,11 +14334,6 @@ class SpatialIndex {
     return candidates.find((candidate) => this.isFree(candidate.claim, policy));
   }
 }
-
-// node_modules/opentui-markdown-render/src/merman/state/routing.ts
-import { BorderChars as BorderChars5 } from "@opentui/core";
-
-// node_modules/opentui-markdown-render/src/merman/state/note.ts
 function stateDiagramNoteConnector(bounds, target) {
   if (bounds.connector)
     return bounds.connector;
@@ -14234,8 +14363,6 @@ function stateDiagramNoteConnector(bounds, target) {
     ]
   };
 }
-
-// node_modules/opentui-markdown-render/src/merman/state/search.ts
 var MAX_RENDER_SEARCH_VISITS = 250000;
 function createStateSearchBudget() {
   return { remaining: MAX_RENDER_SEARCH_VISITS };
@@ -14293,19 +14420,17 @@ function findStateManhattanPath(starts, goal, space, bounds, budget, isFree = (p
   }
   if (!parents.has(pointKey(goal)))
     return;
-  const path = [];
+  const path5 = [];
   let cursor = pointKey(goal);
   while (cursor) {
-    path.push(points.get(cursor));
+    path5.push(points.get(cursor));
     cursor = parents.get(cursor);
   }
-  return path.reverse();
+  return path5.reverse();
 }
 function pointKey(point) {
   return `${point.x}:${point.y}`;
 }
-
-// node_modules/opentui-markdown-render/src/merman/state/visible-model.ts
 function isHiddenCompositeMarker(state) {
   return Boolean(state?.parentId && (state.kind === "start" || state.kind === "end"));
 }
@@ -14364,8 +14489,6 @@ function prepareVisibleStateDiagram(diagram) {
     transitions
   };
 }
-
-// node_modules/opentui-markdown-render/src/merman/state/routing.ts
 function measureStateTransitionLabel(label) {
   if (!label)
     return { lines: [], width: 0, height: 0 };
@@ -15097,8 +15220,8 @@ function findBodySafePath(start, end, diagram, bounds, plan, search, budget) {
   const direct = directCandidates.map((points) => orthogonalPathPoints(points.map(([x, y]) => ({ x, y }))).map(({ x, y }) => [x, y])).filter((points) => points.every(isFree)).sort((left, right) => left.length - right.length)[0];
   if (direct)
     return direct;
-  const path = findStateManhattanPath([{ x: start[0], y: start[1] }], { x: end[0], y: end[1] }, search, searchBounds, budget);
-  return path?.map((point) => [point.x, point.y]);
+  const path5 = findStateManhattanPath([{ x: start[0], y: start[1] }], { x: end[0], y: end[1] }, search, searchBounds, budget);
+  return path5?.map((point) => [point.x, point.y]);
 }
 function bodySafeTransitionPlan(plan, diagram, bounds, noteBounds, search, budget, forceRepair = false) {
   if (!forceRepair && !routeIntersectsUnrelatedState(plan, diagram, bounds, noteBounds))
@@ -15179,8 +15302,8 @@ function renderBodySafeTransitionPlan(plan, safePath, prefix, suffix, sourceChar
   }
   return { ...plan, cells, path: fullPath, pathRepaired: true };
 }
-function labelDistanceToPath(x, y, width, height, path) {
-  return Math.min(...path.map(([pathX, pathY]) => {
+function labelDistanceToPath(x, y, width, height, path5) {
+  return Math.min(...path5.map(([pathX, pathY]) => {
     const dx = pathX < x ? x - pathX : pathX >= x + width ? pathX - (x + width - 1) : 0;
     const dy = pathY < y ? y - pathY : pathY >= y + height ? pathY - (y + height - 1) : 0;
     return dx + dy;
@@ -15400,8 +15523,6 @@ function createStateTransitionJunctionPlans(diagram, bounds, renderPlans) {
     return [{ state, bounds: stateBounds, connections, transitions, kind }];
   });
 }
-
-// node_modules/opentui-markdown-render/src/merman/state/layout.ts
 var MAX_STRICT_NOTE_PLACEMENTS = 24;
 function computeRanks2(diagram) {
   const ranks = new Map;
@@ -15463,8 +15584,8 @@ function computeMainPath(diagram) {
   const start = diagram.states.find((state) => state.kind === "start")?.id ?? diagram.states[0]?.id;
   if (!start)
     return [];
-  const path = [start];
-  const visited = new Set(path);
+  const path5 = [start];
+  const visited = new Set(path5);
   let current = start;
   while (true) {
     const candidates = (outgoing.get(current) ?? []).filter((transition) => !visited.has(transition.to));
@@ -15477,11 +15598,11 @@ function computeMainPath(diagram) {
     }) ?? (candidates.length === 1 ? candidates[0] : undefined);
     if (!next)
       break;
-    path.push(next.to);
+    path5.push(next.to);
     visited.add(next.to);
     current = next.to;
   }
-  return path;
+  return path5;
 }
 function stateSize(state) {
   if (state.kind !== "state")
@@ -15639,8 +15760,8 @@ function findNoteConnector(search, bounds, target, budget) {
   const minY = Math.min(target.top, bounds.top, search.minY) - margin;
   const maxX = Math.max(target.left + target.width, bounds.left + bounds.width, search.maxX) + margin;
   const maxY = Math.max(target.top + target.height, bounds.top + bounds.height, search.maxY) + margin;
-  const path = findStateManhattanPath(starts, goal, search, { minX: 0, minY, maxX, maxY }, budget, isFree);
-  return path ? { connectorY, points: [...path, end] } : undefined;
+  const path5 = findStateManhattanPath(starts, goal, search, { minX: 0, minY, maxX, maxY }, budget, isFree);
+  return path5 ? { connectorY, points: [...path5, end] } : undefined;
 }
 function belongsToComposite(id, compositeId, statesById, compositesById) {
   let parentId = statesById.get(id)?.parentId ?? compositesById.get(id)?.parentId;
@@ -16211,8 +16332,6 @@ function expandCompositeBoundsForInternalTransitions(diagram, compositeBounds, t
   }
   enforceCompositeMargins(diagram, compositeBounds);
 }
-
-// node_modules/opentui-markdown-render/src/merman/state/options.ts
 var DEFAULT_STATE_DIAGRAM_MIN_STATE_GAP = 5;
 var DEFAULT_STATE_BORDER_STYLE = "rounded";
 var DEFAULT_STATE_ARROW_HEAD_STYLE = "filled";
@@ -16221,8 +16340,6 @@ function normalizeStateMinStateGap(value) {
     return DEFAULT_STATE_DIAGRAM_MIN_STATE_GAP;
   return Math.max(1, Math.trunc(value));
 }
-
-// node_modules/opentui-markdown-render/src/merman/state/style.ts
 var DEFAULT_THEME_RGB5 = {
   state: [228, 239, 232],
   stateBorder: [228, 239, 232],
@@ -16261,8 +16378,6 @@ function resolveStateStyleColors(colors = {}) {
     ...createColorRampTheme(STATE_DEPARTURE_RAMP_STYLES, resolved.stateBorder, resolved.transition)
   };
 }
-
-// node_modules/opentui-markdown-render/src/merman/state/drawing.ts
 function translateTransitionPlans(plans, dx, dy) {
   return plans.map((plan) => ({
     ...plan,
@@ -16511,16 +16626,12 @@ function createStateDiagramDrawingWithDirection(sourceDiagram, options, directio
   }
   return { grid, diagram, layout, transitionPlans };
 }
-
-// node_modules/opentui-markdown-render/src/merman/state/render-grid.ts
 function renderStateGridStyledText(grid, colors, backgrounds) {
   return renderDiagramGridStyledTextByStyle(grid, colors, backgrounds, {
     trimTop: true,
     trimBottom: true
   });
 }
-
-// node_modules/opentui-markdown-render/src/merman/timeline/style.ts
 var DEFAULT_THEME_RGB6 = {
   title: [228, 239, 232],
   section: [154, 184, 169],
@@ -16548,8 +16659,6 @@ function resolveTimelineStyleColors(colors = {}) {
     periodFade3: blendColor(period, spine, 0.83)
   };
 }
-
-// node_modules/opentui-markdown-render/src/merman/timeline/drawing.ts
 var JOIN_WIDTH = TIMELINE_SECTION_FADE_STYLES.length;
 var SPINE_OFFSET = JOIN_WIDTH + 1;
 var EVENT_OFFSET = 3;
@@ -16638,15 +16747,11 @@ function setCell4(grid, x, y, char, style) {
 function setText4(grid, x, y, text, style) {
   grid.setText(x, y, text, style);
 }
-
-// node_modules/opentui-markdown-render/src/merman/timeline/render-grid.ts
 function renderTimelineGridStyledText(grid, colors) {
   return renderDiagramGridStyledText(grid, (run) => run.style ? colors[run.style] : undefined, undefined, {
     trimBottom: true
   });
 }
-
-// node_modules/opentui-markdown-render/src/merman/diagram.ts
 function color(value) {
   return value === undefined ? undefined : parseColor3(value);
 }
@@ -16821,9 +16926,6 @@ function measureMermaidDiagram(source, options = {}) {
     })))
   };
 }
-
-// node_modules/opentui-markdown-render/src/merman/palette.ts
-import { RGBA as RGBA4 } from "@opentui/core";
 function createOpenCodeDiagramPalette(input) {
   const secondary = blendColor(input.text, input.subdued, 0.5);
   const muted = blendColor(input.text, input.subdued, 0.7);
@@ -16864,9 +16966,6 @@ function resolveOpenCodeDiagramPalette(theme) {
     }
   });
 }
-
-// node_modules/opentui-markdown-render/src/view/mermaid.tsx
-import { jsxDEV as jsxDEV7 } from "@opentui/solid/jsx-dev-runtime";
 function DiagramText(props) {
   let ref;
   let dragX;
@@ -16881,8 +16980,9 @@ function DiagramText(props) {
     ref.selectable = false;
     ref.marginTop = 1;
   });
-  return /* @__PURE__ */ jsxDEV7("text", {
-    ref: (renderable) => {
+  return (() => {
+    var _el$ = _$createElement7("text");
+    _$use2((renderable) => {
       ref = renderable;
       if (!ref)
         return;
@@ -16917,8 +17017,9 @@ function DiagramText(props) {
         event.preventDefault();
         event.stopPropagation();
       };
-    }
-  }, undefined, false, undefined, this);
+    }, _el$);
+    return _el$;
+  })();
 }
 function MermaidDiagramView(props) {
   let lastGood;
@@ -16969,39 +17070,56 @@ function MermaidDiagramView(props) {
             }
           } catch (prefixError) {
             if (!(prefixError instanceof MermaidSyntaxError || prefixError instanceof DiagramCanvasSizeError)) {
-              props.onDiagnostic?.({ level: "error", message: prefixError instanceof Error ? prefixError.message : String(prefixError) });
+              props.onDiagnostic?.({
+                level: "error",
+                message: prefixError instanceof Error ? prefixError.message : String(prefixError)
+              });
             }
           }
         }
       }
       if (!(error instanceof MermaidSyntaxError || error instanceof DiagramCanvasSizeError)) {
-        props.onDiagnostic?.({ level: "error", message: error instanceof Error ? error.message : String(error) });
+        props.onDiagnostic?.({
+          level: "error",
+          message: error instanceof Error ? error.message : String(error)
+        });
       }
     }
     return;
   });
-  return /* @__PURE__ */ jsxDEV7("box", {
-    width: "100%",
-    flexDirection: "column",
-    flexShrink: 0,
-    children: /* @__PURE__ */ jsxDEV7(Show3, {
-      when: prepared(),
-      fallback: /* @__PURE__ */ jsxDEV7(CodeBlock, {
-        content: props.source,
-        language: "mermaid",
-        theme: props.theme,
-        headings: props.headings ?? defaultHeadingStyles,
-        syntaxStyle: props.syntaxStyle
-      }, undefined, false, undefined, this),
-      children: (value) => /* @__PURE__ */ jsxDEV7(DiagramText, {
+  return (() => {
+    var _el$2 = _$createElement7("box");
+    _$setProp7(_el$2, "width", "100%");
+    _$setProp7(_el$2, "flexDirection", "column");
+    _$setProp7(_el$2, "flexShrink", 0);
+    _$insert5(_el$2, _$createComponent4(Show2, {
+      get when() {
+        return prepared();
+      },
+      get fallback() {
+        return _$createComponent4(CodeBlock, {
+          get content() {
+            return props.source;
+          },
+          language: "mermaid",
+          get theme() {
+            return props.theme;
+          },
+          get headings() {
+            return props.headings ?? defaultHeadingStyles;
+          },
+          get syntaxStyle() {
+            return props.syntaxStyle;
+          }
+        });
+      },
+      children: (value) => _$createComponent4(DiagramText, {
         prepared: value
-      }, undefined, false, undefined, this)
-    }, undefined, false, undefined, this)
-  }, undefined, false, undefined, this);
+      })
+    }));
+    return _el$2;
+  })();
 }
-
-// node_modules/opentui-markdown-render/src/view/document.tsx
-import { jsxDEV as jsxDEV8, Fragment } from "@opentui/solid/jsx-dev-runtime";
 function listMarker(list, index, item) {
   const bullet = list.ordered ? `${list.start + index}.` : "-";
   return item.task ? `${bullet} ${item.checked ? "[x]" : "[ ]"}` : bullet;
@@ -17013,30 +17131,52 @@ function DocumentView(props) {
     return previous;
   });
   function flow(children, columns, quote, prefix, prefixColor, prefixChunks) {
-    return /* @__PURE__ */ jsxDEV8(InlineFlow, {
+    return _$createComponent5(InlineFlow, {
       inlines: children,
       columns,
-      theme: props.theme,
-      headings: props.headings,
-      graphics: props.graphics,
-      surface: props.surface,
+      get theme() {
+        return props.theme;
+      },
+      get headings() {
+        return props.headings;
+      },
+      get graphics() {
+        return props.graphics;
+      },
+      get surface() {
+        return props.surface;
+      },
       quote,
       prefix,
       prefixColor,
       prefixChunks
-    }, undefined, false, undefined, this);
+    });
   }
   function BlockView(input) {
     if (input.block().type === "mermaid") {
-      return /* @__PURE__ */ jsxDEV8(MermaidDiagramView, {
-        source: input.block().content,
-        theme: props.theme,
-        columns: input.columns,
-        mermaidOptions: props.mermaidOptions,
-        headings: props.headings,
-        syntaxStyle: props.syntaxStyle,
-        onDiagnostic: props.onDiagnostic
-      }, undefined, false, undefined, this);
+      return _$createComponent5(MermaidDiagramView, {
+        get source() {
+          return input.block().content;
+        },
+        get theme() {
+          return props.theme;
+        },
+        get columns() {
+          return input.columns;
+        },
+        get mermaidOptions() {
+          return props.mermaidOptions;
+        },
+        get headings() {
+          return props.headings;
+        },
+        get syntaxStyle() {
+          return props.syntaxStyle;
+        },
+        get onDiagnostic() {
+          return props.onDiagnostic;
+        }
+      });
     }
     const view = createMemo5(() => {
       const block = input.block();
@@ -17047,121 +17187,214 @@ function DocumentView(props) {
         case "heading": {
           const level = headingLevels[block.level - 1];
           const style = props.headings[level];
-          const children = style.uppercase ? block.children.map((child) => child.type === "text" ? { ...child, text: child.text.toUpperCase() } : child) : block.children;
-          return /* @__PURE__ */ jsxDEV8("box", {
-            width: "100%",
-            flexDirection: "column",
-            flexShrink: 0,
-            marginTop: style.marginTop,
-            marginBottom: style.marginBottom,
-            children: /* @__PURE__ */ jsxDEV8(InlineFlow, {
+          const children = style.uppercase ? block.children.map((child) => child.type === "text" ? {
+            ...child,
+            text: child.text.toUpperCase()
+          } : child) : block.children;
+          return (() => {
+            var _el$ = _$createElement8("box");
+            _$setProp8(_el$, "width", "100%");
+            _$setProp8(_el$, "flexDirection", "column");
+            _$setProp8(_el$, "flexShrink", 0);
+            _$insert6(_el$, _$createComponent5(InlineFlow, {
               inlines: children,
               columns,
-              theme: props.theme,
-              headings: props.headings,
-              graphics: props.graphics,
-              surface: props.surface,
-              heading: { level },
+              get theme() {
+                return props.theme;
+              },
+              get headings() {
+                return props.headings;
+              },
+              get graphics() {
+                return props.graphics;
+              },
+              get surface() {
+                return props.surface;
+              },
+              heading: {
+                level
+              },
               prefix: (index) => index === 0 ? `${"#".repeat(level)} ` : " ".repeat(level + 1),
               prefixColor: () => props.theme.text.muted
-            }, undefined, false, undefined, this)
-          }, undefined, false, undefined, this);
+            }));
+            _$effect6((_p$) => {
+              var { marginTop: _v$, marginBottom: _v$2 } = style;
+              _v$ !== _p$.e && (_p$.e = _$setProp8(_el$, "marginTop", _v$, _p$.e));
+              _v$2 !== _p$.t && (_p$.t = _$setProp8(_el$, "marginBottom", _v$2, _p$.t));
+              return _p$;
+            }, {
+              e: undefined,
+              t: undefined
+            });
+            return _el$;
+          })();
         }
         case "rule":
-          return /* @__PURE__ */ jsxDEV8("box", {
-            height: 1,
-            width: "100%",
-            border: ["top"],
-            borderColor: props.theme.markdown.horizontalRule
-          }, undefined, false, undefined, this);
+          return (() => {
+            var _el$2 = _$createElement8("box");
+            _$setProp8(_el$2, "height", 1);
+            _$setProp8(_el$2, "width", "100%");
+            _$setProp8(_el$2, "border", ["top"]);
+            _$effect6((_$p) => _$setProp8(_el$2, "borderColor", props.theme.markdown.horizontalRule, _$p));
+            return _el$2;
+          })();
         case "image":
-          return /* @__PURE__ */ jsxDEV8(LocalImage, {
-            href: block.href,
-            alt: block.alt,
-            base: props.assetBase,
+          return _$createComponent5(LocalImage, {
+            get href() {
+              return block.href;
+            },
+            get alt() {
+              return block.alt;
+            },
+            get base() {
+              return props.assetBase;
+            },
             columns: () => columns,
-            cell: props.graphics.cell,
-            background: props.surface,
+            get cell() {
+              return props.graphics.cell;
+            },
+            get background() {
+              return props.surface;
+            },
             labelColor: () => props.theme.markdown.image,
             textColor: () => props.theme.markdown.imageText,
-            limits: props.imageLimits
-          }, undefined, false, undefined, this);
+            get limits() {
+              return props.imageLimits;
+            }
+          });
         case "display-math":
-          return /* @__PURE__ */ jsxDEV8(DisplayMath, {
-            content: block.content,
-            open: block.open,
-            close: block.close,
+          return _$createComponent5(DisplayMath, {
+            get content() {
+              return block.content;
+            },
+            get open() {
+              return block.open;
+            },
+            get close() {
+              return block.close;
+            },
             maxWidth: () => columns,
             theme: () => props.theme,
-            graphics: props.graphics,
-            surface: props.surface,
+            get graphics() {
+              return props.graphics;
+            },
+            get surface() {
+              return props.surface;
+            },
             scale: () => props.mathScale ?? 1
-          }, undefined, false, undefined, this);
+          });
         case "quote":
-          return /* @__PURE__ */ jsxDEV8("box", {
-            border: columns > 2 ? ["left"] : [],
-            borderColor: props.theme.markdown.blockQuote,
-            paddingLeft: columns > 2 ? 1 : 0,
-            width: "100%",
-            flexDirection: "column",
-            children: /* @__PURE__ */ jsxDEV8(For2, {
-              each: block.blocks,
-              children: (child) => /* @__PURE__ */ jsxDEV8(BlockView, {
+          return (() => {
+            var _el$3 = _$createElement8("box");
+            _$setProp8(_el$3, "border", columns > 2 ? ["left"] : []);
+            _$setProp8(_el$3, "paddingLeft", columns > 2 ? 1 : 0);
+            _$setProp8(_el$3, "width", "100%");
+            _$setProp8(_el$3, "flexDirection", "column");
+            _$insert6(_el$3, _$createComponent5(For2, {
+              get each() {
+                return block.blocks;
+              },
+              children: (child) => _$createComponent5(BlockView, {
                 block: () => child,
                 columns: columns > 2 ? columns - 2 : columns,
                 quote: true
-              }, undefined, false, undefined, this)
-            }, undefined, false, undefined, this)
-          }, undefined, false, undefined, this);
+              })
+            }));
+            _$effect6((_$p) => _$setProp8(_el$3, "borderColor", props.theme.markdown.blockQuote, _$p));
+            return _el$3;
+          })();
         case "list":
-          return /* @__PURE__ */ jsxDEV8(ListBlockView, {
+          return _$createComponent5(ListBlockView, {
             block: () => block,
             columns,
-            quote: input.quote,
+            get quote() {
+              return input.quote;
+            },
             wrapItems: false
-          }, undefined, false, undefined, this);
+          });
         case "code":
-          return /* @__PURE__ */ jsxDEV8(CodeBlock, {
-            content: block.content,
-            language: block.language,
-            theme: props.theme,
-            headings: props.headings,
-            syntaxStyle: props.syntaxStyle
-          }, undefined, false, undefined, this);
+          return _$createComponent5(CodeBlock, {
+            get content() {
+              return block.content;
+            },
+            get language() {
+              return block.language;
+            },
+            get theme() {
+              return props.theme;
+            },
+            get headings() {
+              return props.headings;
+            },
+            get syntaxStyle() {
+              return props.syntaxStyle;
+            }
+          });
         case "mermaid":
-          return /* @__PURE__ */ jsxDEV8(MermaidDiagramView, {
-            source: block.content,
-            theme: props.theme,
+          return _$createComponent5(MermaidDiagramView, {
+            get source() {
+              return block.content;
+            },
+            get theme() {
+              return props.theme;
+            },
             columns,
-            mermaidOptions: props.mermaidOptions,
-            headings: props.headings,
-            syntaxStyle: props.syntaxStyle,
-            onDiagnostic: props.onDiagnostic
-          }, undefined, false, undefined, this);
+            get mermaidOptions() {
+              return props.mermaidOptions;
+            },
+            get headings() {
+              return props.headings;
+            },
+            get syntaxStyle() {
+              return props.syntaxStyle;
+            },
+            get onDiagnostic() {
+              return props.onDiagnostic;
+            }
+          });
         case "table":
-          return /* @__PURE__ */ jsxDEV8(TableBlock, {
+          return _$createComponent5(TableBlock, {
             block,
-            options: props.tableOptions,
-            theme: props.theme,
-            headings: props.headings,
-            hyperlinks: props.graphics.hyperlinks?.() ?? true
-          }, undefined, false, undefined, this);
+            get options() {
+              return props.tableOptions;
+            },
+            get theme() {
+              return props.theme;
+            },
+            get headings() {
+              return props.headings;
+            },
+            get hyperlinks() {
+              return props.graphics.hyperlinks?.() ?? true;
+            }
+          });
         case "literal":
-          return /* @__PURE__ */ jsxDEV8("text", {
-            fg: props.theme.markdown.text,
-            wrapMode: "word",
-            content: block.text
-          }, undefined, false, undefined, this);
+          return (() => {
+            var _el$4 = _$createElement8("text");
+            _$setProp8(_el$4, "wrapMode", "word");
+            _$effect6((_p$) => {
+              var _v$3 = props.theme.markdown.text, _v$4 = block.text;
+              _v$3 !== _p$.e && (_p$.e = _$setProp8(_el$4, "fg", _v$3, _p$.e));
+              _v$4 !== _p$.t && (_p$.t = _$setProp8(_el$4, "content", _v$4, _p$.t));
+              return _p$;
+            }, {
+              e: undefined,
+              t: undefined
+            });
+            return _el$4;
+          })();
         default:
           return assertNever(block);
       }
     });
-    return /* @__PURE__ */ jsxDEV8("box", {
-      width: "100%",
-      flexDirection: "column",
-      flexShrink: 0,
-      children: view()
-    }, undefined, false, undefined, this);
+    return (() => {
+      var _el$5 = _$createElement8("box");
+      _$setProp8(_el$5, "width", "100%");
+      _$setProp8(_el$5, "flexDirection", "column");
+      _$setProp8(_el$5, "flexShrink", 0);
+      _$insert6(_el$5, view);
+      return _el$5;
+    })();
   }
   function ListItemView(input) {
     const list = input.block;
@@ -17169,133 +17402,195 @@ function DocumentView(props) {
     const markerWidth = input.markerWidth;
     const hanging = () => markerWidth() + 1;
     const marker = () => listMarker(list(), input.index(), item());
-    const content = /* @__PURE__ */ jsxDEV8("box", {
-      flexDirection: "column",
-      width: "100%",
-      flexShrink: 0,
-      marginBottom: list().loose && input.index() < list().items.length - 1 ? 1 : 0,
-      children: [
-        /* @__PURE__ */ jsxDEV8(For2, {
-          each: item().blocks,
-          children: (child, childIndex) => childIndex() === 0 && child.type === "paragraph" ? flow(child.children, input.columns, input.quote, (row) => row === 0 ? `${marker().padEnd(markerWidth())} ` : " ".repeat(hanging()), () => list().ordered ? props.theme.markdown.listEnumeration : props.theme.markdown.listItem, item().task ? (row) => row === 0 ? [
-            {
-              __isChunk: true,
-              text: `${list().ordered ? `${list().start + input.index()}.` : "-"} `,
-              fg: list().ordered ? props.theme.markdown.listEnumeration : props.theme.markdown.listItem
+    const content = (() => {
+      var _el$6 = _$createElement8("box");
+      _$setProp8(_el$6, "flexDirection", "column");
+      _$setProp8(_el$6, "width", "100%");
+      _$setProp8(_el$6, "flexShrink", 0);
+      _$insert6(_el$6, _$createComponent5(For2, {
+        get each() {
+          return item().blocks;
+        },
+        children: (child, childIndex) => childIndex() === 0 && child.type === "paragraph" ? flow(child.children, input.columns, input.quote, (row) => row === 0 ? `${marker().padEnd(markerWidth())} ` : " ".repeat(hanging()), () => list().ordered ? props.theme.markdown.listEnumeration : props.theme.markdown.listItem, item().task ? (row) => row === 0 ? [{
+          __isChunk: true,
+          text: `${list().ordered ? `${list().start + input.index()}.` : "-"} `,
+          fg: list().ordered ? props.theme.markdown.listEnumeration : props.theme.markdown.listItem
+        }, {
+          __isChunk: true,
+          text: `${item().checked ? "[x]" : "[ ]"}${" ".repeat(markerWidth() - stringWidth(marker()) + 1)}`,
+          fg: item().checked ? props.theme.text.feedback.success : props.theme.text.muted
+        }] : [{
+          __isChunk: true,
+          text: " ".repeat(hanging()),
+          fg: props.theme.text.muted
+        }] : undefined) : childIndex() === 0 ? (() => {
+          var _el$7 = _$createElement8("box"), _el$8 = _$createElement8("text");
+          _$insertNode3(_el$7, _el$8);
+          _$setProp8(_el$7, "flexDirection", "row");
+          _$setProp8(_el$7, "width", "100%");
+          _$setProp8(_el$7, "flexShrink", 0);
+          _$setProp8(_el$8, "flexShrink", 0);
+          _$insert6(_el$8, () => `${marker().padEnd(markerWidth())} `);
+          _$insert6(_el$7, _$createComponent5(BlockView, {
+            block: () => child,
+            get columns() {
+              return Math.max(1, input.columns - hanging());
             },
-            {
-              __isChunk: true,
-              text: `${item().checked ? "[x]" : "[ ]"}${" ".repeat(markerWidth() - stringWidth(marker()) + 1)}`,
-              fg: item().checked ? props.theme.text.feedback.success : props.theme.text.muted
+            get quote() {
+              return input.quote;
             }
-          ] : [{ __isChunk: true, text: " ".repeat(hanging()), fg: props.theme.text.muted }] : undefined) : childIndex() === 0 ? /* @__PURE__ */ jsxDEV8("box", {
-            flexDirection: "row",
-            width: "100%",
-            flexShrink: 0,
-            children: [
-              /* @__PURE__ */ jsxDEV8("text", {
-                width: hanging(),
-                flexShrink: 0,
-                fg: list().ordered ? props.theme.markdown.listEnumeration : props.theme.markdown.listItem,
-                children: `${marker().padEnd(markerWidth())} `
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsxDEV8(BlockView, {
-                block: () => child,
-                columns: Math.max(1, input.columns - hanging()),
-                quote: input.quote
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this) : /* @__PURE__ */ jsxDEV8("box", {
-            marginLeft: hanging(),
-            width: Math.max(1, input.columns - hanging()),
-            flexDirection: "column",
-            children: /* @__PURE__ */ jsxDEV8(BlockView, {
-              block: () => child,
-              columns: Math.max(1, input.columns - hanging()),
-              quote: input.quote
-            }, undefined, false, undefined, this)
-          }, undefined, false, undefined, this)
-        }, undefined, false, undefined, this),
-        item().blocks.length === 0 && /* @__PURE__ */ jsxDEV8("text", {
-          fg: props.theme.markdown.listItem,
-          children: marker()
-        }, undefined, false, undefined, this)
-      ]
-    }, undefined, true, undefined, this);
+          }), null);
+          _$effect6((_p$) => {
+            var _v$5 = hanging(), _v$6 = list().ordered ? props.theme.markdown.listEnumeration : props.theme.markdown.listItem;
+            _v$5 !== _p$.e && (_p$.e = _$setProp8(_el$8, "width", _v$5, _p$.e));
+            _v$6 !== _p$.t && (_p$.t = _$setProp8(_el$8, "fg", _v$6, _p$.t));
+            return _p$;
+          }, {
+            e: undefined,
+            t: undefined
+          });
+          return _el$7;
+        })() : (() => {
+          var _el$9 = _$createElement8("box");
+          _$setProp8(_el$9, "flexDirection", "column");
+          _$insert6(_el$9, _$createComponent5(BlockView, {
+            block: () => child,
+            get columns() {
+              return Math.max(1, input.columns - hanging());
+            },
+            get quote() {
+              return input.quote;
+            }
+          }));
+          _$effect6((_p$) => {
+            var _v$7 = hanging(), _v$8 = Math.max(1, input.columns - hanging());
+            _v$7 !== _p$.e && (_p$.e = _$setProp8(_el$9, "marginLeft", _v$7, _p$.e));
+            _v$8 !== _p$.t && (_p$.t = _$setProp8(_el$9, "width", _v$8, _p$.t));
+            return _p$;
+          }, {
+            e: undefined,
+            t: undefined
+          });
+          return _el$9;
+        })()
+      }), null);
+      _$insert6(_el$6, (() => {
+        var _c$ = _$memo5(() => item().blocks.length === 0);
+        return () => _c$() && (() => {
+          var _el$0 = _$createElement8("text");
+          _$insert6(_el$0, marker);
+          _$effect6((_$p) => _$setProp8(_el$0, "fg", props.theme.markdown.listItem, _$p));
+          return _el$0;
+        })();
+      })(), null);
+      _$effect6((_$p) => _$setProp8(_el$6, "marginBottom", list().loose && input.index() < list().items.length - 1 ? 1 : 0, _$p));
+      return _el$6;
+    })();
     const info = () => {
       const current = item();
       const source = input.latest().items[input.index()]?.source ?? null;
-      return { kind: "list-item", item: current.source === source ? current : { ...current, source }, source };
+      return {
+        kind: "list-item",
+        item: current.source === source ? current : {
+          ...current,
+          source
+        },
+        source
+      };
     };
-    return /* @__PURE__ */ jsxDEV8(Fragment, {
-      children: input.wrapUnit && props.renderUnit ? props.renderUnit(info, content) : content
-    }, undefined, false, undefined, this);
+    return _$memo5(() => _$memo5(() => !!(input.wrapUnit && props.renderUnit))() ? props.renderUnit(info, content) : content);
   }
   function ListBlockView(input) {
     const markerWidth = createMemo5(() => {
       const list = input.block();
       return Math.max(1, ...list.items.map((entry, index) => stringWidth(listMarker(list, index, entry))));
     });
-    return /* @__PURE__ */ jsxDEV8("box", {
-      flexDirection: "column",
-      width: "100%",
-      flexShrink: 0,
-      children: /* @__PURE__ */ jsxDEV8(For2, {
-        each: input.block().items,
-        children: (item, index) => /* @__PURE__ */ jsxDEV8(ListItemView, {
-          block: input.block,
-          latest: input.latest ?? input.block,
+    return (() => {
+      var _el$1 = _$createElement8("box");
+      _$setProp8(_el$1, "flexDirection", "column");
+      _$setProp8(_el$1, "width", "100%");
+      _$setProp8(_el$1, "flexShrink", 0);
+      _$insert6(_el$1, _$createComponent5(For2, {
+        get each() {
+          return input.block().items;
+        },
+        children: (item, index) => _$createComponent5(ListItemView, {
+          get block() {
+            return input.block;
+          },
+          get latest() {
+            return input.latest ?? input.block;
+          },
           markerWidth,
           item: () => input.block().items[index()] ?? item,
           index,
-          columns: input.columns,
-          quote: input.quote,
-          wrapUnit: input.wrapItems
-        }, undefined, false, undefined, this)
-      }, undefined, false, undefined, this)
-    }, undefined, false, undefined, this);
+          get columns() {
+            return input.columns;
+          },
+          get quote() {
+            return input.quote;
+          },
+          get wrapUnit() {
+            return input.wrapItems;
+          }
+        })
+      }));
+      return _el$1;
+    })();
   }
   function TopLevelSlot(input) {
     const block = input.slot.block;
     if (block().type === "list") {
-      return /* @__PURE__ */ jsxDEV8(ListBlockView, {
+      return _$createComponent5(ListBlockView, {
         block: () => block(),
         latest: () => input.slot.latest(),
-        columns: input.columns,
+        get columns() {
+          return input.columns;
+        },
         wrapItems: true
-      }, undefined, false, undefined, this);
+      });
     }
     const info = () => {
       const current = block();
       if (current.type === "list")
         throw new Error("A top-level list is rendered as list items, not as a block unit");
       const source = input.slot.latest().source ?? null;
-      return { kind: "block", block: current.source === source ? current : { ...current, source }, source };
+      return {
+        kind: "block",
+        block: current.source === source ? current : {
+          ...current,
+          source
+        },
+        source
+      };
     };
-    const content = /* @__PURE__ */ jsxDEV8(BlockView, {
+    const content = _$createComponent5(BlockView, {
       block,
-      columns: input.columns
-    }, undefined, false, undefined, this);
-    return /* @__PURE__ */ jsxDEV8(Fragment, {
-      children: props.renderUnit ? props.renderUnit(info, content) : content
-    }, undefined, false, undefined, this);
+      get columns() {
+        return input.columns;
+      }
+    });
+    return _$memo5(() => _$memo5(() => !!props.renderUnit)() ? props.renderUnit(info, content) : content);
   }
-  return /* @__PURE__ */ jsxDEV8("box", {
-    width: "100%",
-    flexDirection: "column",
-    flexShrink: 0,
-    children: /* @__PURE__ */ jsxDEV8(For2, {
-      each: slots(),
-      children: (slot) => /* @__PURE__ */ jsxDEV8(TopLevelSlot, {
+  return (() => {
+    var _el$10 = _$createElement8("box");
+    _$setProp8(_el$10, "width", "100%");
+    _$setProp8(_el$10, "flexDirection", "column");
+    _$setProp8(_el$10, "flexShrink", 0);
+    _$insert6(_el$10, _$createComponent5(For2, {
+      get each() {
+        return slots();
+      },
+      children: (slot) => _$createComponent5(TopLevelSlot, {
         slot,
-        columns: props.columns
-      }, undefined, false, undefined, this)
-    }, undefined, false, undefined, this)
-  }, undefined, false, undefined, this);
+        get columns() {
+          return props.columns;
+        }
+      })
+    }));
+    return _el$10;
+  })();
 }
-
-// node_modules/opentui-markdown-render/src/app.tsx
-import { jsxDEV as jsxDEV9 } from "@opentui/solid/jsx-dev-runtime";
 function resolveRendererTheme(renderer, options = {}) {
   const host = typeof options.theme === "function" ? options.theme() : options.theme;
   if (host)
@@ -17331,7 +17626,10 @@ function MarkdownRenderer(props) {
       report: (message) => {
         const handler = props.onDiagnostic;
         if (handler) {
-          handler({ level: "warning", message });
+          handler({
+            level: "warning",
+            message
+          });
           return;
         }
         console.warn(`[opentui-markdown-render] ${message}`);
@@ -17351,7 +17649,11 @@ function MarkdownRenderer(props) {
     const explicit = typeof props.tables === "function" ? props.tables() : props.tables;
     return explicit ?? config().tables;
   });
-  const layout = createMemo6(() => resolveConfiguredLayout(config(), { viewport: viewportWidth(), frame: frameSetting(), tables: tableSetting() }));
+  const layout = createMemo6(() => resolveConfiguredLayout(config(), {
+    viewport: viewportWidth(),
+    frame: frameSetting(),
+    tables: tableSetting()
+  }));
   const frame = () => layout().frame;
   const contentWidth = () => layout().contentWidth;
   const tableOptions = () => layout().tables;
@@ -17373,44 +17675,72 @@ function MarkdownRenderer(props) {
     const style = syntaxStyle();
     onCleanup4(() => void renderer.idle().then(() => style.destroy()));
   });
-  return /* @__PURE__ */ jsxDEV9("box", {
-    width: "100%",
-    flexDirection: "column",
-    flexShrink: 0,
-    backgroundColor: theme().background.base,
-    onSizeChange: function() {
+  return (() => {
+    var _el$ = _$createElement9("box");
+    _$setProp9(_el$, "width", "100%");
+    _$setProp9(_el$, "flexDirection", "column");
+    _$setProp9(_el$, "flexShrink", 0);
+    _$setProp9(_el$, "onSizeChange", function() {
       const width = this.width;
       if (width !== viewportWidth())
         queueMicrotask(() => setMeasured(width));
-    },
-    children: /* @__PURE__ */ jsxDEV9(MarkdownFrame, {
-      frame: frame(),
-      theme: theme(),
-      children: /* @__PURE__ */ jsxDEV9(DocumentView, {
-        document: document(),
-        columns: contentWidth(),
-        theme: theme(),
-        headings: headings(),
-        graphics,
-        surface,
-        assetBase: () => props.assetBase?.(),
-        imageLimits: config().images,
-        tableOptions: tableOptions(),
-        mermaidOptions: config().mermaid,
-        mathScale: mathScale(),
-        syntaxStyle: syntaxStyle(),
-        onDiagnostic: props.onDiagnostic,
-        renderUnit: props.renderUnit
-      }, undefined, false, undefined, this)
-    }, undefined, false, undefined, this)
-  }, undefined, false, undefined, this);
+    });
+    _$insert7(_el$, _$createComponent6(MarkdownFrame, {
+      get frame() {
+        return frame();
+      },
+      get theme() {
+        return theme();
+      },
+      get children() {
+        return _$createComponent6(DocumentView, {
+          get document() {
+            return document();
+          },
+          get columns() {
+            return contentWidth();
+          },
+          get theme() {
+            return theme();
+          },
+          get headings() {
+            return headings();
+          },
+          graphics,
+          surface,
+          assetBase: () => props.assetBase?.(),
+          get imageLimits() {
+            return config().images;
+          },
+          get tableOptions() {
+            return tableOptions();
+          },
+          get mermaidOptions() {
+            return config().mermaid;
+          },
+          get mathScale() {
+            return mathScale();
+          },
+          get syntaxStyle() {
+            return syntaxStyle();
+          },
+          get onDiagnostic() {
+            return props.onDiagnostic;
+          },
+          get renderUnit() {
+            return props.renderUnit;
+          }
+        });
+      }
+    }));
+    _$effect7((_$p) => _$setProp9(_el$, "backgroundColor", theme().background.base, _$p));
+    return _el$;
+  })();
 }
-// node_modules/opentui-markdown-render/src/statusline.tsx
-import { For as For3, Show as Show4 } from "solid-js";
-import { TextAttributes as TextAttributes5 } from "@opentui/core";
 var defaultStatusLineFields = statusLineFields.filter((field) => field !== "text");
+
 // src/canvas.tsx
-import { createEffect as createEffect5, createMemo as createMemo7, createResource as createResource4, createSignal as createSignal6, For as For4, Match as Match3, Show as Show5, Switch as Switch3 } from "solid-js";
+import { createEffect as createEffect5, createMemo as createMemo7, createResource as createResource4, createSignal as createSignal6, For as For4, Match as Match3, Show as Show4, Switch as Switch3 } from "solid-js";
 // node_modules/diff/libesm/diff/base.js
 class Diff {
   diff(oldStr, newStr, options = {}) {
@@ -18342,7 +18672,7 @@ function CanvasPage(props) {
       status: `${props.presentation} ${columns}c ${mode()} ${phase()} display ${props.mathSize().toFixed(1)}x h help - r review - s source - e edit - q close`
     };
   });
-  const renderUnit = (info, rendered) => _$createComponent(CanvasReviewUnit, {
+  const renderUnit = (info, rendered) => _$createComponent8(CanvasReviewUnit, {
     info,
     rendered,
     units,
@@ -18357,72 +18687,72 @@ function CanvasPage(props) {
     onEdit: editComment
   });
   return (() => {
-    var _el$ = _$createElement("box"), _el$2 = _$createElement("box"), _el$3 = _$createElement("text"), _el$6 = _$createElement("text"), _el$7 = _$createElement("text"), _el$8 = _$createElement("scrollbox");
-    _$insertNode(_el$, _el$2);
-    _$insertNode(_el$, _el$8);
-    _$setProp(_el$, "width", "100%");
-    _$setProp(_el$, "height", "100%");
-    _$setProp(_el$, "flexDirection", "column");
-    _$setProp(_el$, "onSizeChange", function() {
+    var _el$ = _$createElement11("box"), _el$2 = _$createElement11("box"), _el$3 = _$createElement11("text"), _el$6 = _$createElement11("text"), _el$7 = _$createElement11("text"), _el$8 = _$createElement11("scrollbox");
+    _$insertNode4(_el$, _el$2);
+    _$insertNode4(_el$, _el$8);
+    _$setProp11(_el$, "width", "100%");
+    _$setProp11(_el$, "height", "100%");
+    _$setProp11(_el$, "flexDirection", "column");
+    _$setProp11(_el$, "onSizeChange", function() {
       setWidth(this.width);
     });
-    _$insertNode(_el$2, _el$3);
-    _$insertNode(_el$2, _el$6);
-    _$insertNode(_el$2, _el$7);
-    _$setProp(_el$2, "flexShrink", 0);
-    _$setProp(_el$2, "flexDirection", "row");
-    _$setProp(_el$2, "gap", 1);
-    _$setProp(_el$2, "paddingLeft", 1);
-    _$setProp(_el$2, "paddingRight", 1);
-    _$setProp(_el$2, "border", ["bottom"]);
-    _$insertNode(_el$3, _$createTextNode(`canvas`));
-    _$setProp(_el$3, "flexShrink", 0);
-    _$insert(_el$2, _$createComponent(Show5, {
+    _$insertNode4(_el$2, _el$3);
+    _$insertNode4(_el$2, _el$6);
+    _$insertNode4(_el$2, _el$7);
+    _$setProp11(_el$2, "flexShrink", 0);
+    _$setProp11(_el$2, "flexDirection", "row");
+    _$setProp11(_el$2, "gap", 1);
+    _$setProp11(_el$2, "paddingLeft", 1);
+    _$setProp11(_el$2, "paddingRight", 1);
+    _$setProp11(_el$2, "border", ["bottom"]);
+    _$insertNode4(_el$3, _$createTextNode3(`canvas`));
+    _$setProp11(_el$3, "flexShrink", 0);
+    _$insert9(_el$2, _$createComponent8(Show4, {
       get when() {
         return header().image;
       },
       get children() {
-        var _el$5 = _$createElement("text");
-        _$setProp(_el$5, "flexShrink", 0);
-        _$insert(_el$5, () => header().image);
-        _$effect((_$p) => _$setProp(_el$5, "fg", theme.text.muted, _$p));
+        var _el$5 = _$createElement11("text");
+        _$setProp11(_el$5, "flexShrink", 0);
+        _$insert9(_el$5, () => header().image);
+        _$effect9((_$p) => _$setProp11(_el$5, "fg", theme.text.muted, _$p));
         return _el$5;
       }
     }), _el$6);
-    _$setProp(_el$6, "flexGrow", 1);
-    _$setProp(_el$6, "minWidth", 0);
-    _$setProp(_el$6, "wrapMode", "none");
-    _$setProp(_el$6, "truncate", true);
-    _$insert(_el$6, label);
-    _$setProp(_el$7, "flexShrink", 0);
-    _$insert(_el$7, () => header().status);
-    _$setProp(_el$8, "flexGrow", 1);
-    _$setProp(_el$8, "contentOptions", {
+    _$setProp11(_el$6, "flexGrow", 1);
+    _$setProp11(_el$6, "minWidth", 0);
+    _$setProp11(_el$6, "wrapMode", "none");
+    _$setProp11(_el$6, "truncate", true);
+    _$insert9(_el$6, label);
+    _$setProp11(_el$7, "flexShrink", 0);
+    _$insert9(_el$7, () => header().status);
+    _$setProp11(_el$8, "flexGrow", 1);
+    _$setProp11(_el$8, "contentOptions", {
       minHeight: "100%",
       paddingLeft: 2,
       paddingRight: 2,
       paddingTop: 1,
       paddingBottom: 1
     });
-    _$insert(_el$8, _$createComponent(Switch3, {
+    _$insert9(_el$8, _$createComponent8(Switch3, {
       get children() {
-        return [_$createComponent(Match3, {
+        return [_$createComponent8(Match3, {
           get when() {
             return !props.file();
           },
           get children() {
-            var _el$9 = _$createElement("box"), _el$0 = _$createElement("text"), _el$10 = _$createElement("text");
-            _$insertNode(_el$9, _el$0);
-            _$insertNode(_el$9, _el$10);
-            _$setProp(_el$9, "flexDirection", "column");
-            _$setProp(_el$9, "gap", 1);
-            _$insertNode(_el$0, _$createTextNode(`Open a Markdown artifact with /canvas path/to/file.md`));
-            _$insertNode(_el$10, _$createTextNode(`Rendered mode supports Markdown, math, Mermaid, tables, and local images.`));
-            _$effect((_p$) => {
+            var _el$9 = _$createElement11("box"), _el$0 = _$createElement11("text"), _el$10 = _$createElement11("text");
+            _$insertNode4(_el$9, _el$0);
+            _$insertNode4(_el$9, _el$10);
+            _$setProp11(_el$9, "flexDirection", "column");
+            _$setProp11(_el$9, "gap", 1);
+            _$insertNode4(_el$0, _$createTextNode3(`Open a Markdown artifact with /canvas path/to/file.md`));
+            _$insertNode4(_el$10, _$createTextNode3(`Rendered mode supports Markdown, math, Mermaid, tables, and local images.`));
+            _$effect9((_p$) => {
               var _v$ = theme.text.base, _v$2 = TextAttributes6.BOLD, _v$3 = theme.text.muted;
-              _v$ !== _p$.e && (_p$.e = _$setProp(_el$0, "fg", _v$, _p$.e));
-              _v$2 !== _p$.t && (_p$.t = _$setProp(_el$0, "attributes", _v$2, _p$.t));
-              _v$3 !== _p$.a && (_p$.a = _$setProp(_el$10, "fg", _v$3, _p$.a));
+              _v$ !== _p$.e && (_p$.e = _$setProp11(_el$0, "fg", _v$, _p$.e));
+              _v$2 !== _p$.t && (_p$.t = _$setProp11(_el$0, "attributes", _v$2, _p$.t));
+              _v$3 !== _p$.a && (_p$.a = _$setProp11(_el$10, "fg", _v$3, _p$.a));
               return _p$;
             }, {
               e: undefined,
@@ -18431,22 +18761,22 @@ function CanvasPage(props) {
             });
             return _el$9;
           }
-        }), _$createComponent(Match3, {
+        }), _$createComponent8(Match3, {
           get when() {
             return loaded()?.error;
           },
           get children() {
-            var _el$12 = _$createElement("box"), _el$13 = _$createElement("text"), _el$15 = _$createElement("text");
-            _$insertNode(_el$12, _el$13);
-            _$insertNode(_el$12, _el$15);
-            _$setProp(_el$12, "flexDirection", "column");
-            _$setProp(_el$12, "gap", 1);
-            _$insertNode(_el$13, _$createTextNode(`Could not load artifact`));
-            _$insert(_el$15, () => loaded().error);
-            _$effect((_p$) => {
+            var _el$12 = _$createElement11("box"), _el$13 = _$createElement11("text"), _el$15 = _$createElement11("text");
+            _$insertNode4(_el$12, _el$13);
+            _$insertNode4(_el$12, _el$15);
+            _$setProp11(_el$12, "flexDirection", "column");
+            _$setProp11(_el$12, "gap", 1);
+            _$insertNode4(_el$13, _$createTextNode3(`Could not load artifact`));
+            _$insert9(_el$15, () => loaded().error);
+            _$effect9((_p$) => {
               var _v$4 = theme.text.feedback.error.base, _v$5 = theme.text.muted;
-              _v$4 !== _p$.e && (_p$.e = _$setProp(_el$13, "fg", _v$4, _p$.e));
-              _v$5 !== _p$.t && (_p$.t = _$setProp(_el$15, "fg", _v$5, _p$.t));
+              _v$4 !== _p$.e && (_p$.e = _$setProp11(_el$13, "fg", _v$4, _p$.e));
+              _v$5 !== _p$.t && (_p$.t = _$setProp11(_el$15, "fg", _v$5, _p$.t));
               return _p$;
             }, {
               e: undefined,
@@ -18454,36 +18784,36 @@ function CanvasPage(props) {
             });
             return _el$12;
           }
-        }), _$createComponent(Match3, {
+        }), _$createComponent8(Match3, {
           get when() {
             return content.loading;
           },
           get children() {
-            var _el$16 = _$createElement("text");
-            _$insertNode(_el$16, _$createTextNode(`Loading artifact...`));
-            _$effect((_$p) => _$setProp(_el$16, "fg", theme.text.muted, _$p));
+            var _el$16 = _$createElement11("text");
+            _$insertNode4(_el$16, _$createTextNode3(`Loading artifact...`));
+            _$effect9((_$p) => _$setProp11(_el$16, "fg", theme.text.muted, _$p));
             return _el$16;
           }
-        }), _$createComponent(Match3, {
+        }), _$createComponent8(Match3, {
           get when() {
             return loaded()?.value !== undefined;
           },
           get children() {
-            return _$createComponent(Show5, {
+            return _$createComponent8(Show4, {
               get when() {
                 return mode() === "rendered";
               },
               get fallback() {
                 return (() => {
-                  var _el$18 = _$createElement("text");
-                  _$setProp(_el$18, "wrapMode", "word");
-                  _$insert(_el$18, () => loaded().value);
-                  _$effect((_$p) => _$setProp(_el$18, "fg", theme.text.base, _$p));
+                  var _el$18 = _$createElement11("text");
+                  _$setProp11(_el$18, "wrapMode", "word");
+                  _$insert9(_el$18, () => loaded().value);
+                  _$effect9((_$p) => _$setProp11(_el$18, "fg", theme.text.base, _$p));
                   return _el$18;
                 })();
               },
               get children() {
-                return _$createComponent(MarkdownRenderer, {
+                return _$createComponent8(MarkdownRenderer, {
                   document,
                   get renderer() {
                     return props.context.renderer;
@@ -18517,16 +18847,16 @@ function CanvasPage(props) {
         })];
       }
     }));
-    _$effect((_p$) => {
+    _$effect9((_p$) => {
       var _v$6 = theme.background.base, _v$7 = props.presentation === "panel" ? ["left"] : false, _v$8 = theme.border.base, _v$9 = theme.decrease(theme.background.base), _v$0 = theme.text.base, _v$1 = TextAttributes6.BOLD, _v$10 = theme.text.muted, _v$11 = theme.text.muted;
-      _v$6 !== _p$.e && (_p$.e = _$setProp(_el$, "backgroundColor", _v$6, _p$.e));
-      _v$7 !== _p$.t && (_p$.t = _$setProp(_el$, "border", _v$7, _p$.t));
-      _v$8 !== _p$.a && (_p$.a = _$setProp(_el$, "borderColor", _v$8, _p$.a));
-      _v$9 !== _p$.o && (_p$.o = _$setProp(_el$2, "borderColor", _v$9, _p$.o));
-      _v$0 !== _p$.i && (_p$.i = _$setProp(_el$3, "fg", _v$0, _p$.i));
-      _v$1 !== _p$.n && (_p$.n = _$setProp(_el$3, "attributes", _v$1, _p$.n));
-      _v$10 !== _p$.s && (_p$.s = _$setProp(_el$6, "fg", _v$10, _p$.s));
-      _v$11 !== _p$.h && (_p$.h = _$setProp(_el$7, "fg", _v$11, _p$.h));
+      _v$6 !== _p$.e && (_p$.e = _$setProp11(_el$, "backgroundColor", _v$6, _p$.e));
+      _v$7 !== _p$.t && (_p$.t = _$setProp11(_el$, "border", _v$7, _p$.t));
+      _v$8 !== _p$.a && (_p$.a = _$setProp11(_el$, "borderColor", _v$8, _p$.a));
+      _v$9 !== _p$.o && (_p$.o = _$setProp11(_el$2, "borderColor", _v$9, _p$.o));
+      _v$0 !== _p$.i && (_p$.i = _$setProp11(_el$3, "fg", _v$0, _p$.i));
+      _v$1 !== _p$.n && (_p$.n = _$setProp11(_el$3, "attributes", _v$1, _p$.n));
+      _v$10 !== _p$.s && (_p$.s = _$setProp11(_el$6, "fg", _v$10, _p$.s));
+      _v$11 !== _p$.h && (_p$.h = _$setProp11(_el$7, "fg", _v$11, _p$.h));
       return _p$;
     }, {
       e: undefined,
@@ -18553,29 +18883,29 @@ function CanvasReviewUnit(props) {
   const active = () => props.phase() === "review" && index() === props.cursor();
   const commented = () => activeRails().length > 0;
   return [(() => {
-    var _el$19 = _$createElement("box"), _el$20 = _$createElement("box");
-    _$insertNode(_el$19, _el$20);
-    _$setProp(_el$19, "width", "100%");
-    _$setProp(_el$19, "flexDirection", "row");
-    _$setProp(_el$20, "flexGrow", 1);
-    _$setProp(_el$20, "minWidth", 0);
-    _$setProp(_el$20, "flexDirection", "column");
-    _$insert(_el$20, _$createComponent(Show5, {
+    var _el$19 = _$createElement11("box"), _el$20 = _$createElement11("box");
+    _$insertNode4(_el$19, _el$20);
+    _$setProp11(_el$19, "width", "100%");
+    _$setProp11(_el$19, "flexDirection", "row");
+    _$setProp11(_el$20, "flexGrow", 1);
+    _$setProp11(_el$20, "minWidth", 0);
+    _$setProp11(_el$20, "flexDirection", "column");
+    _$insert9(_el$20, _$createComponent8(Show4, {
       get when() {
         return activeRails().some((rail) => rail.start === index());
       },
       get children() {
-        var _el$21 = _$createElement("box"), _el$22 = _$createElement("text"), _el$23 = _$createTextNode(`comment `);
-        _$insertNode(_el$21, _el$22);
-        _$setProp(_el$21, "width", "100%");
-        _$setProp(_el$21, "flexDirection", "row");
-        _$setProp(_el$21, "justifyContent", "flex-end");
-        _$insertNode(_el$22, _el$23);
-        _$insert(_el$22, () => activeRails().filter((rail) => rail.start === index()).map((rail) => `#${(props.review()?.comments.indexOf(rail.comment) ?? -1) + 1}`).join(", "), null);
-        _$effect((_p$) => {
+        var _el$21 = _$createElement11("box"), _el$22 = _$createElement11("text"), _el$23 = _$createTextNode3(`comment `);
+        _$insertNode4(_el$21, _el$22);
+        _$setProp11(_el$21, "width", "100%");
+        _$setProp11(_el$21, "flexDirection", "row");
+        _$setProp11(_el$21, "justifyContent", "flex-end");
+        _$insertNode4(_el$22, _el$23);
+        _$insert9(_el$22, () => activeRails().filter((rail) => rail.start === index()).map((rail) => `#${(props.review()?.comments.indexOf(rail.comment) ?? -1) + 1}`).join(", "), null);
+        _$effect9((_p$) => {
           var _v$12 = colors().comment, _v$13 = TextAttributes6.BOLD;
-          _v$12 !== _p$.e && (_p$.e = _$setProp(_el$22, "fg", _v$12, _p$.e));
-          _v$13 !== _p$.t && (_p$.t = _$setProp(_el$22, "attributes", _v$13, _p$.t));
+          _v$12 !== _p$.e && (_p$.e = _$setProp11(_el$22, "fg", _v$12, _p$.e));
+          _v$13 !== _p$.t && (_p$.t = _$setProp11(_el$22, "attributes", _v$13, _p$.t));
           return _p$;
         }, {
           e: undefined,
@@ -18584,23 +18914,23 @@ function CanvasReviewUnit(props) {
         return _el$21;
       }
     }), null);
-    _$insert(_el$20, () => props.rendered, null);
-    _$insert(_el$20, _$createComponent(Show5, {
+    _$insert9(_el$20, () => props.rendered, null);
+    _$insert9(_el$20, _$createComponent8(Show4, {
       get when() {
         return active();
       },
       get children() {
-        var _el$24 = _$createElement("box"), _el$25 = _$createElement("text");
-        _$insertNode(_el$24, _el$25);
-        _$setProp(_el$24, "paddingLeft", 1);
-        _$setProp(_el$24, "paddingRight", 1);
-        _$setProp(_el$24, "flexDirection", "row");
-        _$setProp(_el$24, "justifyContent", "flex-end");
-        _$insertNode(_el$25, _$createTextNode(`review cursor`));
-        _$effect((_p$) => {
+        var _el$24 = _$createElement11("box"), _el$25 = _$createElement11("text");
+        _$insertNode4(_el$24, _el$25);
+        _$setProp11(_el$24, "paddingLeft", 1);
+        _$setProp11(_el$24, "paddingRight", 1);
+        _$setProp11(_el$24, "flexDirection", "row");
+        _$setProp11(_el$24, "justifyContent", "flex-end");
+        _$insertNode4(_el$25, _$createTextNode3(`review cursor`));
+        _$effect9((_p$) => {
           var _v$14 = colors().comment, _v$15 = TextAttributes6.BOLD;
-          _v$14 !== _p$.e && (_p$.e = _$setProp(_el$25, "fg", _v$14, _p$.e));
-          _v$15 !== _p$.t && (_p$.t = _$setProp(_el$25, "attributes", _v$15, _p$.t));
+          _v$14 !== _p$.e && (_p$.e = _$setProp11(_el$25, "fg", _v$14, _p$.e));
+          _v$15 !== _p$.t && (_p$.t = _$setProp11(_el$25, "attributes", _v$15, _p$.t));
           return _p$;
         }, {
           e: undefined,
@@ -18609,7 +18939,7 @@ function CanvasReviewUnit(props) {
         return _el$24;
       }
     }), null);
-    _$insert(_el$19, _$createComponent(CanvasCommentRails, {
+    _$insert9(_el$19, _$createComponent8(CanvasCommentRails, {
       get theme() {
         return props.theme;
       },
@@ -18618,11 +18948,11 @@ function CanvasReviewUnit(props) {
       },
       rails: activeRails
     }), null);
-    _$effect((_p$) => {
+    _$effect9((_p$) => {
       var _v$16 = selected() ? colors().selection : commented() ? colors().commentBackground : undefined, _v$17 = active() ? ["top", "right", "bottom", "left"] : undefined, _v$18 = active() ? colors().cursor : undefined;
-      _v$16 !== _p$.e && (_p$.e = _$setProp(_el$20, "backgroundColor", _v$16, _p$.e));
-      _v$17 !== _p$.t && (_p$.t = _$setProp(_el$20, "border", _v$17, _p$.t));
-      _v$18 !== _p$.a && (_p$.a = _$setProp(_el$20, "borderColor", _v$18, _p$.a));
+      _v$16 !== _p$.e && (_p$.e = _$setProp11(_el$20, "backgroundColor", _v$16, _p$.e));
+      _v$17 !== _p$.t && (_p$.t = _$setProp11(_el$20, "border", _v$17, _p$.t));
+      _v$18 !== _p$.a && (_p$.a = _$setProp11(_el$20, "borderColor", _v$18, _p$.a));
       return _p$;
     }, {
       e: undefined,
@@ -18630,18 +18960,18 @@ function CanvasReviewUnit(props) {
       a: undefined
     });
     return _el$19;
-  })(), _$createComponent(For4, {
+  })(), _$createComponent8(For4, {
     get each() {
       return endingRails();
     },
     children: (rail) => (() => {
-      var _el$27 = _$createElement("box"), _el$28 = _$createElement("box");
-      _$insertNode(_el$27, _el$28);
-      _$setProp(_el$27, "width", "100%");
-      _$setProp(_el$27, "flexDirection", "row");
-      _$setProp(_el$28, "flexGrow", 1);
-      _$setProp(_el$28, "minWidth", 0);
-      _$insert(_el$28, _$createComponent(CanvasCommentCard, {
+      var _el$27 = _$createElement11("box"), _el$28 = _$createElement11("box");
+      _$insertNode4(_el$27, _el$28);
+      _$setProp11(_el$27, "width", "100%");
+      _$setProp11(_el$27, "flexDirection", "row");
+      _$setProp11(_el$28, "flexGrow", 1);
+      _$setProp11(_el$28, "minWidth", 0);
+      _$insert9(_el$28, _$createComponent8(CanvasCommentCard, {
         get theme() {
           return props.theme;
         },
@@ -18658,7 +18988,7 @@ function CanvasReviewUnit(props) {
           return props.onEdit;
         }
       }));
-      _$insert(_el$27, _$createComponent(CanvasCommentRails, {
+      _$insert9(_el$27, _$createComponent8(CanvasCommentRails, {
         get theme() {
           return props.theme;
         },
@@ -18675,56 +19005,56 @@ function CanvasReviewUnit(props) {
 function CanvasCommentRails(props) {
   const colors = () => canvasReviewColors(props.theme);
   return (() => {
-    var _el$29 = _$createElement("box");
-    _$setProp(_el$29, "flexShrink", 0);
-    _$setProp(_el$29, "flexDirection", "row");
-    _$insert(_el$29, _$createComponent(For4, {
+    var _el$29 = _$createElement11("box");
+    _$setProp11(_el$29, "flexShrink", 0);
+    _$setProp11(_el$29, "flexDirection", "row");
+    _$insert9(_el$29, _$createComponent8(For4, {
       get each() {
         return Array.from({
           length: props.columns()
         }, (_, column) => column);
       },
-      children: (column) => _$createComponent(Show5, {
+      children: (column) => _$createComponent8(Show4, {
         get when() {
           return props.connector?.() === column;
         },
         get fallback() {
-          return _$createComponent(Show5, {
+          return _$createComponent8(Show4, {
             get when() {
               return props.rails().some((rail) => rail.column === column);
             },
             get fallback() {
               return (() => {
-                var _el$35 = _$createElement("box");
-                _$setProp(_el$35, "width", 1);
+                var _el$35 = _$createElement11("box");
+                _$setProp11(_el$35, "width", 1);
                 return _el$35;
               })();
             },
             get children() {
-              var _el$34 = _$createElement("box");
-              _$setProp(_el$34, "width", 1);
-              _$setProp(_el$34, "height", "100%");
-              _$setProp(_el$34, "border", ["left"]);
-              _$effect((_$p) => _$setProp(_el$34, "borderColor", colors().comment, _$p));
+              var _el$34 = _$createElement11("box");
+              _$setProp11(_el$34, "width", 1);
+              _$setProp11(_el$34, "height", "100%");
+              _$setProp11(_el$34, "border", ["left"]);
+              _$effect9((_$p) => _$setProp11(_el$34, "borderColor", colors().comment, _$p));
               return _el$34;
             }
           });
         },
         get children() {
-          var _el$30 = _$createElement("box"), _el$31 = _$createElement("text"), _el$33 = _$createElement("box");
-          _$insertNode(_el$30, _el$31);
-          _$insertNode(_el$30, _el$33);
-          _$setProp(_el$30, "width", 1);
-          _$setProp(_el$30, "height", "100%");
-          _$setProp(_el$30, "flexDirection", "column");
-          _$insertNode(_el$31, _$createTextNode(`\u2524`));
-          _$setProp(_el$33, "flexGrow", 1);
-          _$setProp(_el$33, "minHeight", 0);
-          _$setProp(_el$33, "border", ["left"]);
-          _$effect((_p$) => {
+          var _el$30 = _$createElement11("box"), _el$31 = _$createElement11("text"), _el$33 = _$createElement11("box");
+          _$insertNode4(_el$30, _el$31);
+          _$insertNode4(_el$30, _el$33);
+          _$setProp11(_el$30, "width", 1);
+          _$setProp11(_el$30, "height", "100%");
+          _$setProp11(_el$30, "flexDirection", "column");
+          _$insertNode4(_el$31, _$createTextNode3(`\u2524`));
+          _$setProp11(_el$33, "flexGrow", 1);
+          _$setProp11(_el$33, "minHeight", 0);
+          _$setProp11(_el$33, "border", ["left"]);
+          _$effect9((_p$) => {
             var _v$19 = colors().comment, _v$20 = colors().comment;
-            _v$19 !== _p$.e && (_p$.e = _$setProp(_el$31, "fg", _v$19, _p$.e));
-            _v$20 !== _p$.t && (_p$.t = _$setProp(_el$33, "borderColor", _v$20, _p$.t));
+            _v$19 !== _p$.e && (_p$.e = _$setProp11(_el$31, "fg", _v$19, _p$.e));
+            _v$20 !== _p$.t && (_p$.t = _$setProp11(_el$33, "borderColor", _v$20, _p$.t));
             return _p$;
           }, {
             e: undefined,
@@ -18734,60 +19064,60 @@ function CanvasCommentRails(props) {
         }
       })
     }));
-    _$effect((_$p) => _$setProp(_el$29, "width", props.columns(), _$p));
+    _$effect9((_$p) => _$setProp11(_el$29, "width", props.columns(), _$p));
     return _el$29;
   })();
 }
 function CanvasCommentCard(props) {
   const colors = () => canvasReviewColors(props.theme);
   return (() => {
-    var _el$36 = _$createElement("box"), _el$37 = _$createElement("box"), _el$38 = _$createElement("box"), _el$39 = _$createElement("text"), _el$40 = _$createTextNode(`#`), _el$41 = _$createTextNode(` `), _el$42 = _$createElement("text"), _el$44 = _$createElement("box"), _el$45 = _$createElement("text"), _el$47 = _$createElement("text");
-    _$insertNode(_el$36, _el$37);
-    _$insertNode(_el$36, _el$44);
-    _$setProp(_el$36, "paddingLeft", 1);
-    _$setProp(_el$36, "flexDirection", "column");
-    _$insertNode(_el$37, _el$38);
-    _$insertNode(_el$37, _el$42);
-    _$setProp(_el$37, "width", "100%");
-    _$setProp(_el$37, "flexDirection", "row");
-    _$insertNode(_el$38, _el$39);
-    _$setProp(_el$38, "flexGrow", 1);
-    _$setProp(_el$38, "minWidth", 0);
-    _$setProp(_el$38, "paddingLeft", 1);
-    _$setProp(_el$38, "paddingRight", 1);
-    _$setProp(_el$38, "flexDirection", "row");
-    _$setProp(_el$38, "justifyContent", "flex-end");
-    _$setProp(_el$38, "border", ["top", "right", "bottom", "left"]);
-    _$insertNode(_el$39, _el$40);
-    _$insertNode(_el$39, _el$41);
-    _$setProp(_el$39, "wrapMode", "word");
-    _$setProp(_el$39, "flexShrink", 1);
-    _$insert(_el$39, () => props.number + 1, _el$41);
-    _$insert(_el$39, () => props.comment.message, null);
-    _$insertNode(_el$42, _$createTextNode(`\u2500\u2500\u2500`));
-    _$setProp(_el$42, "width", 3);
-    _$insertNode(_el$44, _el$45);
-    _$insertNode(_el$44, _el$47);
-    _$setProp(_el$44, "paddingTop", 1);
-    _$setProp(_el$44, "paddingRight", 1);
-    _$setProp(_el$44, "gap", 1);
-    _$setProp(_el$44, "flexDirection", "row");
-    _$setProp(_el$44, "justifyContent", "flex-end");
-    _$insertNode(_el$45, _$createTextNode(`edit`));
-    _$setProp(_el$45, "flexShrink", 0);
-    _$setProp(_el$45, "onMouseUp", () => props.onEdit(props.comment.id));
-    _$insertNode(_el$47, _$createTextNode(`delete`));
-    _$setProp(_el$47, "flexShrink", 0);
-    _$setProp(_el$47, "onMouseUp", () => props.onDelete(props.comment.id));
-    _$effect((_p$) => {
+    var _el$36 = _$createElement11("box"), _el$37 = _$createElement11("box"), _el$38 = _$createElement11("box"), _el$39 = _$createElement11("text"), _el$40 = _$createTextNode3(`#`), _el$41 = _$createTextNode3(` `), _el$42 = _$createElement11("text"), _el$44 = _$createElement11("box"), _el$45 = _$createElement11("text"), _el$47 = _$createElement11("text");
+    _$insertNode4(_el$36, _el$37);
+    _$insertNode4(_el$36, _el$44);
+    _$setProp11(_el$36, "paddingLeft", 1);
+    _$setProp11(_el$36, "flexDirection", "column");
+    _$insertNode4(_el$37, _el$38);
+    _$insertNode4(_el$37, _el$42);
+    _$setProp11(_el$37, "width", "100%");
+    _$setProp11(_el$37, "flexDirection", "row");
+    _$insertNode4(_el$38, _el$39);
+    _$setProp11(_el$38, "flexGrow", 1);
+    _$setProp11(_el$38, "minWidth", 0);
+    _$setProp11(_el$38, "paddingLeft", 1);
+    _$setProp11(_el$38, "paddingRight", 1);
+    _$setProp11(_el$38, "flexDirection", "row");
+    _$setProp11(_el$38, "justifyContent", "flex-end");
+    _$setProp11(_el$38, "border", ["top", "right", "bottom", "left"]);
+    _$insertNode4(_el$39, _el$40);
+    _$insertNode4(_el$39, _el$41);
+    _$setProp11(_el$39, "wrapMode", "word");
+    _$setProp11(_el$39, "flexShrink", 1);
+    _$insert9(_el$39, () => props.number + 1, _el$41);
+    _$insert9(_el$39, () => props.comment.message, null);
+    _$insertNode4(_el$42, _$createTextNode3(`\u2500\u2500\u2500`));
+    _$setProp11(_el$42, "width", 3);
+    _$insertNode4(_el$44, _el$45);
+    _$insertNode4(_el$44, _el$47);
+    _$setProp11(_el$44, "paddingTop", 1);
+    _$setProp11(_el$44, "paddingRight", 1);
+    _$setProp11(_el$44, "gap", 1);
+    _$setProp11(_el$44, "flexDirection", "row");
+    _$setProp11(_el$44, "justifyContent", "flex-end");
+    _$insertNode4(_el$45, _$createTextNode3(`edit`));
+    _$setProp11(_el$45, "flexShrink", 0);
+    _$setProp11(_el$45, "onMouseUp", () => props.onEdit(props.comment.id));
+    _$insertNode4(_el$47, _$createTextNode3(`delete`));
+    _$setProp11(_el$47, "flexShrink", 0);
+    _$setProp11(_el$47, "onMouseUp", () => props.onDelete(props.comment.id));
+    _$effect9((_p$) => {
       var _v$21 = colors().commentBackground, _v$22 = colors().comment, _v$23 = props.theme.text.base, _v$24 = TextAttributes6.BOLD, _v$25 = colors().comment, _v$26 = props.theme.text.muted, _v$27 = props.theme.text.muted;
-      _v$21 !== _p$.e && (_p$.e = _$setProp(_el$36, "backgroundColor", _v$21, _p$.e));
-      _v$22 !== _p$.t && (_p$.t = _$setProp(_el$38, "borderColor", _v$22, _p$.t));
-      _v$23 !== _p$.a && (_p$.a = _$setProp(_el$39, "fg", _v$23, _p$.a));
-      _v$24 !== _p$.o && (_p$.o = _$setProp(_el$39, "attributes", _v$24, _p$.o));
-      _v$25 !== _p$.i && (_p$.i = _$setProp(_el$42, "fg", _v$25, _p$.i));
-      _v$26 !== _p$.n && (_p$.n = _$setProp(_el$45, "fg", _v$26, _p$.n));
-      _v$27 !== _p$.s && (_p$.s = _$setProp(_el$47, "fg", _v$27, _p$.s));
+      _v$21 !== _p$.e && (_p$.e = _$setProp11(_el$36, "backgroundColor", _v$21, _p$.e));
+      _v$22 !== _p$.t && (_p$.t = _$setProp11(_el$38, "borderColor", _v$22, _p$.t));
+      _v$23 !== _p$.a && (_p$.a = _$setProp11(_el$39, "fg", _v$23, _p$.a));
+      _v$24 !== _p$.o && (_p$.o = _$setProp11(_el$39, "attributes", _v$24, _p$.o));
+      _v$25 !== _p$.i && (_p$.i = _$setProp11(_el$42, "fg", _v$25, _p$.i));
+      _v$26 !== _p$.n && (_p$.n = _$setProp11(_el$45, "fg", _v$26, _p$.n));
+      _v$27 !== _p$.s && (_p$.s = _$setProp11(_el$47, "fg", _v$27, _p$.s));
       return _p$;
     }, {
       e: undefined,
@@ -18858,7 +19188,7 @@ var canvas_default = {
     });
     context.ui.router.register({
       name: "artifact-canvas",
-      render: () => _$createComponent(CanvasPage, {
+      render: () => _$createComponent8(CanvasPage, {
         context,
         file,
         onClose: () => context.ui.router.navigate(previous()),
@@ -18876,7 +19206,7 @@ var canvas_default = {
       render(input) {
         if (input.name !== "artifact-canvas")
           return null;
-        return _$createComponent(CanvasPage, {
+        return _$createComponent8(CanvasPage, {
           context,
           file,
           get onClose() {
