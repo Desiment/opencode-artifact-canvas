@@ -1,3 +1,4 @@
+import { createRequire } from "node:module"
 import { readdir, stat } from "node:fs/promises"
 import path from "node:path"
 
@@ -83,7 +84,7 @@ const localImage = contents.slice(contents.indexOf("function LocalImage"), conte
 if (localImage.includes("jsxDEV") || !localImage.includes("get children()")) {
   throw new Error("Release contains uncompiled dependency JSX that eagerly reads image media")
 }
-if (!localImage.includes('"alignItems", "center"')) {
+if (!localImage.includes('"alignSelf", "center"')) {
   throw new Error("Release does not center standalone images")
 }
 const documentView = contents.slice(contents.indexOf("function DocumentView"), contents.indexOf("function MarkdownRenderer"))
@@ -98,5 +99,11 @@ if (!archiveContents.includes("artifact-canvas/tui.js\n")) throw new Error("Arch
 if (archiveContents.includes("server.ts") || archiveContents.includes("tui.tsx")) {
   throw new Error("Archive contains development source")
 }
+
+const native = createRequire(import.meta.url)(path.join(output, "prebuilds/linux-x64-gnu/opentui_markdown_render.node")) as {
+  renderLatex(input: { latex: string; display?: boolean }): Promise<{ png: Uint8Array }>
+}
+const formula = await native.renderLatex({ latex: "x^2" })
+if (!formula.png.length) throw new Error("Release native math addon returned no image")
 
 process.stdout.write("Release archive is installable on Linux x64 glibc.\n")
