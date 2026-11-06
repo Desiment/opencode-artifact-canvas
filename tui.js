@@ -770,7 +770,7 @@ function stringWidth(string, options = {}) {
 import { parseColor } from "@opentui/core";
 import { RGBA } from "@opentui/core";
 import { RGBA as RGBA2 } from "@opentui/core";
-import { existsSync as existsSync2, readFileSync as readFileSync2, statSync as statSync2 } from "fs";
+import { existsSync as existsSync2, readFileSync as readFileSync2, readdirSync, statSync as statSync2 } from "fs";
 import os2 from "os";
 import path3 from "path";
 
@@ -5734,14 +5734,23 @@ function mergeMarkdownTheme(base, override) {
   return { ...merged, headingLevels };
 }
 var themeFileNames = [".jsonc", ".json"];
-function loadTheme(name, environment = { XDG_CONFIG_HOME: process.env.XDG_CONFIG_HOME, HOME: process.env.HOME }) {
-  if (!/^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(name))
-    return;
+function userThemeDirectory(environment) {
   const configured = environment.XDG_CONFIG_HOME;
   const configHome = configured && path3.isAbsolute(configured) ? configured : path3.join(environment.HOME || os2.homedir(), ".config");
+  return path3.join(configHome, "otmd", "themes");
+}
+function bundledThemeDirectories(bundleDirectory) {
+  return [
+    path3.resolve(bundleDirectory, "..", "..", "themes"),
+    path3.resolve(bundleDirectory, "..", "themes")
+  ];
+}
+function loadTheme(name, environment = { XDG_CONFIG_HOME: process.env.XDG_CONFIG_HOME, HOME: process.env.HOME }, bundleDirectory = import.meta.dir) {
+  if (!/^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(name))
+    return;
   const directories = [
-    path3.join(configHome, "otmd", "themes"),
-    path3.resolve(import.meta.dir, "..", "..", "themes")
+    userThemeDirectory(environment),
+    ...bundledThemeDirectories(bundleDirectory)
   ];
   for (const directory of directories) {
     for (const suffix of themeFileNames) {
@@ -5917,14 +5926,47 @@ function createMathDisplayExtension() {
     }
   };
 }
+function createMathDisplayBlockExtension() {
+  return {
+    name: "mathDisplayBlock",
+    level: "block",
+    start(src) {
+      const match = /\n(?= {0,3}(?:\$\$|\\\[))/.exec(src);
+      if (!match)
+        return;
+      return match.index + 1;
+    },
+    tokenizer(src) {
+      const match = /^( {0,3})(\$\$|\\\[)/.exec(src);
+      if (!match)
+        return;
+      const open = match[2];
+      const close = open === "$$" ? "$$" : "\\]";
+      const contentStart = match[0].length;
+      const end = closing(src, close, contentStart, false);
+      if (end <= contentStart)
+        return;
+      const content = src.slice(contentStart, end);
+      const raw = src.slice(0, end + close.length);
+      return {
+        type: "mathDisplayBlock",
+        raw,
+        text: content,
+        content,
+        open,
+        close
+      };
+    }
+  };
+}
 var parser = new B({
   gfm: true,
   breaks: false,
   async: false,
-  extensions: [createMathDisplayExtension(), createMathInlineExtension()]
+  extensions: [createMathDisplayBlockExtension(), createMathDisplayExtension(), createMathInlineExtension()]
 });
 function isDisplay(token) {
-  return token.type === "mathDisplay";
+  return token.type === "mathDisplay" || token.type === "mathDisplayBlock";
 }
 function isInlineMath(token) {
   return token.type === "mathInline";
