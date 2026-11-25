@@ -587,7 +587,7 @@ import { memo as _$memo6 } from "@opentui/solid";
 import { effect as _$effect9 } from "@opentui/solid";
 import { createComponent as _$createComponent8 } from "@opentui/solid";
 import { createTextNode as _$createTextNode3 } from "@opentui/solid";
-import { insertNode as _$insertNode4 } from "@opentui/solid";
+import { insertNode as _$insertNode5 } from "@opentui/solid";
 import { insert as _$insert9 } from "@opentui/solid";
 import { setProp as _$setProp11 } from "@opentui/solid";
 import { createElement as _$createElement11 } from "@opentui/solid";
@@ -2045,7 +2045,7 @@ import { setProp as _$setProp } from "@opentui/solid";
 import { spread as _$spread } from "@opentui/solid";
 import { mergeProps as _$mergeProps } from "@opentui/solid";
 import { createElement as _$createElement } from "@opentui/solid";
-import { insertNode as _$insertNode3 } from "@opentui/solid";
+import { insertNode as _$insertNode4 } from "@opentui/solid";
 import { memo as _$memo5 } from "@opentui/solid";
 import { effect as _$effect6 } from "@opentui/solid";
 import { insert as _$insert6 } from "@opentui/solid";
@@ -2067,6 +2067,7 @@ import { useRenderer } from "@opentui/solid";
 import path4 from "path";
 import { createEffect, createResource, createSignal as createSignal2, Match, onCleanup as onCleanup2, Switch } from "solid-js";
 import { effect as _$effect2 } from "@opentui/solid";
+import { insertNode as _$insertNode2 } from "@opentui/solid";
 import { setProp as _$setProp3 } from "@opentui/solid";
 import { createElement as _$createElement3 } from "@opentui/solid";
 import { infoStringToFiletype } from "@opentui/core";
@@ -2098,7 +2099,7 @@ import { memo as _$memo3 } from "@opentui/solid";
 import { createComponent as _$createComponent3 } from "@opentui/solid";
 import { effect as _$effect5 } from "@opentui/solid";
 import { createTextNode as _$createTextNode2 } from "@opentui/solid";
-import { insertNode as _$insertNode2 } from "@opentui/solid";
+import { insertNode as _$insertNode3 } from "@opentui/solid";
 import { setProp as _$setProp6 } from "@opentui/solid";
 import { createElement as _$createElement6 } from "@opentui/solid";
 import { createResource as createResource3, createSignal as createSignal4, Match as Match2, Switch as Switch2 } from "solid-js";
@@ -6660,25 +6661,35 @@ function CodeBlock(props) {
       renderer.idle().then(() => owned.destroy());
   });
   return (() => {
-    var _el$ = _$createElement3("code");
-    _$setProp3(_el$, "conceal", false);
-    _$setProp3(_el$, "drawUnstyledText", true);
-    _$setProp3(_el$, "streaming", false);
+    var _el$ = _$createElement3("box"), _el$2 = _$createElement3("code");
+    _$insertNode2(_el$, _el$2);
     _$setProp3(_el$, "width", "100%");
+    _$setProp3(_el$, "flexDirection", "column");
+    _$setProp3(_el$, "flexShrink", 0);
+    _$setProp3(_el$, "border", true);
+    _$setProp3(_el$, "borderStyle", "rounded");
+    _$setProp3(_el$, "paddingLeft", 1);
+    _$setProp3(_el$, "paddingRight", 1);
+    _$setProp3(_el$2, "conceal", false);
+    _$setProp3(_el$2, "drawUnstyledText", true);
+    _$setProp3(_el$2, "streaming", false);
+    _$setProp3(_el$2, "width", "100%");
     _$effect2((_p$) => {
-      var _v$ = props.content, _v$2 = resolveCodeFiletype(props.language), _v$3 = props.syntaxStyle ?? owned, _v$4 = props.theme.markdown.codeBlock, _v$5 = props.theme.background.base;
-      _v$ !== _p$.e && (_p$.e = _$setProp3(_el$, "content", _v$, _p$.e));
-      _v$2 !== _p$.t && (_p$.t = _$setProp3(_el$, "filetype", _v$2, _p$.t));
-      _v$3 !== _p$.a && (_p$.a = _$setProp3(_el$, "syntaxStyle", _v$3, _p$.a));
-      _v$4 !== _p$.o && (_p$.o = _$setProp3(_el$, "fg", _v$4, _p$.o));
-      _v$5 !== _p$.i && (_p$.i = _$setProp3(_el$, "bg", _v$5, _p$.i));
+      var _v$ = frameBorderColor(props.theme), _v$2 = props.content, _v$3 = resolveCodeFiletype(props.language), _v$4 = props.syntaxStyle ?? owned, _v$5 = props.theme.markdown.codeBlock, _v$6 = props.theme.background.base;
+      _v$ !== _p$.e && (_p$.e = _$setProp3(_el$, "borderColor", _v$, _p$.e));
+      _v$2 !== _p$.t && (_p$.t = _$setProp3(_el$2, "content", _v$2, _p$.t));
+      _v$3 !== _p$.a && (_p$.a = _$setProp3(_el$2, "filetype", _v$3, _p$.a));
+      _v$4 !== _p$.o && (_p$.o = _$setProp3(_el$2, "syntaxStyle", _v$4, _p$.o));
+      _v$5 !== _p$.i && (_p$.i = _$setProp3(_el$2, "fg", _v$5, _p$.i));
+      _v$6 !== _p$.n && (_p$.n = _$setProp3(_el$2, "bg", _v$6, _p$.n));
       return _p$;
     }, {
       e: undefined,
       t: undefined,
       a: undefined,
       o: undefined,
-      i: undefined
+      i: undefined,
+      n: undefined
     });
     return _el$;
   })();
@@ -7495,7 +7506,7 @@ function DisplayMath(props) {
           },
           get children() {
             var _el$2 = _$createElement6("text");
-            _$insertNode2(_el$2, _$createTextNode2(`Rendering math...`));
+            _$insertNode3(_el$2, _$createTextNode2(`Rendering math...`));
             _$setProp6(_el$2, "alignSelf", "center");
             _$effect5((_$p) => _$setProp6(_el$2, "fg", props.theme().text.muted, _$p));
             return _el$2;
@@ -7506,14 +7517,14 @@ function DisplayMath(props) {
           },
           get children() {
             var _el$4 = _$createElement6("box"), _el$5 = _$createElement6("text"), _el$7 = _$createElement6("text"), _el$8 = _$createElement6("text");
-            _$insertNode2(_el$4, _el$5);
-            _$insertNode2(_el$4, _el$7);
-            _$insertNode2(_el$4, _el$8);
+            _$insertNode3(_el$4, _el$5);
+            _$insertNode3(_el$4, _el$7);
+            _$insertNode3(_el$4, _el$8);
             _$setProp6(_el$4, "flexDirection", "column");
             _$setProp6(_el$4, "border", ["left"]);
             _$setProp6(_el$4, "paddingLeft", 1);
             _$setProp6(_el$4, "alignSelf", "center");
-            _$insertNode2(_el$5, _$createTextNode2(`Could not render TeX; showing source`));
+            _$insertNode3(_el$5, _$createTextNode2(`Could not render TeX; showing source`));
             _$setProp6(_el$7, "wrapMode", "word");
             _$insert4(_el$7, error);
             _$setProp6(_el$8, "wrapMode", "word");
@@ -7539,7 +7550,7 @@ function DisplayMath(props) {
           },
           get children() {
             var _el$9 = _$createElement6("box"), _el$0 = _$createElement6("image");
-            _$insertNode2(_el$9, _el$0);
+            _$insertNode3(_el$9, _el$0);
             _$setProp6(_el$9, "width", "100%");
             _$setProp6(_el$9, "flexShrink", 0);
             _$setProp6(_el$9, "alignItems", "center");
@@ -17508,7 +17519,7 @@ function DocumentView(props) {
           fg: props.theme.text.muted
         }] : undefined) : childIndex() === 0 ? (() => {
           var _el$7 = _$createElement8("box"), _el$8 = _$createElement8("text");
-          _$insertNode3(_el$7, _el$8);
+          _$insertNode4(_el$7, _el$8);
           _$setProp8(_el$7, "flexDirection", "row");
           _$setProp8(_el$7, "width", "100%");
           _$setProp8(_el$7, "flexShrink", 0);
@@ -18594,17 +18605,17 @@ function CanvasDetailsDialog(props) {
   }));
   return (() => {
     var _el$ = _$createElement11("box"), _el$2 = _$createElement11("box"), _el$3 = _$createElement11("text"), _el$4 = _$createElement11("text"), _el$6 = _$createElement11("box"), _el$7 = _$createElement11("box"), _el$8 = _$createElement11("text");
-    _$insertNode4(_el$, _el$2);
-    _$insertNode4(_el$, _el$6);
+    _$insertNode5(_el$, _el$2);
+    _$insertNode5(_el$, _el$6);
     _$setProp11(_el$, "paddingLeft", 2);
     _$setProp11(_el$, "paddingRight", 2);
     _$setProp11(_el$, "gap", 1);
-    _$insertNode4(_el$2, _el$3);
-    _$insertNode4(_el$2, _el$4);
+    _$insertNode5(_el$2, _el$3);
+    _$insertNode5(_el$2, _el$4);
     _$setProp11(_el$2, "flexDirection", "row");
     _$setProp11(_el$2, "justifyContent", "space-between");
     _$insert9(_el$3, () => props.title);
-    _$insertNode4(_el$4, _$createTextNode3(`esc`));
+    _$insertNode5(_el$4, _$createTextNode3(`esc`));
     _$setProp11(_el$4, "onMouseUp", close);
     _$insert9(_el$, _$createComponent8(For4, {
       get each() {
@@ -18614,7 +18625,7 @@ function CanvasDetailsDialog(props) {
         const labelWidth = Math.max(10, ...section.rows.map((row) => row.label.length + 2));
         return (() => {
           var _el$0 = _$createElement11("box"), _el$1 = _$createElement11("text");
-          _$insertNode4(_el$0, _el$1);
+          _$insertNode5(_el$0, _el$1);
           _$setProp11(_el$0, "flexDirection", "column");
           _$insert9(_el$1, () => section.title);
           _$insert9(_el$0, _$createComponent8(For4, {
@@ -18623,8 +18634,8 @@ function CanvasDetailsDialog(props) {
             },
             children: (row) => (() => {
               var _el$10 = _$createElement11("box"), _el$11 = _$createElement11("text"), _el$12 = _$createElement11("text");
-              _$insertNode4(_el$10, _el$11);
-              _$insertNode4(_el$10, _el$12);
+              _$insertNode5(_el$10, _el$11);
+              _$insertNode5(_el$10, _el$12);
               _$setProp11(_el$10, "flexDirection", "row");
               _$setProp11(_el$10, "width", "100%");
               _$setProp11(_el$11, "width", labelWidth);
@@ -18661,15 +18672,15 @@ function CanvasDetailsDialog(props) {
         })();
       }
     }), _el$6);
-    _$insertNode4(_el$6, _el$7);
+    _$insertNode5(_el$6, _el$7);
     _$setProp11(_el$6, "flexDirection", "row");
     _$setProp11(_el$6, "justifyContent", "flex-end");
     _$setProp11(_el$6, "paddingBottom", 1);
-    _$insertNode4(_el$7, _el$8);
+    _$insertNode5(_el$7, _el$8);
     _$setProp11(_el$7, "paddingLeft", 3);
     _$setProp11(_el$7, "paddingRight", 3);
     _$setProp11(_el$7, "onMouseUp", close);
-    _$insertNode4(_el$8, _$createTextNode3(`close`));
+    _$insertNode5(_el$8, _$createTextNode3(`close`));
     _$effect9((_p$) => {
       var _v$ = theme.text.base, _v$2 = TextAttributes6.BOLD, _v$3 = theme.text.muted, _v$4 = theme.background.action.primary.focused, _v$5 = theme.text.action.primary.focused;
       _v$ !== _p$.e && (_p$.e = _$setProp11(_el$3, "fg", _v$, _p$.e));
@@ -19126,16 +19137,16 @@ function CanvasPage(props) {
   });
   return (() => {
     var _el$13 = _$createElement11("box"), _el$14 = _$createElement11("box"), _el$15 = _$createElement11("text"), _el$16 = _$createElement11("text"), _el$18 = _$createElement11("scrollbox");
-    _$insertNode4(_el$13, _el$14);
-    _$insertNode4(_el$13, _el$18);
+    _$insertNode5(_el$13, _el$14);
+    _$insertNode5(_el$13, _el$18);
     _$setProp11(_el$13, "width", "100%");
     _$setProp11(_el$13, "height", "100%");
     _$setProp11(_el$13, "flexDirection", "column");
     _$setProp11(_el$13, "onSizeChange", function() {
       setWidth(this.width);
     });
-    _$insertNode4(_el$14, _el$15);
-    _$insertNode4(_el$14, _el$16);
+    _$insertNode5(_el$14, _el$15);
+    _$insertNode5(_el$14, _el$16);
     _$setProp11(_el$14, "flexShrink", 0);
     _$setProp11(_el$14, "flexDirection", "row");
     _$setProp11(_el$14, "gap", 1);
@@ -19147,7 +19158,7 @@ function CanvasPage(props) {
     _$setProp11(_el$15, "wrapMode", "none");
     _$setProp11(_el$15, "truncate", true);
     _$insert9(_el$15, label);
-    _$insertNode4(_el$16, _$createTextNode3(`h help q quit`));
+    _$insertNode5(_el$16, _$createTextNode3(`h help q quit`));
     _$setProp11(_el$16, "flexShrink", 0);
     _$setProp11(_el$18, "flexGrow", 1);
     _$setProp11(_el$18, "contentOptions", {
@@ -19165,14 +19176,14 @@ function CanvasPage(props) {
           },
           get children() {
             var _el$19 = _$createElement11("box"), _el$20 = _$createElement11("text"), _el$22 = _$createElement11("text"), _el$24 = _$createElement11("text");
-            _$insertNode4(_el$19, _el$20);
-            _$insertNode4(_el$19, _el$22);
-            _$insertNode4(_el$19, _el$24);
+            _$insertNode5(_el$19, _el$20);
+            _$insertNode5(_el$19, _el$22);
+            _$insertNode5(_el$19, _el$24);
             _$setProp11(_el$19, "flexDirection", "column");
             _$setProp11(_el$19, "gap", 1);
-            _$insertNode4(_el$20, _$createTextNode3(`Open a Markdown artifact with /canvas path/to/file.md`));
-            _$insertNode4(_el$22, _$createTextNode3(`Press o to browse the project's artifacts.`));
-            _$insertNode4(_el$24, _$createTextNode3(`Rendered mode supports Markdown, math, Mermaid, tables, and local images.`));
+            _$insertNode5(_el$20, _$createTextNode3(`Open a Markdown artifact with /canvas path/to/file.md`));
+            _$insertNode5(_el$22, _$createTextNode3(`Press o to browse the project's artifacts.`));
+            _$insertNode5(_el$24, _$createTextNode3(`Rendered mode supports Markdown, math, Mermaid, tables, and local images.`));
             _$effect9((_p$) => {
               var _v$1 = theme.text.base, _v$10 = TextAttributes6.BOLD, _v$11 = theme.text.muted, _v$12 = theme.text.muted;
               _v$1 !== _p$.e && (_p$.e = _$setProp11(_el$20, "fg", _v$1, _p$.e));
@@ -19194,11 +19205,11 @@ function CanvasPage(props) {
           },
           get children() {
             var _el$26 = _$createElement11("box"), _el$27 = _$createElement11("text"), _el$29 = _$createElement11("text");
-            _$insertNode4(_el$26, _el$27);
-            _$insertNode4(_el$26, _el$29);
+            _$insertNode5(_el$26, _el$27);
+            _$insertNode5(_el$26, _el$29);
             _$setProp11(_el$26, "flexDirection", "column");
             _$setProp11(_el$26, "gap", 1);
-            _$insertNode4(_el$27, _$createTextNode3(`Could not load artifact`));
+            _$insertNode5(_el$27, _$createTextNode3(`Could not load artifact`));
             _$insert9(_el$29, () => loaded().error);
             _$effect9((_p$) => {
               var _v$13 = theme.text.feedback.error.base, _v$14 = theme.text.muted;
@@ -19217,7 +19228,7 @@ function CanvasPage(props) {
           },
           get children() {
             var _el$30 = _$createElement11("text");
-            _$insertNode4(_el$30, _$createTextNode3(`Loading artifact...`));
+            _$insertNode5(_el$30, _$createTextNode3(`Loading artifact...`));
             _$effect9((_$p) => _$setProp11(_el$30, "fg", theme.text.muted, _$p));
             return _el$30;
           }
@@ -19311,7 +19322,7 @@ function CanvasReviewUnit(props) {
   const commented = () => activeRails().length > 0;
   return [(() => {
     var _el$33 = _$createElement11("box"), _el$34 = _$createElement11("box");
-    _$insertNode4(_el$33, _el$34);
+    _$insertNode5(_el$33, _el$34);
     _$setProp11(_el$33, "width", "100%");
     _$setProp11(_el$33, "flexDirection", "row");
     _$setProp11(_el$34, "flexGrow", 1);
@@ -19323,11 +19334,11 @@ function CanvasReviewUnit(props) {
       },
       get children() {
         var _el$35 = _$createElement11("box"), _el$36 = _$createElement11("text"), _el$37 = _$createTextNode3(`comment `);
-        _$insertNode4(_el$35, _el$36);
+        _$insertNode5(_el$35, _el$36);
         _$setProp11(_el$35, "width", "100%");
         _$setProp11(_el$35, "flexDirection", "row");
         _$setProp11(_el$35, "justifyContent", "flex-end");
-        _$insertNode4(_el$36, _el$37);
+        _$insertNode5(_el$36, _el$37);
         _$insert9(_el$36, () => activeRails().filter((rail) => rail.start === index()).map((rail) => `#${(props.review()?.comments.indexOf(rail.comment) ?? -1) + 1}`).join(", "), null);
         _$effect9((_p$) => {
           var _v$21 = colors().comment, _v$22 = TextAttributes6.BOLD;
@@ -19348,12 +19359,12 @@ function CanvasReviewUnit(props) {
       },
       get children() {
         var _el$38 = _$createElement11("box"), _el$39 = _$createElement11("text");
-        _$insertNode4(_el$38, _el$39);
+        _$insertNode5(_el$38, _el$39);
         _$setProp11(_el$38, "paddingLeft", 1);
         _$setProp11(_el$38, "paddingRight", 1);
         _$setProp11(_el$38, "flexDirection", "row");
         _$setProp11(_el$38, "justifyContent", "flex-end");
-        _$insertNode4(_el$39, _$createTextNode3(`review cursor`));
+        _$insertNode5(_el$39, _$createTextNode3(`review cursor`));
         _$effect9((_p$) => {
           var _v$23 = colors().comment, _v$24 = TextAttributes6.BOLD;
           _v$23 !== _p$.e && (_p$.e = _$setProp11(_el$39, "fg", _v$23, _p$.e));
@@ -19393,7 +19404,7 @@ function CanvasReviewUnit(props) {
     },
     children: (rail) => (() => {
       var _el$41 = _$createElement11("box"), _el$42 = _$createElement11("box");
-      _$insertNode4(_el$41, _el$42);
+      _$insertNode5(_el$41, _el$42);
       _$setProp11(_el$41, "width", "100%");
       _$setProp11(_el$41, "flexDirection", "row");
       _$setProp11(_el$42, "flexGrow", 1);
@@ -19469,12 +19480,12 @@ function CanvasCommentRails(props) {
         },
         get children() {
           var _el$44 = _$createElement11("box"), _el$45 = _$createElement11("text"), _el$47 = _$createElement11("box");
-          _$insertNode4(_el$44, _el$45);
-          _$insertNode4(_el$44, _el$47);
+          _$insertNode5(_el$44, _el$45);
+          _$insertNode5(_el$44, _el$47);
           _$setProp11(_el$44, "width", 1);
           _$setProp11(_el$44, "height", "100%");
           _$setProp11(_el$44, "flexDirection", "column");
-          _$insertNode4(_el$45, _$createTextNode3(`\u2524`));
+          _$insertNode5(_el$45, _$createTextNode3(`\u2524`));
           _$setProp11(_el$47, "flexGrow", 1);
           _$setProp11(_el$47, "minHeight", 0);
           _$setProp11(_el$47, "border", ["left"]);
@@ -19499,15 +19510,15 @@ function CanvasCommentCard(props) {
   const colors = () => canvasReviewColors(props.theme);
   return (() => {
     var _el$50 = _$createElement11("box"), _el$51 = _$createElement11("box"), _el$52 = _$createElement11("box"), _el$53 = _$createElement11("text"), _el$54 = _$createTextNode3(`#`), _el$55 = _$createTextNode3(` `), _el$56 = _$createElement11("text"), _el$58 = _$createElement11("box"), _el$59 = _$createElement11("text"), _el$61 = _$createElement11("text");
-    _$insertNode4(_el$50, _el$51);
-    _$insertNode4(_el$50, _el$58);
+    _$insertNode5(_el$50, _el$51);
+    _$insertNode5(_el$50, _el$58);
     _$setProp11(_el$50, "paddingLeft", 1);
     _$setProp11(_el$50, "flexDirection", "column");
-    _$insertNode4(_el$51, _el$52);
-    _$insertNode4(_el$51, _el$56);
+    _$insertNode5(_el$51, _el$52);
+    _$insertNode5(_el$51, _el$56);
     _$setProp11(_el$51, "width", "100%");
     _$setProp11(_el$51, "flexDirection", "row");
-    _$insertNode4(_el$52, _el$53);
+    _$insertNode5(_el$52, _el$53);
     _$setProp11(_el$52, "flexGrow", 1);
     _$setProp11(_el$52, "minWidth", 0);
     _$setProp11(_el$52, "paddingLeft", 1);
@@ -19515,25 +19526,25 @@ function CanvasCommentCard(props) {
     _$setProp11(_el$52, "flexDirection", "row");
     _$setProp11(_el$52, "justifyContent", "flex-end");
     _$setProp11(_el$52, "border", ["top", "right", "bottom", "left"]);
-    _$insertNode4(_el$53, _el$54);
-    _$insertNode4(_el$53, _el$55);
+    _$insertNode5(_el$53, _el$54);
+    _$insertNode5(_el$53, _el$55);
     _$setProp11(_el$53, "wrapMode", "word");
     _$setProp11(_el$53, "flexShrink", 1);
     _$insert9(_el$53, () => props.number + 1, _el$55);
     _$insert9(_el$53, () => props.comment.message, null);
-    _$insertNode4(_el$56, _$createTextNode3(`\u2500\u2500\u2500`));
+    _$insertNode5(_el$56, _$createTextNode3(`\u2500\u2500\u2500`));
     _$setProp11(_el$56, "width", 3);
-    _$insertNode4(_el$58, _el$59);
-    _$insertNode4(_el$58, _el$61);
+    _$insertNode5(_el$58, _el$59);
+    _$insertNode5(_el$58, _el$61);
     _$setProp11(_el$58, "paddingTop", 1);
     _$setProp11(_el$58, "paddingRight", 1);
     _$setProp11(_el$58, "gap", 1);
     _$setProp11(_el$58, "flexDirection", "row");
     _$setProp11(_el$58, "justifyContent", "flex-end");
-    _$insertNode4(_el$59, _$createTextNode3(`edit`));
+    _$insertNode5(_el$59, _$createTextNode3(`edit`));
     _$setProp11(_el$59, "flexShrink", 0);
     _$setProp11(_el$59, "onMouseUp", () => props.onEdit(props.comment.id));
-    _$insertNode4(_el$61, _$createTextNode3(`delete`));
+    _$insertNode5(_el$61, _$createTextNode3(`delete`));
     _$setProp11(_el$61, "flexShrink", 0);
     _$setProp11(_el$61, "onMouseUp", () => props.onDelete(props.comment.id));
     _$effect9((_p$) => {
