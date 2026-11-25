@@ -23,6 +23,7 @@ import {
   type Accessor,
   type JSX,
 } from "solid-js"
+import { artifactExtensions, collectArtifactFiles, fuzzyFilterArtifacts } from "./picker"
 import {
   addReviewComment,
   assignCommentRails,
@@ -162,6 +163,7 @@ function CanvasPage(props: {
   context: Plugin.Context
   file: () => string | undefined
   onClose: () => void
+  openPicker: () => Promise<void>
   active?: () => boolean
   presentation: string
   sessionID?: () => string | undefined
@@ -261,11 +263,17 @@ function CanvasPage(props: {
     if (phase() === "review") discardReview()
     props.onClose()
   }
+  const openArtifactPicker = async () => {
+    if (!await requestReviewExit()) return
+    if (phase() === "review") discardReview()
+    await props.openPicker()
+  }
   const showHelp = () => {
     props.context.ui.dialog.show(() => <CanvasDetailsDialog context={props.context} title="Artifact Canvas help" sections={[
       { title: "GENERAL", rows: [
         { label: "h", value: "Show this help" },
         { label: "c", value: "Show Canvas configuration and runtime information" },
+        { label: "o", value: "Open the artifact picker to browse or switch artifacts" },
         { label: "q", value: "Close Canvas (asks first during review)" },
         { label: "Esc", value: "Cancel a visual selection, otherwise close Canvas" },
       ] },
@@ -373,6 +381,7 @@ function CanvasPage(props: {
           ? props.context.ui.toast.show({ variant: "warning", message: "Leave review mode before editing the artifact" })
           : void editArtifact(props.context, props.file(), cwd, refetch),
       },
+      { bind: "o", title: "open artifact picker", run: () => void openArtifactPicker() },
       { bind: "r", title: phase() === "review" ? "leave review" : "start review", run: () => phase() === "review" ? void leaveReview() : enterReview() },
       { bind: "q", title: "close canvas", run: () => void closeCanvas() },
       { bind: "h", title: "canvas help", run: () => void showHelp() },
@@ -435,6 +444,7 @@ function CanvasPage(props: {
           <Match when={!props.file()}>
             <box flexDirection="column" gap={1}>
               <text fg={theme.text.base} attributes={TextAttributes.BOLD}>Open a Markdown artifact with /canvas path/to/file.md</text>
+              <text fg={theme.text.muted}>Press o to browse the project's artifacts.</text>
               <text fg={theme.text.muted}>Rendered mode supports Markdown, math, Mermaid, tables, and local images.</text>
             </box>
           </Match>
@@ -568,6 +578,22 @@ function CanvasCommentCard(props: {
   </box>
 }
 
+async function selectArtifact(context: Plugin.Context): Promise<string | undefined> {
+  const root = context.location?.directory ?? process.cwd()
+  const extensions = artifactExtensions(context.options)
+  const files = collectArtifactFiles(root, extensions)
+  if (!files.length) {
+    context.ui.toast.show({ variant: "warning", message: `No ${extensions.join(", ")} files found under ${root}` })
+    return undefined
+  }
+  return await context.ui.dialog.select({
+    title: "Open artifact",
+    placeholder: "Search artifacts...",
+    options: files.map((file) => ({ title: path.relative(root, file) || file, value: file })),
+    search: fuzzyFilterArtifacts,
+  })
+}
+
 async function editArtifact(context: Plugin.Context, file: string | undefined, cwd: string, refetch: () => void) {
   if (!file) return
   const editor = process.env.VISUAL || process.env.EDITOR
@@ -602,10 +628,23 @@ export default {
     }
     const [file, setFile] = createSignal<string>()
     const [previous, setPrevious] = createSignal({ ...context.ui.router.current() })
+    const openCanvas = (artifact: string | undefined) => {
+      const current = context.ui.router.current()
+      setFile(artifact)
+      context.ui.dialog.clear()
+      if (context.ui.panel.open("artifact-canvas", { presentation: "panel" })) return
+      if (current.type === "session") context.ui.toast.show({ variant: "warning", message: "Canvas panel could not open; falling back to fullscreen" })
+      if (current.type !== "plugin" || current.name !== "artifact-canvas") setPrevious({ ...current })
+      context.ui.router.navigate({ type: "plugin", name: "artifact-canvas" })
+    }
+    const pickArtifact = async () => {
+      const picked = await selectArtifact(context)
+      if (picked) openCanvas(picked)
+    }
     context.ui.router.register({
       name: "artifact-canvas",
       render: () => <CanvasPage context={context} file={file} onClose={() => context.ui.router.navigate(previous())}
-        presentation="fullscreen" sessionID={() => {
+        openPicker={pickArtifact} presentation="fullscreen" sessionID={() => {
           const route = previous()
           return route.type === "session" ? route.sessionID : undefined
         }} />,
@@ -614,8 +653,8 @@ export default {
       append: "session.panel",
       render(input) {
         if (input.name !== "artifact-canvas") return null
-        return <CanvasPage context={context} file={file} onClose={input.close} active={() => input.focused}
-          presentation={input.presentation} sessionID={() => input.sessionID} />
+        return <CanvasPage context={context} file={file} onClose={input.close} openPicker={pickArtifact}
+          active={() => input.focused} presentation={input.presentation} sessionID={() => input.sessionID} />
       },
     })
     context.ui.slot({
@@ -630,14 +669,9 @@ export default {
             group: "System",
             palette: true,
             slash: { name: "canvas", arguments: true },
-            run(input?: string) {
-              const current = context.ui.router.current()
-              setFile(input?.trim() ? path.resolve(process.cwd(), input.trim()) : undefined)
-              context.ui.dialog.clear()
-              if (context.ui.panel.open("artifact-canvas", { presentation: "panel" })) return
-              if (current.type === "session") context.ui.toast.show({ variant: "warning", message: "Canvas panel could not open; falling back to fullscreen" })
-              if (current.type !== "plugin" || current.name !== "artifact-canvas") setPrevious({ ...current })
-              context.ui.router.navigate({ type: "plugin", name: "artifact-canvas" })
+            async run(input?: string) {
+              if (!input?.trim()) return pickArtifact()
+              openCanvas(path.resolve(process.cwd(), input.trim()))
             },
           }],
         }))

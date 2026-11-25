@@ -593,7 +593,7 @@ import { setProp as _$setProp11 } from "@opentui/solid";
 import { createElement as _$createElement11 } from "@opentui/solid";
 import { BaseRenderable, TextAttributes as TextAttributes6 } from "@opentui/core";
 import { spawn } from "child_process";
-import path5 from "path";
+import path6 from "path";
 
 // node_modules/opentui-markdown-render/dist/index.js
 import { effect as _$effect7 } from "@opentui/solid";
@@ -17827,6 +17827,102 @@ var defaultStatusLineFields = statusLineFields.filter((field) => field !== "text
 
 // src/canvas.tsx
 import { createEffect as createEffect5, createMemo as createMemo7, createResource as createResource4, createSignal as createSignal6, For as For4, Match as Match3, Show as Show4, Switch as Switch3 } from "solid-js";
+
+// src/picker.ts
+import { readdirSync as readdirSync2, statSync as statSync3 } from "fs";
+import path5 from "path";
+var DEFAULT_EXTENSIONS = [".md"];
+var SKIPPED_DIRECTORIES = new Set(["node_modules"]);
+var TITLE_BOUNDARIES = new Set(["/", "\\", "-", "_"]);
+function artifactExtensions(options) {
+  const configured = options.extensions;
+  const entries = typeof configured === "string" ? configured.split(",") : Array.isArray(configured) ? configured : undefined;
+  if (!entries)
+    return [...DEFAULT_EXTENSIONS];
+  const extensions = [];
+  for (const entry of entries) {
+    if (typeof entry !== "string")
+      continue;
+    const value = entry.trim().toLowerCase();
+    if (!value)
+      continue;
+    const extension = value.startsWith(".") ? value : `.${value}`;
+    if (!extensions.includes(extension))
+      extensions.push(extension);
+  }
+  return extensions.length ? extensions : [...DEFAULT_EXTENSIONS];
+}
+function collectArtifactFiles(root, extensions) {
+  const base = path5.resolve(root);
+  const wanted = new Set(extensions.map((extension) => extension.toLowerCase()));
+  const files = [];
+  const read = (directory) => {
+    try {
+      return readdirSync2(directory, { withFileTypes: true });
+    } catch {
+      return [];
+    }
+  };
+  const walk = (directory) => {
+    for (const entry of read(directory)) {
+      const entryPath = path5.join(directory, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name.startsWith(".") || SKIPPED_DIRECTORIES.has(entry.name))
+          continue;
+        walk(entryPath);
+        continue;
+      }
+      if (entry.isSymbolicLink()) {
+        let target;
+        try {
+          target = statSync3(entryPath);
+        } catch {
+          continue;
+        }
+        if (!target.isFile())
+          continue;
+      } else if (!entry.isFile()) {
+        continue;
+      }
+      if (wanted.has(path5.extname(entry.name).toLowerCase()))
+        files.push(entryPath);
+    }
+  };
+  walk(base);
+  const depth = (file) => path5.relative(base, file).split(path5.sep).length;
+  return files.sort((left, right) => depth(left) - depth(right) || (left < right ? -1 : left > right ? 1 : 0));
+}
+function subsequenceScore(query, title) {
+  const haystack = title.toLowerCase();
+  let score = 0;
+  let previous = -2;
+  let from = 0;
+  for (const character of query) {
+    const index = haystack.indexOf(character, from);
+    if (index < 0)
+      return;
+    score += 2;
+    if (index === previous + 1)
+      score += 4;
+    if (index === 0 || TITLE_BOUNDARIES.has(haystack[index - 1]))
+      score += 2;
+    previous = index;
+    from = index + 1;
+  }
+  return score;
+}
+function fuzzyFilterArtifacts(query, options) {
+  const needle = query.trim().toLowerCase();
+  if (!needle)
+    return options;
+  const matches = [];
+  options.forEach((option, order) => {
+    const score = subsequenceScore(needle, option.title);
+    if (score !== undefined)
+      matches.push({ option, score, order });
+  });
+  return matches.sort((left, right) => right.score - left.score || left.option.title.length - right.option.title.length || left.order - right.order).map((match) => match.option);
+}
 // node_modules/diff/libesm/diff/base.js
 class Diff {
   diff(oldStr, newStr, options = {}) {
@@ -18707,6 +18803,13 @@ function CanvasPage(props) {
       discardReview();
     props.onClose();
   };
+  const openArtifactPicker = async () => {
+    if (!await requestReviewExit())
+      return;
+    if (phase() === "review")
+      discardReview();
+    await props.openPicker();
+  };
   const showHelp = () => {
     props.context.ui.dialog.show(() => _$createComponent8(CanvasDetailsDialog, {
       get context() {
@@ -18722,6 +18825,9 @@ function CanvasPage(props) {
           }, {
             label: "c",
             value: "Show Canvas configuration and runtime information"
+          }, {
+            label: "o",
+            value: "Open the artifact picker to browse or switch artifacts"
           }, {
             label: "q",
             value: "Close Canvas (asks first during review)"
@@ -18931,6 +19037,10 @@ function CanvasPage(props) {
         message: "Leave review mode before editing the artifact"
       }) : void editArtifact(props.context, props.file(), cwd, refetch)
     }, {
+      bind: "o",
+      title: "open artifact picker",
+      run: () => void openArtifactPicker()
+    }, {
       bind: "r",
       title: phase() === "review" ? "leave review" : "start review",
       run: () => phase() === "review" ? void leaveReview() : enterReview()
@@ -18996,7 +19106,7 @@ function CanvasPage(props) {
   }));
   const label = () => {
     const file = props.file();
-    return file ? path5.relative(cwd, file) || file : "No artifact selected";
+    return file ? path6.relative(cwd, file) || file : "No artifact selected";
   };
   const selected = (info) => phase() === "review" && visualSelectionContains(units(), info, cursor(), visualStart());
   const commented = (info) => commentRangeContains(units(), info, rails());
@@ -19054,23 +19164,27 @@ function CanvasPage(props) {
             return !props.file();
           },
           get children() {
-            var _el$19 = _$createElement11("box"), _el$20 = _$createElement11("text"), _el$22 = _$createElement11("text");
+            var _el$19 = _$createElement11("box"), _el$20 = _$createElement11("text"), _el$22 = _$createElement11("text"), _el$24 = _$createElement11("text");
             _$insertNode4(_el$19, _el$20);
             _$insertNode4(_el$19, _el$22);
+            _$insertNode4(_el$19, _el$24);
             _$setProp11(_el$19, "flexDirection", "column");
             _$setProp11(_el$19, "gap", 1);
             _$insertNode4(_el$20, _$createTextNode3(`Open a Markdown artifact with /canvas path/to/file.md`));
-            _$insertNode4(_el$22, _$createTextNode3(`Rendered mode supports Markdown, math, Mermaid, tables, and local images.`));
+            _$insertNode4(_el$22, _$createTextNode3(`Press o to browse the project's artifacts.`));
+            _$insertNode4(_el$24, _$createTextNode3(`Rendered mode supports Markdown, math, Mermaid, tables, and local images.`));
             _$effect9((_p$) => {
-              var _v$1 = theme.text.base, _v$10 = TextAttributes6.BOLD, _v$11 = theme.text.muted;
+              var _v$1 = theme.text.base, _v$10 = TextAttributes6.BOLD, _v$11 = theme.text.muted, _v$12 = theme.text.muted;
               _v$1 !== _p$.e && (_p$.e = _$setProp11(_el$20, "fg", _v$1, _p$.e));
               _v$10 !== _p$.t && (_p$.t = _$setProp11(_el$20, "attributes", _v$10, _p$.t));
               _v$11 !== _p$.a && (_p$.a = _$setProp11(_el$22, "fg", _v$11, _p$.a));
+              _v$12 !== _p$.o && (_p$.o = _$setProp11(_el$24, "fg", _v$12, _p$.o));
               return _p$;
             }, {
               e: undefined,
               t: undefined,
-              a: undefined
+              a: undefined,
+              o: undefined
             });
             return _el$19;
           }
@@ -19079,33 +19193,33 @@ function CanvasPage(props) {
             return loaded()?.error;
           },
           get children() {
-            var _el$24 = _$createElement11("box"), _el$25 = _$createElement11("text"), _el$27 = _$createElement11("text");
-            _$insertNode4(_el$24, _el$25);
-            _$insertNode4(_el$24, _el$27);
-            _$setProp11(_el$24, "flexDirection", "column");
-            _$setProp11(_el$24, "gap", 1);
-            _$insertNode4(_el$25, _$createTextNode3(`Could not load artifact`));
-            _$insert9(_el$27, () => loaded().error);
+            var _el$26 = _$createElement11("box"), _el$27 = _$createElement11("text"), _el$29 = _$createElement11("text");
+            _$insertNode4(_el$26, _el$27);
+            _$insertNode4(_el$26, _el$29);
+            _$setProp11(_el$26, "flexDirection", "column");
+            _$setProp11(_el$26, "gap", 1);
+            _$insertNode4(_el$27, _$createTextNode3(`Could not load artifact`));
+            _$insert9(_el$29, () => loaded().error);
             _$effect9((_p$) => {
-              var _v$12 = theme.text.feedback.error.base, _v$13 = theme.text.muted;
-              _v$12 !== _p$.e && (_p$.e = _$setProp11(_el$25, "fg", _v$12, _p$.e));
-              _v$13 !== _p$.t && (_p$.t = _$setProp11(_el$27, "fg", _v$13, _p$.t));
+              var _v$13 = theme.text.feedback.error.base, _v$14 = theme.text.muted;
+              _v$13 !== _p$.e && (_p$.e = _$setProp11(_el$27, "fg", _v$13, _p$.e));
+              _v$14 !== _p$.t && (_p$.t = _$setProp11(_el$29, "fg", _v$14, _p$.t));
               return _p$;
             }, {
               e: undefined,
               t: undefined
             });
-            return _el$24;
+            return _el$26;
           }
         }), _$createComponent8(Match3, {
           get when() {
             return content.loading;
           },
           get children() {
-            var _el$28 = _$createElement11("text");
-            _$insertNode4(_el$28, _$createTextNode3(`Loading artifact...`));
-            _$effect9((_$p) => _$setProp11(_el$28, "fg", theme.text.muted, _$p));
-            return _el$28;
+            var _el$30 = _$createElement11("text");
+            _$insertNode4(_el$30, _$createTextNode3(`Loading artifact...`));
+            _$effect9((_$p) => _$setProp11(_el$30, "fg", theme.text.muted, _$p));
+            return _el$30;
           }
         }), _$createComponent8(Match3, {
           get when() {
@@ -19118,11 +19232,11 @@ function CanvasPage(props) {
               },
               get fallback() {
                 return (() => {
-                  var _el$30 = _$createElement11("text");
-                  _$setProp11(_el$30, "wrapMode", "word");
-                  _$insert9(_el$30, () => loaded().value);
-                  _$effect9((_$p) => _$setProp11(_el$30, "fg", theme.text.base, _$p));
-                  return _el$30;
+                  var _el$32 = _$createElement11("text");
+                  _$setProp11(_el$32, "wrapMode", "word");
+                  _$insert9(_el$32, () => loaded().value);
+                  _$effect9((_$p) => _$setProp11(_el$32, "fg", theme.text.base, _$p));
+                  return _el$32;
                 })();
               },
               get children() {
@@ -19132,7 +19246,7 @@ function CanvasPage(props) {
                     return props.context.renderer;
                   },
                   columns: available,
-                  assetBase: () => props.file() ? path5.dirname(props.file()) : undefined,
+                  assetBase: () => props.file() ? path6.dirname(props.file()) : undefined,
                   theme: renderTheme,
                   frame: {
                     enabled: false
@@ -19166,13 +19280,13 @@ function CanvasPage(props) {
       }
     }));
     _$effect9((_p$) => {
-      var _v$14 = theme.background.base, _v$15 = props.presentation === "panel" ? ["left"] : false, _v$16 = theme.border.base, _v$17 = theme.decrease(theme.background.base), _v$18 = theme.text.muted, _v$19 = theme.text.muted;
-      _v$14 !== _p$.e && (_p$.e = _$setProp11(_el$13, "backgroundColor", _v$14, _p$.e));
-      _v$15 !== _p$.t && (_p$.t = _$setProp11(_el$13, "border", _v$15, _p$.t));
-      _v$16 !== _p$.a && (_p$.a = _$setProp11(_el$13, "borderColor", _v$16, _p$.a));
-      _v$17 !== _p$.o && (_p$.o = _$setProp11(_el$14, "borderColor", _v$17, _p$.o));
-      _v$18 !== _p$.i && (_p$.i = _$setProp11(_el$15, "fg", _v$18, _p$.i));
-      _v$19 !== _p$.n && (_p$.n = _$setProp11(_el$16, "fg", _v$19, _p$.n));
+      var _v$15 = theme.background.base, _v$16 = props.presentation === "panel" ? ["left"] : false, _v$17 = theme.border.base, _v$18 = theme.decrease(theme.background.base), _v$19 = theme.text.muted, _v$20 = theme.text.muted;
+      _v$15 !== _p$.e && (_p$.e = _$setProp11(_el$13, "backgroundColor", _v$15, _p$.e));
+      _v$16 !== _p$.t && (_p$.t = _$setProp11(_el$13, "border", _v$16, _p$.t));
+      _v$17 !== _p$.a && (_p$.a = _$setProp11(_el$13, "borderColor", _v$17, _p$.a));
+      _v$18 !== _p$.o && (_p$.o = _$setProp11(_el$14, "borderColor", _v$18, _p$.o));
+      _v$19 !== _p$.i && (_p$.i = _$setProp11(_el$15, "fg", _v$19, _p$.i));
+      _v$20 !== _p$.n && (_p$.n = _$setProp11(_el$16, "fg", _v$20, _p$.n));
       return _p$;
     }, {
       e: undefined,
@@ -19196,63 +19310,63 @@ function CanvasReviewUnit(props) {
   const active = () => props.phase() === "review" && index() === props.cursor();
   const commented = () => activeRails().length > 0;
   return [(() => {
-    var _el$31 = _$createElement11("box"), _el$32 = _$createElement11("box");
-    _$insertNode4(_el$31, _el$32);
-    _$setProp11(_el$31, "width", "100%");
-    _$setProp11(_el$31, "flexDirection", "row");
-    _$setProp11(_el$32, "flexGrow", 1);
-    _$setProp11(_el$32, "minWidth", 0);
-    _$setProp11(_el$32, "flexDirection", "column");
-    _$insert9(_el$32, _$createComponent8(Show4, {
+    var _el$33 = _$createElement11("box"), _el$34 = _$createElement11("box");
+    _$insertNode4(_el$33, _el$34);
+    _$setProp11(_el$33, "width", "100%");
+    _$setProp11(_el$33, "flexDirection", "row");
+    _$setProp11(_el$34, "flexGrow", 1);
+    _$setProp11(_el$34, "minWidth", 0);
+    _$setProp11(_el$34, "flexDirection", "column");
+    _$insert9(_el$34, _$createComponent8(Show4, {
       get when() {
         return activeRails().some((rail) => rail.start === index());
       },
       get children() {
-        var _el$33 = _$createElement11("box"), _el$34 = _$createElement11("text"), _el$35 = _$createTextNode3(`comment `);
-        _$insertNode4(_el$33, _el$34);
-        _$setProp11(_el$33, "width", "100%");
-        _$setProp11(_el$33, "flexDirection", "row");
-        _$setProp11(_el$33, "justifyContent", "flex-end");
-        _$insertNode4(_el$34, _el$35);
-        _$insert9(_el$34, () => activeRails().filter((rail) => rail.start === index()).map((rail) => `#${(props.review()?.comments.indexOf(rail.comment) ?? -1) + 1}`).join(", "), null);
+        var _el$35 = _$createElement11("box"), _el$36 = _$createElement11("text"), _el$37 = _$createTextNode3(`comment `);
+        _$insertNode4(_el$35, _el$36);
+        _$setProp11(_el$35, "width", "100%");
+        _$setProp11(_el$35, "flexDirection", "row");
+        _$setProp11(_el$35, "justifyContent", "flex-end");
+        _$insertNode4(_el$36, _el$37);
+        _$insert9(_el$36, () => activeRails().filter((rail) => rail.start === index()).map((rail) => `#${(props.review()?.comments.indexOf(rail.comment) ?? -1) + 1}`).join(", "), null);
         _$effect9((_p$) => {
-          var _v$20 = colors().comment, _v$21 = TextAttributes6.BOLD;
-          _v$20 !== _p$.e && (_p$.e = _$setProp11(_el$34, "fg", _v$20, _p$.e));
-          _v$21 !== _p$.t && (_p$.t = _$setProp11(_el$34, "attributes", _v$21, _p$.t));
+          var _v$21 = colors().comment, _v$22 = TextAttributes6.BOLD;
+          _v$21 !== _p$.e && (_p$.e = _$setProp11(_el$36, "fg", _v$21, _p$.e));
+          _v$22 !== _p$.t && (_p$.t = _$setProp11(_el$36, "attributes", _v$22, _p$.t));
           return _p$;
         }, {
           e: undefined,
           t: undefined
         });
-        return _el$33;
+        return _el$35;
       }
     }), null);
-    _$insert9(_el$32, () => props.rendered, null);
-    _$insert9(_el$32, _$createComponent8(Show4, {
+    _$insert9(_el$34, () => props.rendered, null);
+    _$insert9(_el$34, _$createComponent8(Show4, {
       get when() {
         return active();
       },
       get children() {
-        var _el$36 = _$createElement11("box"), _el$37 = _$createElement11("text");
-        _$insertNode4(_el$36, _el$37);
-        _$setProp11(_el$36, "paddingLeft", 1);
-        _$setProp11(_el$36, "paddingRight", 1);
-        _$setProp11(_el$36, "flexDirection", "row");
-        _$setProp11(_el$36, "justifyContent", "flex-end");
-        _$insertNode4(_el$37, _$createTextNode3(`review cursor`));
+        var _el$38 = _$createElement11("box"), _el$39 = _$createElement11("text");
+        _$insertNode4(_el$38, _el$39);
+        _$setProp11(_el$38, "paddingLeft", 1);
+        _$setProp11(_el$38, "paddingRight", 1);
+        _$setProp11(_el$38, "flexDirection", "row");
+        _$setProp11(_el$38, "justifyContent", "flex-end");
+        _$insertNode4(_el$39, _$createTextNode3(`review cursor`));
         _$effect9((_p$) => {
-          var _v$22 = colors().comment, _v$23 = TextAttributes6.BOLD;
-          _v$22 !== _p$.e && (_p$.e = _$setProp11(_el$37, "fg", _v$22, _p$.e));
-          _v$23 !== _p$.t && (_p$.t = _$setProp11(_el$37, "attributes", _v$23, _p$.t));
+          var _v$23 = colors().comment, _v$24 = TextAttributes6.BOLD;
+          _v$23 !== _p$.e && (_p$.e = _$setProp11(_el$39, "fg", _v$23, _p$.e));
+          _v$24 !== _p$.t && (_p$.t = _$setProp11(_el$39, "attributes", _v$24, _p$.t));
           return _p$;
         }, {
           e: undefined,
           t: undefined
         });
-        return _el$36;
+        return _el$38;
       }
     }), null);
-    _$insert9(_el$31, _$createComponent8(CanvasCommentRails, {
+    _$insert9(_el$33, _$createComponent8(CanvasCommentRails, {
       get theme() {
         return props.theme;
       },
@@ -19262,29 +19376,29 @@ function CanvasReviewUnit(props) {
       rails: activeRails
     }), null);
     _$effect9((_p$) => {
-      var _v$24 = selected() ? colors().selection : commented() ? colors().commentBackground : undefined, _v$25 = active() ? ["top", "right", "bottom", "left"] : undefined, _v$26 = active() ? colors().cursor : undefined;
-      _v$24 !== _p$.e && (_p$.e = _$setProp11(_el$32, "backgroundColor", _v$24, _p$.e));
-      _v$25 !== _p$.t && (_p$.t = _$setProp11(_el$32, "border", _v$25, _p$.t));
-      _v$26 !== _p$.a && (_p$.a = _$setProp11(_el$32, "borderColor", _v$26, _p$.a));
+      var _v$25 = selected() ? colors().selection : commented() ? colors().commentBackground : undefined, _v$26 = active() ? ["top", "right", "bottom", "left"] : undefined, _v$27 = active() ? colors().cursor : undefined;
+      _v$25 !== _p$.e && (_p$.e = _$setProp11(_el$34, "backgroundColor", _v$25, _p$.e));
+      _v$26 !== _p$.t && (_p$.t = _$setProp11(_el$34, "border", _v$26, _p$.t));
+      _v$27 !== _p$.a && (_p$.a = _$setProp11(_el$34, "borderColor", _v$27, _p$.a));
       return _p$;
     }, {
       e: undefined,
       t: undefined,
       a: undefined
     });
-    return _el$31;
+    return _el$33;
   })(), _$createComponent8(For4, {
     get each() {
       return endingRails();
     },
     children: (rail) => (() => {
-      var _el$39 = _$createElement11("box"), _el$40 = _$createElement11("box");
-      _$insertNode4(_el$39, _el$40);
-      _$setProp11(_el$39, "width", "100%");
-      _$setProp11(_el$39, "flexDirection", "row");
-      _$setProp11(_el$40, "flexGrow", 1);
-      _$setProp11(_el$40, "minWidth", 0);
-      _$insert9(_el$40, _$createComponent8(CanvasCommentCard, {
+      var _el$41 = _$createElement11("box"), _el$42 = _$createElement11("box");
+      _$insertNode4(_el$41, _el$42);
+      _$setProp11(_el$41, "width", "100%");
+      _$setProp11(_el$41, "flexDirection", "row");
+      _$setProp11(_el$42, "flexGrow", 1);
+      _$setProp11(_el$42, "minWidth", 0);
+      _$insert9(_el$42, _$createComponent8(CanvasCommentCard, {
         get theme() {
           return props.theme;
         },
@@ -19301,7 +19415,7 @@ function CanvasReviewUnit(props) {
           return props.onEdit;
         }
       }));
-      _$insert9(_el$39, _$createComponent8(CanvasCommentRails, {
+      _$insert9(_el$41, _$createComponent8(CanvasCommentRails, {
         get theme() {
           return props.theme;
         },
@@ -19311,17 +19425,17 @@ function CanvasReviewUnit(props) {
         rails: activeRails,
         connector: () => rail.column
       }), null);
-      return _el$39;
+      return _el$41;
     })()
   })];
 }
 function CanvasCommentRails(props) {
   const colors = () => canvasReviewColors(props.theme);
   return (() => {
-    var _el$41 = _$createElement11("box");
-    _$setProp11(_el$41, "flexShrink", 0);
-    _$setProp11(_el$41, "flexDirection", "row");
-    _$insert9(_el$41, _$createComponent8(For4, {
+    var _el$43 = _$createElement11("box");
+    _$setProp11(_el$43, "flexShrink", 0);
+    _$setProp11(_el$43, "flexDirection", "row");
+    _$insert9(_el$43, _$createComponent8(For4, {
       get each() {
         return Array.from({
           length: props.columns()
@@ -19338,99 +19452,99 @@ function CanvasCommentRails(props) {
             },
             get fallback() {
               return (() => {
-                var _el$47 = _$createElement11("box");
-                _$setProp11(_el$47, "width", 1);
-                return _el$47;
+                var _el$49 = _$createElement11("box");
+                _$setProp11(_el$49, "width", 1);
+                return _el$49;
               })();
             },
             get children() {
-              var _el$46 = _$createElement11("box");
-              _$setProp11(_el$46, "width", 1);
-              _$setProp11(_el$46, "height", "100%");
-              _$setProp11(_el$46, "border", ["left"]);
-              _$effect9((_$p) => _$setProp11(_el$46, "borderColor", colors().comment, _$p));
-              return _el$46;
+              var _el$48 = _$createElement11("box");
+              _$setProp11(_el$48, "width", 1);
+              _$setProp11(_el$48, "height", "100%");
+              _$setProp11(_el$48, "border", ["left"]);
+              _$effect9((_$p) => _$setProp11(_el$48, "borderColor", colors().comment, _$p));
+              return _el$48;
             }
           });
         },
         get children() {
-          var _el$42 = _$createElement11("box"), _el$43 = _$createElement11("text"), _el$45 = _$createElement11("box");
-          _$insertNode4(_el$42, _el$43);
-          _$insertNode4(_el$42, _el$45);
-          _$setProp11(_el$42, "width", 1);
-          _$setProp11(_el$42, "height", "100%");
-          _$setProp11(_el$42, "flexDirection", "column");
-          _$insertNode4(_el$43, _$createTextNode3(`\u2524`));
-          _$setProp11(_el$45, "flexGrow", 1);
-          _$setProp11(_el$45, "minHeight", 0);
-          _$setProp11(_el$45, "border", ["left"]);
+          var _el$44 = _$createElement11("box"), _el$45 = _$createElement11("text"), _el$47 = _$createElement11("box");
+          _$insertNode4(_el$44, _el$45);
+          _$insertNode4(_el$44, _el$47);
+          _$setProp11(_el$44, "width", 1);
+          _$setProp11(_el$44, "height", "100%");
+          _$setProp11(_el$44, "flexDirection", "column");
+          _$insertNode4(_el$45, _$createTextNode3(`\u2524`));
+          _$setProp11(_el$47, "flexGrow", 1);
+          _$setProp11(_el$47, "minHeight", 0);
+          _$setProp11(_el$47, "border", ["left"]);
           _$effect9((_p$) => {
-            var _v$27 = colors().comment, _v$28 = colors().comment;
-            _v$27 !== _p$.e && (_p$.e = _$setProp11(_el$43, "fg", _v$27, _p$.e));
-            _v$28 !== _p$.t && (_p$.t = _$setProp11(_el$45, "borderColor", _v$28, _p$.t));
+            var _v$28 = colors().comment, _v$29 = colors().comment;
+            _v$28 !== _p$.e && (_p$.e = _$setProp11(_el$45, "fg", _v$28, _p$.e));
+            _v$29 !== _p$.t && (_p$.t = _$setProp11(_el$47, "borderColor", _v$29, _p$.t));
             return _p$;
           }, {
             e: undefined,
             t: undefined
           });
-          return _el$42;
+          return _el$44;
         }
       })
     }));
-    _$effect9((_$p) => _$setProp11(_el$41, "width", props.columns(), _$p));
-    return _el$41;
+    _$effect9((_$p) => _$setProp11(_el$43, "width", props.columns(), _$p));
+    return _el$43;
   })();
 }
 function CanvasCommentCard(props) {
   const colors = () => canvasReviewColors(props.theme);
   return (() => {
-    var _el$48 = _$createElement11("box"), _el$49 = _$createElement11("box"), _el$50 = _$createElement11("box"), _el$51 = _$createElement11("text"), _el$52 = _$createTextNode3(`#`), _el$53 = _$createTextNode3(` `), _el$54 = _$createElement11("text"), _el$56 = _$createElement11("box"), _el$57 = _$createElement11("text"), _el$59 = _$createElement11("text");
-    _$insertNode4(_el$48, _el$49);
-    _$insertNode4(_el$48, _el$56);
-    _$setProp11(_el$48, "paddingLeft", 1);
-    _$setProp11(_el$48, "flexDirection", "column");
-    _$insertNode4(_el$49, _el$50);
-    _$insertNode4(_el$49, _el$54);
-    _$setProp11(_el$49, "width", "100%");
-    _$setProp11(_el$49, "flexDirection", "row");
+    var _el$50 = _$createElement11("box"), _el$51 = _$createElement11("box"), _el$52 = _$createElement11("box"), _el$53 = _$createElement11("text"), _el$54 = _$createTextNode3(`#`), _el$55 = _$createTextNode3(` `), _el$56 = _$createElement11("text"), _el$58 = _$createElement11("box"), _el$59 = _$createElement11("text"), _el$61 = _$createElement11("text");
     _$insertNode4(_el$50, _el$51);
-    _$setProp11(_el$50, "flexGrow", 1);
-    _$setProp11(_el$50, "minWidth", 0);
+    _$insertNode4(_el$50, _el$58);
     _$setProp11(_el$50, "paddingLeft", 1);
-    _$setProp11(_el$50, "paddingRight", 1);
-    _$setProp11(_el$50, "flexDirection", "row");
-    _$setProp11(_el$50, "justifyContent", "flex-end");
-    _$setProp11(_el$50, "border", ["top", "right", "bottom", "left"]);
+    _$setProp11(_el$50, "flexDirection", "column");
     _$insertNode4(_el$51, _el$52);
-    _$insertNode4(_el$51, _el$53);
-    _$setProp11(_el$51, "wrapMode", "word");
-    _$setProp11(_el$51, "flexShrink", 1);
-    _$insert9(_el$51, () => props.number + 1, _el$53);
-    _$insert9(_el$51, () => props.comment.message, null);
-    _$insertNode4(_el$54, _$createTextNode3(`\u2500\u2500\u2500`));
-    _$setProp11(_el$54, "width", 3);
-    _$insertNode4(_el$56, _el$57);
-    _$insertNode4(_el$56, _el$59);
-    _$setProp11(_el$56, "paddingTop", 1);
-    _$setProp11(_el$56, "paddingRight", 1);
-    _$setProp11(_el$56, "gap", 1);
-    _$setProp11(_el$56, "flexDirection", "row");
-    _$setProp11(_el$56, "justifyContent", "flex-end");
-    _$insertNode4(_el$57, _$createTextNode3(`edit`));
-    _$setProp11(_el$57, "flexShrink", 0);
-    _$setProp11(_el$57, "onMouseUp", () => props.onEdit(props.comment.id));
-    _$insertNode4(_el$59, _$createTextNode3(`delete`));
+    _$insertNode4(_el$51, _el$56);
+    _$setProp11(_el$51, "width", "100%");
+    _$setProp11(_el$51, "flexDirection", "row");
+    _$insertNode4(_el$52, _el$53);
+    _$setProp11(_el$52, "flexGrow", 1);
+    _$setProp11(_el$52, "minWidth", 0);
+    _$setProp11(_el$52, "paddingLeft", 1);
+    _$setProp11(_el$52, "paddingRight", 1);
+    _$setProp11(_el$52, "flexDirection", "row");
+    _$setProp11(_el$52, "justifyContent", "flex-end");
+    _$setProp11(_el$52, "border", ["top", "right", "bottom", "left"]);
+    _$insertNode4(_el$53, _el$54);
+    _$insertNode4(_el$53, _el$55);
+    _$setProp11(_el$53, "wrapMode", "word");
+    _$setProp11(_el$53, "flexShrink", 1);
+    _$insert9(_el$53, () => props.number + 1, _el$55);
+    _$insert9(_el$53, () => props.comment.message, null);
+    _$insertNode4(_el$56, _$createTextNode3(`\u2500\u2500\u2500`));
+    _$setProp11(_el$56, "width", 3);
+    _$insertNode4(_el$58, _el$59);
+    _$insertNode4(_el$58, _el$61);
+    _$setProp11(_el$58, "paddingTop", 1);
+    _$setProp11(_el$58, "paddingRight", 1);
+    _$setProp11(_el$58, "gap", 1);
+    _$setProp11(_el$58, "flexDirection", "row");
+    _$setProp11(_el$58, "justifyContent", "flex-end");
+    _$insertNode4(_el$59, _$createTextNode3(`edit`));
     _$setProp11(_el$59, "flexShrink", 0);
-    _$setProp11(_el$59, "onMouseUp", () => props.onDelete(props.comment.id));
+    _$setProp11(_el$59, "onMouseUp", () => props.onEdit(props.comment.id));
+    _$insertNode4(_el$61, _$createTextNode3(`delete`));
+    _$setProp11(_el$61, "flexShrink", 0);
+    _$setProp11(_el$61, "onMouseUp", () => props.onDelete(props.comment.id));
     _$effect9((_p$) => {
-      var _v$29 = colors().commentBackground, _v$30 = colors().comment, _v$31 = props.theme.text.base, _v$32 = TextAttributes6.BOLD, _v$33 = colors().comment, _v$34 = props.theme.text.muted, _v$35 = props.theme.text.muted;
-      _v$29 !== _p$.e && (_p$.e = _$setProp11(_el$48, "backgroundColor", _v$29, _p$.e));
-      _v$30 !== _p$.t && (_p$.t = _$setProp11(_el$50, "borderColor", _v$30, _p$.t));
-      _v$31 !== _p$.a && (_p$.a = _$setProp11(_el$51, "fg", _v$31, _p$.a));
-      _v$32 !== _p$.o && (_p$.o = _$setProp11(_el$51, "attributes", _v$32, _p$.o));
-      _v$33 !== _p$.i && (_p$.i = _$setProp11(_el$54, "fg", _v$33, _p$.i));
-      _v$34 !== _p$.n && (_p$.n = _$setProp11(_el$57, "fg", _v$34, _p$.n));
-      _v$35 !== _p$.s && (_p$.s = _$setProp11(_el$59, "fg", _v$35, _p$.s));
+      var _v$30 = colors().commentBackground, _v$31 = colors().comment, _v$32 = props.theme.text.base, _v$33 = TextAttributes6.BOLD, _v$34 = colors().comment, _v$35 = props.theme.text.muted, _v$36 = props.theme.text.muted;
+      _v$30 !== _p$.e && (_p$.e = _$setProp11(_el$50, "backgroundColor", _v$30, _p$.e));
+      _v$31 !== _p$.t && (_p$.t = _$setProp11(_el$52, "borderColor", _v$31, _p$.t));
+      _v$32 !== _p$.a && (_p$.a = _$setProp11(_el$53, "fg", _v$32, _p$.a));
+      _v$33 !== _p$.o && (_p$.o = _$setProp11(_el$53, "attributes", _v$33, _p$.o));
+      _v$34 !== _p$.i && (_p$.i = _$setProp11(_el$56, "fg", _v$34, _p$.i));
+      _v$35 !== _p$.n && (_p$.n = _$setProp11(_el$59, "fg", _v$35, _p$.n));
+      _v$36 !== _p$.s && (_p$.s = _$setProp11(_el$61, "fg", _v$36, _p$.s));
       return _p$;
     }, {
       e: undefined,
@@ -19441,8 +19555,29 @@ function CanvasCommentCard(props) {
       n: undefined,
       s: undefined
     });
-    return _el$48;
+    return _el$50;
   })();
+}
+async function selectArtifact(context) {
+  const root = context.location?.directory ?? process.cwd();
+  const extensions = artifactExtensions(context.options);
+  const files = collectArtifactFiles(root, extensions);
+  if (!files.length) {
+    context.ui.toast.show({
+      variant: "warning",
+      message: `No ${extensions.join(", ")} files found under ${root}`
+    });
+    return;
+  }
+  return await context.ui.dialog.select({
+    title: "Open artifact",
+    placeholder: "Search artifacts...",
+    options: files.map((file) => ({
+      title: path6.relative(root, file) || file,
+      value: file
+    })),
+    search: fuzzyFilterArtifacts
+  });
 }
 async function editArtifact(context, file, cwd, refetch) {
   if (!file)
@@ -19490,12 +19625,40 @@ var canvas_default = {
     const [previous, setPrevious] = createSignal6({
       ...context.ui.router.current()
     });
+    const openCanvas = (artifact) => {
+      const current = context.ui.router.current();
+      setFile(artifact);
+      context.ui.dialog.clear();
+      if (context.ui.panel.open("artifact-canvas", {
+        presentation: "panel"
+      }))
+        return;
+      if (current.type === "session")
+        context.ui.toast.show({
+          variant: "warning",
+          message: "Canvas panel could not open; falling back to fullscreen"
+        });
+      if (current.type !== "plugin" || current.name !== "artifact-canvas")
+        setPrevious({
+          ...current
+        });
+      context.ui.router.navigate({
+        type: "plugin",
+        name: "artifact-canvas"
+      });
+    };
+    const pickArtifact = async () => {
+      const picked = await selectArtifact(context);
+      if (picked)
+        openCanvas(picked);
+    };
     context.ui.router.register({
       name: "artifact-canvas",
       render: () => _$createComponent8(CanvasPage, {
         context,
         file,
         onClose: () => context.ui.router.navigate(previous()),
+        openPicker: pickArtifact,
         presentation: "fullscreen",
         sessionID: () => {
           const route = previous();
@@ -19514,6 +19677,7 @@ var canvas_default = {
           get onClose() {
             return input.close;
           },
+          openPicker: pickArtifact,
           active: () => input.focused,
           get presentation() {
             return input.presentation;
@@ -19537,27 +19701,10 @@ var canvas_default = {
               name: "canvas",
               arguments: true
             },
-            run(input) {
-              const current = context.ui.router.current();
-              setFile(input?.trim() ? path5.resolve(process.cwd(), input.trim()) : undefined);
-              context.ui.dialog.clear();
-              if (context.ui.panel.open("artifact-canvas", {
-                presentation: "panel"
-              }))
-                return;
-              if (current.type === "session")
-                context.ui.toast.show({
-                  variant: "warning",
-                  message: "Canvas panel could not open; falling back to fullscreen"
-                });
-              if (current.type !== "plugin" || current.name !== "artifact-canvas")
-                setPrevious({
-                  ...current
-                });
-              context.ui.router.navigate({
-                type: "plugin",
-                name: "artifact-canvas"
-              });
+            async run(input) {
+              if (!input?.trim())
+                return pickArtifact();
+              openCanvas(path6.resolve(process.cwd(), input.trim()));
             }
           }]
         }));
