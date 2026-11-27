@@ -19590,6 +19590,31 @@ async function selectArtifact(context) {
     search: fuzzyFilterArtifacts
   });
 }
+async function withSuspendedRenderer(renderer, operation, onError) {
+  let suspended = false;
+  try {
+    await renderer.suspend();
+    suspended = true;
+    renderer.currentRenderBuffer.clear();
+    return await operation();
+  } catch (error) {
+    onError(error);
+  } finally {
+    if (!suspended)
+      return;
+    try {
+      renderer.currentRenderBuffer.clear();
+    } catch (error) {
+      onError(error);
+    }
+    try {
+      await renderer.resume();
+      renderer.requestRender();
+    } catch (error) {
+      onError(error);
+    }
+  }
+}
 async function editArtifact(context, file, cwd, refetch) {
   if (!file)
     return;
@@ -19601,9 +19626,7 @@ async function editArtifact(context, file, cwd, refetch) {
     });
     return;
   }
-  context.renderer.suspend();
-  context.renderer.currentRenderBuffer.clear();
-  try {
+  await withSuspendedRenderer(context.renderer, async () => {
     await new Promise((resolve, reject) => {
       const parts = editor.split(" ");
       const child = spawn(parts[0], [...parts.slice(1), file], {
@@ -19615,16 +19638,10 @@ async function editArtifact(context, file, cwd, refetch) {
       child.on("exit", (code, signal) => code === 0 ? resolve() : reject(new Error(`Editor exited with ${signal ? `signal ${signal}` : `code ${code}`}`)));
     });
     refetch();
-  } catch (error) {
-    context.ui.toast.show({
-      variant: "error",
-      message: error instanceof Error ? error.message : String(error)
-    });
-  } finally {
-    context.renderer.currentRenderBuffer.clear();
-    context.renderer.resume();
-    context.renderer.requestRender();
-  }
+  }, (error) => context.ui.toast.show({
+    variant: "error",
+    message: error instanceof Error ? error.message : String(error)
+  }));
 }
 var canvas_default = {
   id: "opencode.artifact-canvas",

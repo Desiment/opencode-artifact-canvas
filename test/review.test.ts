@@ -11,7 +11,15 @@ import {
   updateReviewComment,
   type ReviewComment,
 } from "../src/review"
-import { commentRangeContains, confirmReviewExit, documentReviewUnits, unitAtomKind, visualSelectionContains } from "../src/canvas"
+import {
+  commentRangeContains,
+  confirmReviewExit,
+  documentReviewUnits,
+  unitAtomKind,
+  visualSelectionContains,
+  withSuspendedRenderer,
+  type SuspendableRenderer,
+} from "../src/canvas"
 import { parseDocument } from "opentui-markdown-render"
 
 describe("artifact canvas review state", () => {
@@ -192,5 +200,78 @@ describe("artifact canvas review state", () => {
     expect(draft).toContain("```mermaid\nflowchart LR\n```")
     expect(draft).toContain("-$x$")
     expect(draft).toContain("+$y$")
+  })
+})
+
+describe("artifact canvas renderer transitions", () => {
+  function renderer(events: string[], behaviors: {
+    suspend?: () => Promise<void>
+    resume?: () => Promise<void>
+  } = {}): SuspendableRenderer {
+    return {
+      currentRenderBuffer: { clear: () => events.push("clear") },
+      suspend: behaviors.suspend ?? (async () => { events.push("suspend") }),
+      resume: behaviors.resume ?? (async () => { events.push("resume") }),
+      requestRender: () => events.push("request render"),
+    } as unknown as SuspendableRenderer
+  }
+
+  test("waits for suspension before launching the editor, then resumes before rendering", async () => {
+    const events: string[] = []
+    let completeSuspension!: () => void
+    const suspension = new Promise<void>((resolve) => { completeSuspension = resolve })
+    const operation = withSuspendedRenderer(
+      renderer(events, { suspend: async () => { events.push("suspend"); await suspension } }),
+      async () => { events.push("launch editor") },
+      (error) => { throw error },
+    )
+
+    await Promise.resolve()
+    expect(events).toEqual(["suspend"])
+    completeSuspension()
+    await operation
+    expect(events).toEqual(["suspend", "clear", "launch editor", "clear", "resume", "request render"])
+  })
+
+  test("reports suspension and editor failures without resuming an incomplete suspension", async () => {
+    const suspendError = new Error("suspend failed")
+    const editorError = new Error("editor failed")
+    const errors: unknown[] = []
+    const suspendEvents: string[] = []
+    const suspendResult = await withSuspendedRenderer(
+      renderer(suspendEvents, { suspend: async () => { suspendEvents.push("suspend"); throw suspendError } }),
+      async () => { suspendEvents.push("launch editor") },
+      (error) => errors.push(error),
+    )
+
+    expect(suspendResult).toBeUndefined()
+    expect(suspendEvents).toEqual(["suspend"])
+    expect(errors).toEqual([suspendError])
+
+    const editorEvents: string[] = []
+    const editorResult = await withSuspendedRenderer(
+      renderer(editorEvents),
+      async () => { editorEvents.push("launch editor"); throw editorError },
+      (error) => errors.push(error),
+    )
+
+    expect(editorResult).toBeUndefined()
+    expect(editorEvents).toEqual(["suspend", "clear", "launch editor", "clear", "resume", "request render"])
+    expect(errors).toEqual([suspendError, editorError])
+  })
+
+  test("reports a resume failure and does not request a render before resuming", async () => {
+    const events: string[] = []
+    const resumeError = new Error("resume failed")
+    const errors: unknown[] = []
+
+    await withSuspendedRenderer(
+      renderer(events, { resume: async () => { events.push("resume"); throw resumeError } }),
+      async () => { events.push("launch editor") },
+      (error) => errors.push(error),
+    )
+
+    expect(events).toEqual(["suspend", "clear", "launch editor", "clear", "resume"])
+    expect(errors).toEqual([resumeError])
   })
 })
