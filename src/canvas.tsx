@@ -594,6 +594,40 @@ async function selectArtifact(context: Plugin.Context): Promise<string | undefin
   })
 }
 
+export type SuspendableRenderer = Pick<
+  Plugin.Context["renderer"],
+  "suspend" | "resume" | "requestRender" | "currentRenderBuffer"
+>
+
+export async function withSuspendedRenderer<T>(
+  renderer: SuspendableRenderer,
+  operation: () => Promise<T>,
+  onError: (error: unknown) => void,
+): Promise<T | undefined> {
+  let suspended = false
+  try {
+    await renderer.suspend()
+    suspended = true
+    renderer.currentRenderBuffer.clear()
+    return await operation()
+  } catch (error) {
+    onError(error)
+  } finally {
+    if (!suspended) return
+    try {
+      renderer.currentRenderBuffer.clear()
+    } catch (error) {
+      onError(error)
+    }
+    try {
+      await renderer.resume()
+      renderer.requestRender()
+    } catch (error) {
+      onError(error)
+    }
+  }
+}
+
 async function editArtifact(context: Plugin.Context, file: string | undefined, cwd: string, refetch: () => void) {
   if (!file) return
   const editor = process.env.VISUAL || process.env.EDITOR
@@ -601,9 +635,7 @@ async function editArtifact(context: Plugin.Context, file: string | undefined, c
     context.ui.toast.show({ variant: "warning", message: "Set VISUAL or EDITOR to edit the artifact" })
     return
   }
-  context.renderer.suspend()
-  context.renderer.currentRenderBuffer.clear()
-  try {
+  await withSuspendedRenderer(context.renderer, async () => {
     await new Promise<void>((resolve, reject) => {
       const parts = editor.split(" ")
       const child = spawn(parts[0]!, [...parts.slice(1), file], { cwd, stdio: "inherit", shell: process.platform === "win32" })
@@ -611,13 +643,7 @@ async function editArtifact(context: Plugin.Context, file: string | undefined, c
       child.on("exit", (code, signal) => code === 0 ? resolve() : reject(new Error(`Editor exited with ${signal ? `signal ${signal}` : `code ${code}`}`)))
     })
     refetch()
-  } catch (error) {
-    context.ui.toast.show({ variant: "error", message: error instanceof Error ? error.message : String(error) })
-  } finally {
-    context.renderer.currentRenderBuffer.clear()
-    context.renderer.resume()
-    context.renderer.requestRender()
-  }
+  }, (error) => context.ui.toast.show({ variant: "error", message: error instanceof Error ? error.message : String(error) }))
 }
 
 export default {
